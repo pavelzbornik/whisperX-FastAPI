@@ -33,6 +33,14 @@ Individual services
 
 Get the status of a job via GET /transcription_status/{identifier}
 
+## Language and Whisper model settings
+
+In `services.py` you can define:
+
+- default Language constant `LANG = "en"` (you can also set it in the request)
+- default Whisper model `WHISPER_MODEL = "base"`
+
+
 ## Getting Started
 
 ### Local Run
