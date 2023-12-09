@@ -28,5 +28,5 @@ RUN pip install git+https://github.com/m-bain/whisperx.git --no-cache-dir
 
 RUN pip install -r requirements.txt --no-cache-dir
 
-EXPOSE 9000
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:9000", "--workers", "1", "--timeout", "0", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
+EXPOSE 8000
+ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
