@@ -4,7 +4,9 @@ The whisperX API is a tool for enhancing and analyzing audio content. This API p
 
 ## Documentation
 
-See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details on requests and responses.
+Swagger UI is available at `/docs` for all the services
+
+See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details on whisperX functions.
 
 ## Services
 
