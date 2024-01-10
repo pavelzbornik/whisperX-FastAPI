@@ -292,9 +292,11 @@ async def combine(
 
 @app.post("/speech-to-text-url", tags=["Speech-2-Text"])
 async def speech_to_text_url(
-    background_tasks: BackgroundTasks, url: str = Form(...)
+    background_tasks: BackgroundTasks, 
+    language: str = None,
+    url: str = Form(...)
 ) -> Response:
-    return download_and_process_file(url, background_tasks)
+    return download_and_process_file(url, background_tasks, language)
 
 
 @app.get("/transcription_status/{identifier}", tags=["Tasks Management"])

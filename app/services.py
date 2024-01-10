@@ -158,7 +158,7 @@ async def process_audio_common(audio, identifier, language=LANG):
         )
 
 
-def download_and_process_file(url, background_tasks):
+def download_and_process_file(url, background_tasks, language=None):
     """
     Download an audio file from a URL and process it in the background.
 
@@ -187,6 +187,8 @@ def download_and_process_file(url, background_tasks):
     identifier = generate_unique_identifier()
 
     validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
+    if language:
+        validate_language_code(language)
 
     # Save the identifier and set the initial status to "processing"
     update_transcription_status(
@@ -197,7 +199,9 @@ def download_and_process_file(url, background_tasks):
     )
     audio = process_audio_file(temp_audio_file.name)
     # Use background tasks to perform the audio processing
-    background_tasks.add_task(process_audio_common, audio, identifier)
+    background_tasks.add_task(
+            process_audio_common, audio, identifier, language
+    )
 
     # Return the identifier to the user
     return Response(identifier=identifier, message="Task queued")
