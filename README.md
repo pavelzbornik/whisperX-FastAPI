@@ -85,12 +85,22 @@ WHISPER_MODEL=<<WHISPER MODEL SIZE>>
 
 2. Build Image
 
+using `docker-compose.yaml`
+
+```sh
+#build and start the image using compose file
+docker-compose up
+```
+
+
+alternative approach
+
 ```sh
 #build image
 docker build -t whisperx-service .
 
 # Run Container
-docker run -d --gpus all -p 8000:8000 whisperx-service
+docker run -d --gpus all -p 8000:8000 --env-file .env whisperx-service
 ```
 The API will be accessible at http://127.0.0.1:8000.
 

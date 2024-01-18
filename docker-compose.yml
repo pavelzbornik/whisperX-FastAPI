@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  whisperx-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: whisperx-service
+    container_name: whisperx-container
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+
