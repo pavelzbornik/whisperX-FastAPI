@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List, Union
+from typing import Optional, List, Any
 
 
 class Response(BaseModel):
@@ -77,13 +77,6 @@ class TranscriptInput(BaseModel):
 
 class Result(BaseModel):
     status: str
-    result: Optional[
-        Union[
-            List[DiarizationSegment],
-            Transcript,
-            DiaredTrancript,
-            AlignedTranscription,
-        ]
-    ]
+    result: Any
     metadata: Metadata
     error: Optional[str]
