@@ -12,14 +12,11 @@ from .models import (
     DiarizationSegment,
 )
 
-from typing import List, Optional
-
 from pydantic import ValidationError
 
 import pandas as pd
 
 import json
-from json import JSONDecodeError
 
 from .services import (
     generate_unique_identifier,
@@ -292,9 +289,9 @@ async def combine(
 
 @app.post("/speech-to-text-url", tags=["Speech-2-Text"])
 async def speech_to_text_url(
-    background_tasks: BackgroundTasks, 
+    background_tasks: BackgroundTasks,
     language: str = None,
-    url: str = Form(...)
+    url: str = Form(...),
 ) -> Response:
     return download_and_process_file(url, background_tasks, language)
 

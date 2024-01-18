@@ -21,7 +21,7 @@ load_dotenv()
 
 LANG = "en"
 HF_TOKEN = os.getenv("HF_TOKEN")
-WHISPER_MODEL = "base"
+WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
 
 # Load models during startup
@@ -200,7 +200,7 @@ def download_and_process_file(url, background_tasks, language=None):
     audio = process_audio_file(temp_audio_file.name)
     # Use background tasks to perform the audio processing
     background_tasks.add_task(
-            process_audio_common, audio, identifier, language
+        process_audio_common, audio, identifier, language
     )
 
     # Return the identifier to the user

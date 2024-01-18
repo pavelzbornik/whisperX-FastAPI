@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List, Union
 
+
 class Response(BaseModel):
     identifier: str
     message: str
