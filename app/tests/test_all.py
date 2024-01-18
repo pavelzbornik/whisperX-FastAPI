@@ -37,7 +37,7 @@ def test_speech_to_text():
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            "/speech-to-text",
+            "/speech-to-text?language=en",
             files=files,
         )
 
@@ -52,6 +52,9 @@ def test_speech_to_text():
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
+    task_result = client.get(f"/transcription_status/{identifier}")
+    seg_0_text = task_result.json()['result']['segments'][0]['text']
+    assert seg_0_text.startswith(' This is a test audio')
 
 def test_transcribe():
     # There is sometimes issue with CUDA memory better run this test individually
@@ -148,7 +151,7 @@ def test_combine():
 def test_speech_to_text_url():
     # There is sometimes issue with CUDA memory better run this test individually
     response = client.post(
-        "/speech-to-text-url",
+        "/speech-to-text-url?language=en",
         data={
             "url": "https://github.com/tijszwinkels/whisperX-api/raw/main/audio_en.mp3"
         },
@@ -163,6 +166,10 @@ def test_speech_to_text_url():
     assert wait_for_task_completion(
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
+    
+    task_result = client.get(f"/transcription_status/{identifier}")
+    seg_0_text = task_result.json()['result']['segments'][0]['text']
+    assert seg_0_text.startswith(' This is a test audio')
 
 
 def test_get_all_tasks_status():
