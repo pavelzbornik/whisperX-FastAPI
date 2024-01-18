@@ -40,7 +40,6 @@ Get the status of a job via GET /transcription_status/{identifier}
 In `services.py` you can define:
 
 - default Language constant `LANG = "en"` (you can also set it in the request)
-- default Whisper model `WHISPER_MODEL = "base"`
 
 
 ## Getting Started
@@ -62,6 +61,7 @@ pip install -r requirements.txt
 ```
 5. Create `.env` file
 
+define your Whisper Model and token for Huggingface
 ```
 HF_TOKEN=<<YOUR HUGGINGFACE TOKEN>>
 WHISPER_MODEL=<<WHISPER MODEL SIZE>>
