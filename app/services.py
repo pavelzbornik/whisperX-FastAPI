@@ -71,7 +71,7 @@ def transcribe_with_whisper(
     result = model.transcribe(
         audio=audio, batch_size=batch_size, language=language
     )
-    
+
     # delete model
     gc.collect()
     torch.cuda.empty_cache()
@@ -308,4 +308,3 @@ def process_speaker_assignment(diarization_segments, transcript, identifier):
         diarization_segments,
         transcript,
     )
-
