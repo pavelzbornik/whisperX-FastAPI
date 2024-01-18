@@ -16,6 +16,8 @@ from .tasks import generate_unique_identifier, update_transcription_status
 
 from .files import validate_extension, ALLOWED_EXTENSIONS
 
+import gc
+
 # Load environment variables from .env
 load_dotenv()
 
@@ -24,15 +26,14 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
 
-# Load models during startup
 device = "cuda" if torch.cuda.is_available() else "cpu"
-transcription_model = whisperx.load_model(WHISPER_MODEL, device)
-diarize_model = whisperx.DiarizationPipeline(
-    use_auth_token=HF_TOKEN, device=device
-)
-align_model, align_metadata = whisperx.load_align_model(
-    language_code=LANG, device=device
-)
+# transcription_model = whisperx.load_model(WHISPER_MODEL, device)
+# diarize_model = whisperx.DiarizationPipeline(
+#     use_auth_token=HF_TOKEN, device=device
+# )
+# align_model, align_metadata = whisperx.load_align_model(
+#     language_code=LANG, device=device
+# )
 
 
 def validate_language_code(language_code):
@@ -53,7 +54,6 @@ def validate_language_code(language_code):
 
 def transcribe_with_whisper(
     audio,
-    model,
     language=LANG,
     batch_size: int = 16,
 ):
@@ -62,16 +62,45 @@ def transcribe_with_whisper(
 
     Args:
        audio (Audio): The audio to transcribe.
-       model (Model): The Whisper model to use.
        batch_size (int): Batch size for transcription (default 16).
 
     Returns:
        Transcript: The transcription result.
     """
-
-    return model.transcribe(
+    model = whisperx.load_model(WHISPER_MODEL, device)
+    result = model.transcribe(
         audio=audio, batch_size=batch_size, language=language
     )
+    
+    # delete model
+    gc.collect()
+    torch.cuda.empty_cache()
+    del model
+
+    return result
+
+
+def diarize(audio):
+    """
+    Diarize an audio file using the PyAnnotate model.
+
+    Args:
+       audio (Audio): The audio to diarize.
+
+    Returns:
+       Diarizartion: The diarization result.
+    """
+    model = whisperx.DiarizationPipeline(
+        use_auth_token=HF_TOKEN, device=device
+    )
+    result = model(audio)
+
+    # delete model
+    gc.collect()
+    torch.cuda.empty_cache()
+    del model
+
+    return result
 
 
 def align_whisper_output(transcript, audio, language_code):
@@ -86,15 +115,12 @@ def align_whisper_output(transcript, audio, language_code):
     Returns:
        Transcript: The aligned transcript.
     """
-    # Use the global align_model and align_metadata
-    global align_model, align_metadata
-    # if the language code is different from the default language
-    if language_code != LANG:
-        align_model, align_metadata = whisperx.load_align_model(
-            language_code=language_code, device=device
-        )
 
-    return whisperx.align(
+    align_model, align_metadata = whisperx.load_align_model(
+        language_code=language_code, device=device
+    )
+
+    result = whisperx.align(
         transcript,
         align_model,
         align_metadata,
@@ -103,8 +129,16 @@ def align_whisper_output(transcript, audio, language_code):
         return_char_alignments=False,
     )
 
+    # delete model
+    gc.collect()
+    torch.cuda.empty_cache()
+    del align_model
+    del align_metadata
 
-async def process_audio_common(audio, identifier, language=LANG):
+    return result
+
+
+def process_audio_common(audio, identifier, language=LANG):
     """
     Process an audio clip to generate a transcript with speaker labels.
 
@@ -118,7 +152,7 @@ async def process_audio_common(audio, identifier, language=LANG):
     try:
         start_time = datetime.now()
         segments_before_alignment = transcribe_with_whisper(
-            audio, model=transcription_model, language=language
+            audio, language=language
         )
         segments_transcript = align_whisper_output(
             transcript=segments_before_alignment["segments"],
@@ -126,7 +160,7 @@ async def process_audio_common(audio, identifier, language=LANG):
             language_code=segments_before_alignment["language"],
         )
 
-        diarization_segments = diarize_model(audio)
+        diarization_segments = diarize(audio)
 
         result = whisperx.assign_word_speakers(
             diarization_segments, segments_transcript
@@ -247,13 +281,12 @@ def process_transcribe(audio, identifier, language=LANG):
         identifier,
         "transcription",
         audio,
-        transcription_model,
         language,
     )
 
 
 def process_diarize(audio, identifier):
-    process_audio_task(diarize_model, identifier, "diarization", audio)
+    process_audio_task(diarize, identifier, "diarization", audio)
 
 
 def process_alignment(audio, transcript, identifier):
@@ -276,149 +309,3 @@ def process_speaker_assignment(diarization_segments, transcript, identifier):
         transcript,
     )
 
-
-# def process_transcribe(audio, identifier):
-#     """
-#     Process an audio file to generate a transcript.
-
-#     Args:
-#         audio (Audio): The input audio
-#         identifier (str): The identifier for the request
-
-#     Returns:
-#         None: The result is saved in the transcription requests dict.
-
-#     """
-#     try:
-#         start_time = datetime.now()
-#         result = transcribe_with_whisper(audio, model=transcription_model)
-#         end_time = datetime.now()
-#         duration = (end_time - start_time).total_seconds()
-
-#         update_transcription_status(
-#             identifier,
-#             "completed",
-#             result,
-#             task_type="transcription",
-#             duration=duration,
-#         )
-#     except Exception as e:
-#         update_transcription_status(
-#             identifier,
-#             "failed",
-#             result=None,
-#             task_type="transcription",
-#             duration=None,
-#             error=str(e),
-#         )
-
-
-# def process_diarize(audio, identifier):
-#     """
-#     Process an audio file to generate speaker diarization.
-
-#     Args:
-#         audio (Audio): The input audio
-#         identifier (str): The request identifier
-
-#     Returns:
-#         None: Result saved in requests dict
-#     """
-
-#     try:
-#         start_time = datetime.now()
-
-#         diarization_segments = diarize_model(audio)
-
-#         result = diarization_segments.drop(columns=["segment"]).to_dict(
-#             orient="records"
-#         )
-#         print(result)
-
-#         end_time = datetime.now()
-#         duration = (end_time - start_time).total_seconds()
-
-#         update_transcription_status(
-#             identifier,
-#             "completed",
-#             result,
-#             task_type="diarization",
-#             duration=duration,
-#         )
-
-#     except Exception as e:
-#         update_transcription_status(
-#             identifier,
-#             "failed",
-#             result=None,
-#             task_type="diarization",
-#             duration=None,
-#             error=str(e),
-#         )
-
-
-# def process_alignment(audio, transcript, identifier):
-#     try:
-#         start_time = datetime.now()
-
-#         result = align_whisper_output(
-#             transcript=transcript["segments"],
-#             audio=audio,
-#             language_code=transcript["language"],
-#         )
-#         # print(result)
-#         end_time = datetime.now()
-#         duration = (end_time - start_time).total_seconds()
-
-#         update_transcription_status(
-#             identifier,
-#             "completed",
-#             result,
-#             task_type="transcription_aligment",
-#             duration=duration,
-#         )
-
-#     except Exception as e:
-#         update_transcription_status(
-#             identifier,
-#             "failed",
-#             result=None,
-#             task_type="transcription_aligment",
-#             duration=None,
-#             error=str(e),
-#         )
-
-
-# def process_speaker_assignment(diarization_segments, transcript, identifier):
-#     try:
-#         start_time = datetime.now()
-
-#         result = whisperx.assign_word_speakers(
-#             diarization_segments, transcript
-#         )
-
-#         for segment in result["segments"]:
-#             del segment["words"]
-
-#         del result["word_segments"]
-
-#         end_time = datetime.now()
-#         duration = (end_time - start_time).total_seconds()
-
-#         update_transcription_status(
-#             identifier,
-#             "completed",
-#             result,
-#             task_type="combine_transcript&diarization",
-#             duration=duration,
-#         )
-
-#     except Exception as e:
-#         update_transcription_status(
-#             identifier,
-#             "failed",
-#             result=None,
-#             task_type="combine_transcript&diarization",
-#             duration=None,
-#             error=str(e),
-#         )
