@@ -64,6 +64,7 @@ pip install -r requirements.txt
 
 ```
 HF_TOKEN=<<YOUR HUGGINGFACE TOKEN>>
+WHISPER_MODEL=<<WHISPER MODEL SIZE>>
 ```
 
 6. Run the FastAPI application:
@@ -79,6 +80,7 @@ The API will be accessible at http://127.0.0.1:8000.
 
 ```
 HF_TOKEN=<<YOUR HUGGINGFACE TOKEN>>
+WHISPER_MODEL=<<WHISPER MODEL SIZE>>
 ```
 
 2. Build Image
