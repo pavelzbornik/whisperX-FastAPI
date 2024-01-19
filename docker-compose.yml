@@ -6,11 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: whisperx-service
-    container_name: whisperx-container
-    env_file:
-      - .env
-    ports:
-      - "8000:8000"
     deploy:
       resources:
         reservations:
@@ -18,4 +13,13 @@ services:
           - driver: nvidia
             count: 1
             capabilities: [gpu]
+    container_name: whisperx-container
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"            
+    volumes:
+      - whisperx-models-cache:/root/.cache
 
+volumes:
+  whisperx-models-cache: 
