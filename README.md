@@ -104,6 +104,13 @@ docker run -d --gpus all -p 8000:8000 --env-file .env whisperx-service
 ```
 The API will be accessible at http://127.0.0.1:8000.
 
+#### Model cache
+
+The models used by whisperX are stored in `root/.cache`, if you want to avoid downloanding the models each time the container is starting you can store the cache in persistant storage. `docker-compose.yaml` defines a volumne `whisperx-models-cache` to store this cache.
+
+- faster-whisper cache: `root/.cache/huggingface/hub`
+- pyannotate and other models cache: `root/.cache/torch`
+
 ## Related
 - [ahmetoner/whisper-asr-webservice](https://github.com/ahmetoner/whisper-asr-webservice)
 - [alexgo84/whisperx-server](https://github.com/alexgo84/whisperx-server)
