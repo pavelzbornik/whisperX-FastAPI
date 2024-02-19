@@ -19,7 +19,5 @@ services:
     ports:
       - "8000:8000"            
     volumes:
-      - whisperx-models-cache:/root/.cache
-
-volumes:
-  whisperx-models-cache: 
+      - ./.cache:/root/.cache
+    network_mode: "host"
