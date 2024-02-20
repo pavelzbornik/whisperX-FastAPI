@@ -1,7 +1,8 @@
 from fastapi.testclient import TestClient
 from app import main
 import time
-
+import tempfile
+import json
 
 client = TestClient(main.app)
 
@@ -32,15 +33,14 @@ def wait_for_task_completion(identifier, max_attempts=10, delay=10):
     return False
 
 
-def test_speech_to_text():
-    # There is sometimes issue with CUDA memory better run this test individually
+def generic_transcription(client_url):
+
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            "/speech-to-text?language=en",
+            f"{client_url}",
             files=files,
         )
-
     assert response.status_code == 200
     assert "Task queued" in response.json()["message"]
 
@@ -53,32 +53,14 @@ def test_speech_to_text():
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
     task_result = client.get(f"/transcription_status/{identifier}")
-    seg_0_text = task_result.json()['result']['segments'][0]['text']
-    assert seg_0_text.startswith(' This is a test audio')
+    seg_0_text = task_result.json()["result"]["segments"][0]["text"]
+    assert seg_0_text.startswith(" This is a test audio")
 
-def test_transcribe():
-    # There is sometimes issue with CUDA memory better run this test individually
-
-    with open(AUDIO_FILE, "rb") as audio_file:
-        files = {"file": ("audio_en.mp3", audio_file)}
-        response = client.post(
-            "/transcribe",
-            files=files,
-        )
-    assert response.status_code == 200
-    assert "Task queued" in response.json()["message"]
-
-    # Extract identifier from the response
-    identifier = response.json()["identifier"]
-
-    # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    return task_result.json()["result"]
 
 
-def test_align():
-    with open("test_files/transcript.json", "rb") as transcript_file, open(
+def align(transcript_file):
+    with open(transcript_file, "rb") as transcript_file, open(
         AUDIO_FILE, "rb"
     ) as audio_file:
         response = client.post(
@@ -100,8 +82,12 @@ def test_align():
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
+    task_result = client.get(f"/transcription_status/{identifier}")
 
-def test_diarize():
+    return task_result.json()["result"]
+
+
+def diarize():
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
@@ -119,13 +105,15 @@ def test_diarize():
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
+    task_result = client.get(f"/transcription_status/{identifier}")
 
-def test_combine():
-    
-    with open(
-        "test_files/aligned_transcript.json", "rb"
-    ) as transcript_file, open(
-        "test_files/diarazition.json", "rb"
+    return task_result.json()["result"]
+
+
+def combine(aligned_transcript_file, diarazition_file):
+
+    with open(aligned_transcript_file, "rb") as transcript_file, open(
+        diarazition_file, "rb"
     ) as diarization_result:
         files = {
             "aligned_transcript": ("aligned_transcript.json", transcript_file),
@@ -147,6 +135,65 @@ def test_combine():
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
+    task_result = client.get(f"/transcription_status/{identifier}")
+
+    return task_result.json()["result"]
+
+
+def test_speech_to_text():
+    assert generic_transcription("/speech-to-text?language=en") is not None
+
+
+def test_transcribe():
+    assert generic_transcription("/transcribe") is not None
+
+
+def test_align():
+
+    assert align("test_files/transcript.json") is not None
+
+
+def test_diarize():
+
+    assert diarize() is not None
+
+
+def test_flow():
+    # Create temporary files for transcript, aligned transcript, and diarization
+    with tempfile.NamedTemporaryFile(
+        mode="w", delete=False
+    ) as transcript_file, tempfile.NamedTemporaryFile(
+        mode="w", delete=False
+    ) as aligned_transcript_file, tempfile.NamedTemporaryFile(
+        mode="w", delete=False
+    ) as diarization_file:
+
+        # Write the transcription result to the temporary transcript file
+        json.dump(generic_transcription("/transcribe"), transcript_file)
+        transcript_file.flush()  # Ensure data is written to the file
+
+        # Write the aligned transcription result to the temporary aligned transcript file
+        json.dump(align(transcript_file.name), aligned_transcript_file)
+        aligned_transcript_file.flush()
+
+        # Write the diarization result to the temporary diarization file
+        json.dump(diarize(), diarization_file)
+        diarization_file.flush()
+
+        result = combine(aligned_transcript_file.name, diarization_file.name)
+
+        assert result["segments"][0]["text"].startswith(
+            " This is a test audio"
+        )
+
+
+def test_combine():
+    result = combine(
+        "test_files/aligned_transcript.json", "test_files/diarazition.json"
+    )
+
+    assert result["segments"][0]["text"].startswith(" This is a test audio")
+
 
 def test_speech_to_text_url():
     # There is sometimes issue with CUDA memory better run this test individually
@@ -166,10 +213,10 @@ def test_speech_to_text_url():
     assert wait_for_task_completion(
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
-    
+
     task_result = client.get(f"/transcription_status/{identifier}")
-    seg_0_text = task_result.json()['result']['segments'][0]['text']
-    assert seg_0_text.startswith(' This is a test audio')
+    seg_0_text = task_result.json()["result"]["segments"][0]["text"]
+    assert seg_0_text.startswith(" This is a test audio")
 
 
 def test_get_all_tasks_status():
