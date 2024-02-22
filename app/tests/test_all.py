@@ -4,7 +4,6 @@ import time
 import tempfile
 import json
 import pytest
-import os
 
 client = TestClient(main.app)
 

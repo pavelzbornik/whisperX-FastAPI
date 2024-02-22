@@ -15,8 +15,6 @@ from sqlalchemy.orm import Session
 from .models import Response
 from .audio import process_audio_file
 from .tasks import (
-    # generate_unique_identifier,
-    # update_transcription_status,
     update_task_status_in_db,
     add_task_to_db,
 )
@@ -36,13 +34,6 @@ WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-# transcription_model = whisperx.load_model(WHISPER_MODEL, device)
-# diarize_model = whisperx.DiarizationPipeline(
-#     use_auth_token=HF_TOKEN, device=device
-# )
-# align_model, align_metadata = whisperx.load_align_model(
-#     language_code=LANG, device=device
-# )
 
 
 def validate_language_code(language_code):
@@ -151,7 +142,6 @@ def process_audio_common(
     audio,
     identifier,
     session: Session = Depends(get_db_session),
-    # file_name=None,
     language=LANG,
 ):
     """
@@ -189,13 +179,6 @@ def process_audio_common(
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
-        # update_transcription_status(
-        #     identifier=identifier,
-        #     status="completed",
-        #     result=result,
-        #     task_type="full_process",
-        #     duration=duration,
-        # )
         update_task_status_in_db(
             identifier=identifier,
             update_data={
@@ -206,14 +189,6 @@ def process_audio_common(
             session=session,
         )
     except Exception as e:
-        # update_transcription_status(
-        #     identifier=identifier,
-        #     status="failed",
-        #     result=None,
-        #     task_type="full_process",
-        #     duration=None,
-        #     error=str(e),
-        # )
         update_task_status_in_db(
             identifier=identifier,
             update_data={
@@ -254,22 +229,11 @@ def download_and_process_file(
         for chunk in response.iter_content(chunk_size=8192):
             temp_audio_file.write(chunk)
 
-    # Generate a unique identifier for the transcription request
-    # identifier = generate_unique_identifier()
-
     validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
     if language:
         validate_language_code(language)
 
-    # Save the identifier and set the initial status to "processing"
-    # update_transcription_status(
-    #     identifier=identifier,
-    #     status="processing",
-    #     file_name=temp_audio_file.name,
-    #     task_type="full_process",
-    # )
     identifier = add_task_to_db(
-        # identifier=identifier,
         status="processing",
         file_name=temp_audio_file.name,
         task_type="full_process",
@@ -307,13 +271,6 @@ def process_audio_task(
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
-        # update_transcription_status(
-        #     identifier,
-        #     "completed",
-        #     result,
-        #     task_type=task_type,
-        #     duration=duration,
-        # )
         update_task_status_in_db(
             identifier=identifier,
             update_data={
@@ -328,14 +285,6 @@ def process_audio_task(
         logging.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
-        # update_transcription_status(
-        #     identifier,
-        #     "failed",
-        #     result=None,
-        #     task_type=task_type,
-        #     duration=None,
-        #     error=str(e),
-        # )
         update_task_status_in_db(
             identifier=identifier,
             update_data={

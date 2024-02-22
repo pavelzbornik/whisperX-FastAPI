@@ -140,9 +140,6 @@ async def speech_to_text(
     Returns:
         dict: A dictionary containing the identifier and a message. The message is "Task queued". The identifier is a unique identifier for the transcription request.
     """
-    # Generate a unique identifier for the transcription request
-    # identifier = generate_unique_identifier()
-
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
     if language:
         validate_language_code(language)
@@ -152,20 +149,11 @@ async def speech_to_text(
 
     # Save the identifier and set the initial status to "processing" in the database
     identifier = add_task_to_db(
-        # identifier=identifier,
         status="processing",
         file_name=file.filename,
         task_type="full_process",
         session=session,
     )
-
-    # Save the identifier and set the initial status to "processing"
-    # update_transcription_status(
-    #     identifier=identifier,
-    #     status="processing",
-    #     file_name=file.filename,
-    #     task_type="full_process",
-    # )
 
     # Use background tasks to perform the audio processing
     background_tasks.add_task(
@@ -187,7 +175,6 @@ async def transcribe(
     file: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
-    # identifier = generate_unique_identifier()
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
     if language:
@@ -196,12 +183,6 @@ async def transcribe(
     temp_file = save_temporary_file(file.file, file.filename)
     audio = whisperx.load_audio(temp_file)
 
-    # update_transcription_status(
-    #     identifier,
-    #     "processing",
-    #     file_name=file.filename,
-    #     task_type="transcription",
-    # )
     identifier = add_task_to_db(
         # identifier=identifier,
         status="processing",
@@ -240,8 +221,6 @@ def align(
             status_code=400, detail=f"Invalid JSON content. {str(e)}"
         )
 
-    # identifier = generate_unique_identifier()
-
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -254,12 +233,6 @@ def align(
         task_type="transcription_aligment",
         session=session,
     )
-    # update_transcription_status(
-    #     identifier,
-    #     "processing",
-    #     file_name=file.filename,
-    #     task_type="transcription_aligment",
-    # )
 
     background_tasks.add_task(
         process_alignment,
@@ -278,19 +251,12 @@ async def diarize(
     file: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
-    # identifier = generate_unique_identifier()
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
     audio = whisperx.load_audio(temp_file)
 
-    # update_transcription_status(
-    #     identifier,
-    #     "processing",
-    #     file_name=file.filename,
-    #     task_type="diarization",
-    # )
     identifier = add_task_to_db(
         # identifier=identifier,
         status="processing",
@@ -314,7 +280,6 @@ async def combine(
     diarization_result: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ):
-    # identifier = generate_unique_identifier()
 
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})
@@ -338,14 +303,7 @@ async def combine(
             status_code=400, detail=f"Invalid JSON content. {str(e)}"
         )
 
-    # update_transcription_status(
-    #     identifier,
-    #     "processing",
-    #     file_name=None,
-    #     task_type="combine_transcript&diarization",
-    # )
     identifier = add_task_to_db(
-        # identifier=identifier,
         status="processing",
         file_name=None,
         task_type="combine_transcript&diarization",

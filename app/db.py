@@ -2,13 +2,9 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from .models import Task
-
-
 from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 
 # Create engine and session
 db_url = os.getenv("DB_URL", "sqlite:///records.db")
@@ -34,4 +30,3 @@ def handle_database_errors(func):
             raise HTTPException(status_code=500, detail=error_message)
 
     return wrapper
-
