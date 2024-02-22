@@ -3,10 +3,17 @@ from app import main
 import time
 import tempfile
 import json
+import pytest
+import os
 
 client = TestClient(main.app)
 
 AUDIO_FILE = "test_files/audio_en.mp3"
+
+
+@pytest.fixture(autouse=True)
+def set_env_variable(monkeypatch):
+    monkeypatch.setenv("DB_URL", "sqlite:///:memory:")
 
 
 def test_index():
