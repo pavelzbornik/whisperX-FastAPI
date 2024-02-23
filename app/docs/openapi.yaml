@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.amr'', ''.wma'', ''.aac'', ''.mp3'', ''.ogg'', ''.wav'',
-    ''.m4a'', ''.awb'', ''.oga''}
+    AUDIO_EXTENSIONS = {''.wma'', ''.aac'', ''.oga'', ''.wav'', ''.m4a'', ''.awb'',
+    ''.ogg'', ''.amr'', ''.mp3''}
 
 
-    VIDEO_EXTENSIONS = {''.mov'', ''.avi'', ''.mkv'', ''.wmv'', ''.mp4''}
+    VIDEO_EXTENSIONS = {''.mkv'', ''.mov'', ''.wmv'', ''.mp4'', ''.avi''}
 
 
     '
@@ -533,11 +533,26 @@ components:
         task_type:
           type: string
           title: Task Type
+        task_params:
+          anyOf:
+          - type: object
+          - type: 'null'
+          title: Task Params
+        language:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Language
         file_name:
           anyOf:
           - type: string
           - type: 'null'
           title: File Name
+        url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Url
         duration:
           anyOf:
           - type: number
@@ -546,7 +561,10 @@ components:
       type: object
       required:
       - task_type
+      - task_params
+      - language
       - file_name
+      - url
       - duration
       title: Metadata
     Response:

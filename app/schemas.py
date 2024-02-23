@@ -10,7 +10,10 @@ class Response(BaseModel):
 
 class Metadata(BaseModel):
     task_type: str
+    task_params: Optional[dict]
+    language: Optional[str]
     file_name: Optional[str]
+    url: Optional[str]
     duration: Optional[float]
 
 

@@ -89,7 +89,15 @@ async def transcribe(
         # identifier=identifier,
         status="processing",
         file_name=file.filename,
+        language=language,
         task_type="transcription",
+        task_params={
+            'batch_size': batch_size,
+            'model': model,
+            'device': device,
+            'device_index': device_index,
+            'compute_type': compute_type
+        },
         session=session,
     )
 

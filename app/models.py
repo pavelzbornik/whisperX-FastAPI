@@ -44,7 +44,10 @@ class Task(Base):
     file_name = Column(
         String, comment="Name of the file associated with the task"
     )
+    url = Column(String, comment="URL of the file associated with the task")
+    language = Column(String, comment="Language of the file associated with the task")
     task_type = Column(String, comment="Type/category of the task")
+    task_params = Column(JSON, comment="Parameters of the task")
     duration = Column(Float, comment="Duration of the task execution")
     error = Column(
         String, comment="Error message, if any, associated with the task"

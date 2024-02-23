@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.amr', '.wma', '.aac', '.mp3', '.ogg', '.wav', '.m4a', '.awb', '.oga'}\n\nVIDEO_EXTENSIONS = {'.mov', '.avi', '.mkv', '.wmv', '.mp4'}\n\n",
+    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.wma', '.aac', '.oga', '.wav', '.m4a', '.awb', '.ogg', '.amr', '.mp3'}\n\nVIDEO_EXTENSIONS = {'.mkv', '.mov', '.wmv', '.mp4', '.avi'}\n\n",
     "version": "0.0.1"
   },
   "paths": {
@@ -695,6 +695,28 @@
             "type": "string",
             "title": "Task Type"
           },
+          "task_params": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Params"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
           "file_name": {
             "anyOf": [
               {
@@ -705,6 +727,17 @@
               }
             ],
             "title": "File Name"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
           },
           "duration": {
             "anyOf": [
@@ -721,7 +754,10 @@
         "type": "object",
         "required": [
           "task_type",
+          "task_params",
+          "language",
           "file_name",
+          "url",
           "duration"
         ],
         "title": "Metadata"
