@@ -4,42 +4,20 @@ The whisperX API is a tool for enhancing and analyzing audio content. This API p
 
 ## Documentation
 
-Swagger UI is available at `/docs` for all the services
+Swagger UI is available at `/docs` for all the services, dump of OpenAPI definition is awailable in folder `app/docs` as well. You can explore it in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
 
 See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details on whisperX functions.
 
-## Services
-
-The following services are available:
-
-1. Transcribe - Transcribe an audio/video file into text.
-2. Align - Align the transcript to the audio/video file. 
-3. Diarize - Diarize an audio/video file with speakers.
-4. Combine Transcript and Diarization - Combine the transcript and diarization results.
-
-
-## Usage
-
-Make POST requests to the following endpoints:
-
-- **/speech-to-text** - Process an audio/video file.
-- **/speech-to-text-url** - Download and process an audio/video file.
-
-Individual services
-- **/transcribe** - Transcribe an audio file. 
-- **/align** - Align a transcript to an audio file.
-- **/diarize** - Diarize an audio file into speakers.
-- **/combine** - Combine transcript and diarization results.
-
-## Status
-
-Get the status of a job via GET /transcription_status/{identifier}
-
 ## Language and Whisper model settings
 
-In `services.py` you can define:
+- in `whisperx_services.py` you can define default Language constant `LANG = "en"` (you can also set it in the request)
+- `.env` contains defintion of Whisper model using `WHISPER_MODEL` variable
 
-- default Language constant `LANG = "en"` (you can also set it in the request)
+## Task management and result storage
+
+Status and result of each tasks are stored in db using ORM Sqlalchemy, db connection is defined by enviroment variable `DB_URL` if value is not specified `db.py` sets default db as  `sqlite:///records.db`
+
+See documentation for driver definition at [Sqlalchemy Engine configuration](https://docs.sqlalchemy.org/en/20/core/engines.html) if you want to connect other type of db than Sqlite.
 
 
 ## Getting Started
