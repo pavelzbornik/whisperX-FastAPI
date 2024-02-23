@@ -1,5 +1,6 @@
 from typing import Dict, Any
-from .models import TaskSimple, ResultTasks, Task
+from .models import Task
+from .schemas import TaskSimple, ResultTasks
 from .db import handle_database_errors, get_db_session
 from sqlalchemy.orm import Session
 from fastapi import Depends
@@ -88,3 +89,18 @@ def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
             )
         )
     return ResultTasks(tasks=tasks)
+
+
+@handle_database_errors
+def delete_task_from_db(identifier: str, session: Session):
+    # Check if the identifier exists in the database
+    task = session.query(Task).filter(Task.uuid == identifier).first()
+
+    if task:
+        # If the task exists, delete it from the database
+        session.delete(task)
+        session.commit()
+        return True
+    else:
+        # If the task does not exist, return False
+        return False
