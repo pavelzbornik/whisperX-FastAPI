@@ -22,7 +22,7 @@ def test_index():
 
 
 def get_task_status(identifier):
-    response = client.get(f"/transcription_status/{identifier}")
+    response = client.get(f"/task/{identifier}")
     if response.status_code == 200:
         return response.json()["status"]
     return None
@@ -58,7 +58,7 @@ def generic_transcription(client_url):
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
-    task_result = client.get(f"/transcription_status/{identifier}")
+    task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
     assert seg_0_text.startswith(" This is a test audio")
 
@@ -70,7 +70,7 @@ def align(transcript_file):
         AUDIO_FILE, "rb"
     ) as audio_file:
         response = client.post(
-            "/align",
+            "/service/align",
             files={
                 "transcript": ("transcript.json", transcript_file),
                 "file": ("audio_file.mp3", audio_file),
@@ -88,7 +88,7 @@ def align(transcript_file):
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
-    task_result = client.get(f"/transcription_status/{identifier}")
+    task_result = client.get(f"/task/{identifier}")
 
     return task_result.json()["result"]
 
@@ -97,7 +97,7 @@ def diarize():
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            "/diarize",
+            "/service/diarize",
             files=files,
         )
     assert response.status_code == 200
@@ -111,7 +111,7 @@ def diarize():
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
-    task_result = client.get(f"/transcription_status/{identifier}")
+    task_result = client.get(f"/task/{identifier}")
 
     return task_result.json()["result"]
 
@@ -126,7 +126,7 @@ def combine(aligned_transcript_file, diarazition_file):
             "diarization_result": ("diarazition.json", diarization_result),
         }
         response = client.post(
-            "/combine",
+            "/service/combine",
             files=files,
         )
     print(response.json())
@@ -141,7 +141,7 @@ def combine(aligned_transcript_file, diarazition_file):
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
-    task_result = client.get(f"/transcription_status/{identifier}")
+    task_result = client.get(f"/task/{identifier}")
 
     return task_result.json()["result"]
 
@@ -151,7 +151,7 @@ def test_speech_to_text():
 
 
 def test_transcribe():
-    assert generic_transcription("/transcribe") is not None
+    assert generic_transcription("/service/transcribe") is not None
 
 
 def test_align():
@@ -175,7 +175,7 @@ def test_flow():
     ) as diarization_file:
 
         # Write the transcription result to the temporary transcript file
-        json.dump(generic_transcription("/transcribe"), transcript_file)
+        json.dump(generic_transcription("/service/transcribe"), transcript_file)
         transcript_file.flush()  # Ensure data is written to the file
 
         # Write the aligned transcription result to the temporary aligned transcript file
@@ -220,13 +220,38 @@ def test_speech_to_text_url():
         identifier
     ), f"Task with identifier {identifier} did not complete within the expected time."
 
-    task_result = client.get(f"/transcription_status/{identifier}")
+    task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
     assert seg_0_text.startswith(" This is a test audio")
 
 
 def test_get_all_tasks_status():
-    response = client.get("/all_tasks_status")
+    response = client.get("/task/all")
     assert response.status_code == 200
     assert "tasks" in response.json()
     assert isinstance(response.json()["tasks"], list)
+
+
+def test_delete_task():
+    # Create a task first to delete
+    with open(AUDIO_FILE, "rb") as audio_file:
+        files = {"file": ("audio_en.mp3", audio_file)}
+        response = client.post(
+            "/service/transcribe",
+            files=files,
+        )
+    assert response.status_code == 200
+    assert "Task queued" in response.json()["message"]
+
+    # Extract identifier from the response
+    identifier = response.json()["identifier"]
+
+    # Attempt to delete the task
+    delete_response = client.delete(f"/task/{identifier}/delete")
+    assert delete_response.status_code == 200
+    assert delete_response.json()["message"] == "Task deleted"
+
+    # Ensure the task is not found after deletion
+    get_response = client.get(f"/task/{identifier}")
+    assert get_response.status_code == 404
+    assert get_response.json()["detail"] == "Identifier not found"
