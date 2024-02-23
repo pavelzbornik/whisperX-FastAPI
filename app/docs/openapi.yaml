@@ -1,0 +1,477 @@
+openapi: 3.0.0
+info:
+  title: whisperX REST service
+  description: '
+
+    # whisperX REST Service
+
+
+    Welcome to the whisperX RESTful API! This API provides a suite of audio processing
+    services to enhance and analyze your audio content.
+
+
+    ## Documentation:
+
+
+    For detailed information on request and response formats, consult the [WhisperX
+    Documentation](https://github.com/m-bain/whisperX).
+
+
+    ## Services:
+
+
+    Speech-2-Text provides a suite of audio processing services to enhance and analyze
+    your audio content. The following services are available:
+
+
+    1. Transcribe: Transcribe an audio/video  file into text.
+
+    2. Align: Align the transcript to the audio/video file.
+
+    3. Diarize: Diarize an audio/video file into speakers.
+
+    4. Combine Transcript and Diarization: Combine the transcript and diarization
+    results.
+
+
+    ## Supported file extensions:
+
+    AUDIO_EXTENSIONS = {''.awb'', ''.ogg'', ''.aac'', ''.oga'', ''.m4a'', ''.amr'',
+    ''.mp3'', ''.wma'', ''.wav''}
+
+
+    VIDEO_EXTENSIONS = {''.mkv'', ''.mp4'', ''.wmv'', ''.mov'', ''.avi''}
+
+
+    '
+  version: 0.0.1
+paths:
+  /speech-to-text:
+    post:
+      tags:
+      - Speech-2-Text
+      summary: Speech To Text
+      description: "Process an audio/video file in the background in full process.\n\
+        \nArgs:\n    background_tasks (BackgroundTasks): The BackgroundTasks object.\n\
+        \    audio_file (UploadFile): The audio file to process.\n\nReturns:\n   \
+        \ dict: A dictionary containing the identifier and a message. The message\
+        \ is \"Task queued\". The identifier is a unique identifier for the transcription\
+        \ request."
+      operationId: speech_to_text_speech_to_text_post
+      parameters:
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+          title: Language
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_speech_to_text_speech_to_text_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /speech-to-text-url:
+    post:
+      tags:
+      - Speech-2-Text
+      summary: Speech To Text Url
+      operationId: speech_to_text_url_speech_to_text_url_post
+      parameters:
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+          title: Language
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_speech_to_text_url_speech_to_text_url_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /task/all:
+    get:
+      tags:
+      - Tasks Management
+      summary: Get All Tasks Status
+      operationId: get_all_tasks_status_task_all_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultTasks'
+  /task/{identifier}:
+    get:
+      tags:
+      - Tasks Management
+      summary: Get Transcription Status
+      operationId: get_transcription_status_task__identifier__get
+      parameters:
+      - name: identifier
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Identifier
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /task/{identifier}/delete:
+    delete:
+      tags:
+      - Tasks Management
+      summary: Delete Task
+      operationId: delete_task_task__identifier__delete_delete
+      parameters:
+      - name: identifier
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Identifier
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /service/transcribe:
+    post:
+      tags:
+      - Speech-2-Text services
+      summary: 1. Transcribe
+      operationId: 1__Transcribe_service_transcribe_post
+      parameters:
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+          title: Language
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_1__Transcribe_service_transcribe_post'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /service/align:
+    post:
+      tags:
+      - Speech-2-Text services
+      summary: 2. Align Transcript
+      operationId: 2__Align_Transcript_service_align_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_2__Align_Transcript_service_align_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /service/diarize:
+    post:
+      tags:
+      - Speech-2-Text services
+      summary: 3. Diarize
+      operationId: 3__Diarize_service_diarize_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_3__Diarize_service_diarize_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /service/combine:
+    post:
+      tags:
+      - Speech-2-Text services
+      summary: 4. Combine Transcript And Diarization Result
+      operationId: 4__Combine_Transcript_and_Diarization_result_service_combine_post
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Body_4__Combine_Transcript_and_Diarization_result_service_combine_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    Body_1__Transcribe_service_transcribe_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_1__Transcribe_service_transcribe_post
+    Body_2__Align_Transcript_service_align_post:
+      properties:
+        transcript:
+          type: string
+          format: binary
+          title: Transcript
+        file:
+          type: string
+          format: binary
+          title: File
+      type: object
+      required:
+      - transcript
+      - file
+      title: Body_2__Align_Transcript_service_align_post
+    Body_3__Diarize_service_diarize_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: File
+      type: object
+      required:
+      - file
+      title: Body_3__Diarize_service_diarize_post
+    Body_4__Combine_Transcript_and_Diarization_result_service_combine_post:
+      properties:
+        aligned_transcript:
+          type: string
+          format: binary
+          title: Aligned Transcript
+        diarization_result:
+          type: string
+          format: binary
+          title: Diarization Result
+      type: object
+      required:
+      - aligned_transcript
+      - diarization_result
+      title: Body_4__Combine_Transcript_and_Diarization_result_service_combine_post
+    Body_speech_to_text_speech_to_text_post:
+      properties:
+        file:
+          type: string
+          format: binary
+          title: Audio/Video File
+          description: File to be processed
+      type: object
+      required:
+      - file
+      title: Body_speech_to_text_speech_to_text_post
+    Body_speech_to_text_url_speech_to_text_url_post:
+      properties:
+        url:
+          type: string
+          title: Url
+      type: object
+      required:
+      - url
+      title: Body_speech_to_text_url_speech_to_text_url_post
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    Metadata:
+      properties:
+        task_type:
+          type: string
+          title: Task Type
+        file_name:
+          anyOf:
+          - type: string
+          title: File Name
+        duration:
+          anyOf:
+          - type: number
+          title: Duration
+      type: object
+      required:
+      - task_type
+      - file_name
+      - duration
+      title: Metadata
+    Response:
+      properties:
+        identifier:
+          type: string
+          title: Identifier
+        message:
+          type: string
+          title: Message
+      type: object
+      required:
+      - identifier
+      - message
+      title: Response
+    Result:
+      properties:
+        status:
+          type: string
+          title: Status
+        result:
+          title: Result
+        metadata:
+          $ref: '#/components/schemas/Metadata'
+        error:
+          anyOf:
+          - type: string
+          title: Error
+      type: object
+      required:
+      - status
+      - result
+      - metadata
+      - error
+      title: Result
+    ResultTasks:
+      properties:
+        tasks:
+          items:
+            $ref: '#/components/schemas/TaskSimple'
+          type: array
+          title: Tasks
+      type: object
+      required:
+      - tasks
+      title: ResultTasks
+    TaskSimple:
+      properties:
+        identifier:
+          type: string
+          title: Identifier
+        status:
+          type: string
+          title: Status
+        task_type:
+          type: string
+          title: Task Type
+      type: object
+      required:
+      - identifier
+      - status
+      - task_type
+      title: TaskSimple
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+tags:
+- name: Speech-2-Text
+  description: Operations related to transcript
+- name: Speech-2-Text services
+  description: Individual services for transcript
+- name: Tasks Management
+  description: Manage tasks.
