@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from ..db import get_db_session
 
@@ -18,6 +18,10 @@ from ..schemas import (
     Transcript,
     AlignedTranscription,
     DiarizationSegment,
+    ComputeType,
+    WhisperModel,
+    Device,
+    
 )
 
 from pydantic import ValidationError
@@ -42,6 +46,7 @@ from ..files import (
     ALLOWED_EXTENSIONS,
 )
 
+from ..whisperx_services import WHISPER_MODEL, device, LANG
 
 service_router = APIRouter()
 
@@ -53,9 +58,24 @@ service_router = APIRouter()
 )
 async def transcribe(
     background_tasks: BackgroundTasks,
-    language: str = None,
+    language: str = Query(
+        default=LANG,
+        description="Language to transcribe",
+        enum=list(whisperx.utils.LANGUAGES.keys()),
+    ),
     file: UploadFile = File(...),
     session: Session = Depends(get_db_session),
+    model: WhisperModel = Query(
+        default=WHISPER_MODEL, description="Model to use for transcription"
+    ),
+    device: Device = Query(
+        default=device, description="Device to run the model",
+    ),
+    device_index: int = 0,
+    batch_size: int = 8,
+    compute_type: ComputeType = Query(
+        default="float16", description="Type of computation"
+    ),
 ) -> Response:
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
@@ -79,6 +99,11 @@ async def transcribe(
         identifier,
         language,
         session,
+        batch_size,
+        model,
+        device,
+        device_index,
+        compute_type,
     )
 
     return Response(identifier=identifier, message="Task queued")

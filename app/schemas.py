@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List, Any
+from enum import Enum
+from whisperx import utils
 
 class Response(BaseModel):
     identifier: str
@@ -79,3 +81,35 @@ class Result(BaseModel):
     result: Any
     metadata: Metadata
     error: Optional[str]
+
+
+class ComputeType(str, Enum):
+    float16 = "float16"
+    float32 = "float32"
+    int8 = "int8"
+
+
+class WhisperModel(str, Enum):
+    tiny = "tiny"
+    tiny_en = "tiny.en"
+    base = "base"
+    base_en = "base.en"
+    small = "small"
+    small_en = "small.en"
+    medium = "medium"
+    medium_en = "medium.en"
+    large = "large"
+    large_v1 = "large-v1"
+    large_v2 = "large-v2"
+    large_v3 = "large-v3"
+
+class Device(str, Enum):
+    cuda = "cuda"
+    cpu = "cpu"
+
+
+class Language(str, Enum):
+    def __init__(self):
+        for code, name in utils.LANGUAGES.items():
+            setattr(Language, code, name)
+

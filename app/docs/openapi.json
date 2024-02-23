@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.awb', '.ogg', '.aac', '.oga', '.m4a', '.amr', '.mp3', '.wma', '.wav'}\n\nVIDEO_EXTENSIONS = {'.mkv', '.mp4', '.wmv', '.mov', '.avi'}\n\n",
+    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.amr', '.wma', '.aac', '.mp3', '.ogg', '.wav', '.m4a', '.awb', '.oga'}\n\nVIDEO_EXTENSIONS = {'.mov', '.avi', '.mkv', '.wmv', '.mp4'}\n\n",
     "version": "0.0.1"
   },
   "paths": {
@@ -230,8 +230,181 @@
             "required": false,
             "schema": {
               "type": "string",
+              "description": "Language to transcribe",
+              "enum": [
+                "en",
+                "zh",
+                "de",
+                "es",
+                "ru",
+                "ko",
+                "fr",
+                "ja",
+                "pt",
+                "tr",
+                "pl",
+                "ca",
+                "nl",
+                "ar",
+                "sv",
+                "it",
+                "id",
+                "hi",
+                "fi",
+                "vi",
+                "he",
+                "uk",
+                "el",
+                "ms",
+                "cs",
+                "ro",
+                "da",
+                "hu",
+                "ta",
+                "no",
+                "th",
+                "ur",
+                "hr",
+                "bg",
+                "lt",
+                "la",
+                "mi",
+                "ml",
+                "cy",
+                "sk",
+                "te",
+                "fa",
+                "lv",
+                "bn",
+                "sr",
+                "az",
+                "sl",
+                "kn",
+                "et",
+                "mk",
+                "br",
+                "eu",
+                "is",
+                "hy",
+                "ne",
+                "mn",
+                "bs",
+                "kk",
+                "sq",
+                "sw",
+                "gl",
+                "mr",
+                "pa",
+                "si",
+                "km",
+                "sn",
+                "yo",
+                "so",
+                "af",
+                "oc",
+                "ka",
+                "be",
+                "tg",
+                "sd",
+                "gu",
+                "am",
+                "yi",
+                "lo",
+                "uz",
+                "fo",
+                "ht",
+                "ps",
+                "tk",
+                "nn",
+                "mt",
+                "sa",
+                "lb",
+                "my",
+                "bo",
+                "tl",
+                "mg",
+                "as",
+                "tt",
+                "haw",
+                "ln",
+                "ha",
+                "ba",
+                "jw",
+                "su",
+                "yue"
+              ],
+              "default": "en",
               "title": "Language"
+            },
+            "description": "Language to transcribe"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/WhisperModel"
+                }
+              ],
+              "description": "Model to use for transcription",
+              "default": "medium",
+              "title": "Model"
+            },
+            "description": "Model to use for transcription"
+          },
+          {
+            "name": "device",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Device"
+                }
+              ],
+              "description": "Device to run the model",
+              "default": "cuda",
+              "title": "Device"
+            },
+            "description": "Device to run the model"
+          },
+          {
+            "name": "device_index",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Device Index"
             }
+          },
+          {
+            "name": "batch_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 8,
+              "title": "Batch Size"
+            }
+          },
+          {
+            "name": "compute_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ComputeType"
+                }
+              ],
+              "description": "Type of computation",
+              "default": "float16",
+              "title": "Compute Type"
+            },
+            "description": "Type of computation"
           }
         ],
         "requestBody": {
@@ -486,6 +659,23 @@
         ],
         "title": "Body_speech_to_text_url_speech_to_text_url_post"
       },
+      "ComputeType": {
+        "type": "string",
+        "enum": [
+          "float16",
+          "float32",
+          "int8"
+        ],
+        "title": "ComputeType"
+      },
+      "Device": {
+        "type": "string",
+        "enum": [
+          "cuda",
+          "cpu"
+        ],
+        "title": "Device"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -658,6 +848,24 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WhisperModel": {
+        "type": "string",
+        "enum": [
+          "tiny",
+          "tiny.en",
+          "base",
+          "base.en",
+          "small",
+          "small.en",
+          "medium",
+          "medium.en",
+          "large",
+          "large-v1",
+          "large-v2",
+          "large-v3"
+        ],
+        "title": "WhisperModel"
       }
     }
   },

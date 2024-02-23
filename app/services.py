@@ -28,6 +28,8 @@ from .whisperx_services import (
     diarize,
     LANG,
     process_audio_common,
+    WHISPER_MODEL,
+    device
 )
 
 
@@ -148,6 +150,11 @@ def process_transcribe(
     identifier,
     language=LANG,
     session: Session = Depends(get_db_session),
+    batch_size: int = 16,
+    model: str = WHISPER_MODEL,  # Add CLI parameters to the function definition
+    device: str = device,
+    device_index: int = 0,
+    compute_type: str = "float16",
 ):
     process_audio_task(
         transcribe_with_whisper,
@@ -156,6 +163,11 @@ def process_transcribe(
         session,
         audio,
         language,
+        batch_size,
+        model,
+        device,
+        device_index,
+        compute_type,
     )
 
 

@@ -27,6 +27,10 @@ def transcribe_with_whisper(
     audio,
     language=LANG,
     batch_size: int = 16,
+    model: str = WHISPER_MODEL,  # Add CLI parameters to the function definition
+    device: str = device,
+    device_index: int = 0,
+    compute_type: str = "float16",
 ):
     """
     Transcribe an audio file using the Whisper model.
@@ -34,11 +38,20 @@ def transcribe_with_whisper(
     Args:
        audio (Audio): The audio to transcribe.
        batch_size (int): Batch size for transcription (default 16).
+       model (str): Name of the Whisper model to use.
+       device (str): Device to use for PyTorch inference.
+       device_index (int): Device index to use for FasterWhisper inference.
+       compute_type (str): Compute type for computation.
 
     Returns:
        Transcript: The transcription result.
     """
-    model = whisperx.load_model(WHISPER_MODEL, device)
+    model = whisperx.load_model(
+        model,
+        device,
+        device_index=device_index,
+        compute_type=compute_type,
+    )
     result = model.transcribe(
         audio=audio, batch_size=batch_size, language=language
     )
