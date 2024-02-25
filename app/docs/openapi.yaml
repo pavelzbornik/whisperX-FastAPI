@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.wma'', ''.aac'', ''.oga'', ''.wav'', ''.m4a'', ''.awb'',
-    ''.ogg'', ''.amr'', ''.mp3''}
+    AUDIO_EXTENSIONS = {''.oga'', ''.mp3'', ''.awb'', ''.aac'', ''.wma'', ''.m4a'',
+    ''.ogg'', ''.wav'', ''.amr''}
 
 
-    VIDEO_EXTENSIONS = {''.mkv'', ''.mov'', ''.wmv'', ''.mp4'', ''.avi''}
+    VIDEO_EXTENSIONS = {''.mov'', ''.mkv'', ''.wmv'', ''.mp4'', ''.avi''}
 
 
     '
@@ -304,34 +304,38 @@ paths:
         schema:
           allOf:
           - $ref: '#/components/schemas/WhisperModel'
-          description: Model to use for transcription
+          description: Name of the Whisper model to use
           default: medium
           title: Model
-        description: Model to use for transcription
+        description: Name of the Whisper model to use
       - name: device
         in: query
         required: false
         schema:
           allOf:
           - $ref: '#/components/schemas/Device'
-          description: Device to run the model
+          description: Device to use for PyTorch inference
           default: cuda
           title: Device
-        description: Device to run the model
+        description: Device to use for PyTorch inference
       - name: device_index
         in: query
         required: false
         schema:
           type: integer
+          description: Device index to use for FasterWhisper inference
           default: 0
           title: Device Index
+        description: Device index to use for FasterWhisper inference
       - name: batch_size
         in: query
         required: false
         schema:
           type: integer
+          description: The preferred batch size for inference
           default: 8
           title: Batch Size
+        description: The preferred batch size for inference
       - name: compute_type
         in: query
         required: false
@@ -442,6 +446,7 @@ components:
           type: string
           format: binary
           title: File
+          description: Audio file to transcribe
       type: object
       required:
       - file

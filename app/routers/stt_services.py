@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
+
 from sqlalchemy.orm import Session
 from ..db import get_db_session
 
 from ..tasks import add_task_to_db
 
-from fastapi import (
-    File,
-    UploadFile,
-    HTTPException,
-    Depends,
-)
 from fastapi import BackgroundTasks
 import whisperx
 
@@ -21,7 +16,6 @@ from ..schemas import (
     ComputeType,
     WhisperModel,
     Device,
-    
 )
 
 from pydantic import ValidationError
@@ -29,8 +23,6 @@ from pydantic import ValidationError
 import pandas as pd
 
 import json
-
-from sqlalchemy.orm import Session
 
 from ..services import (
     process_transcribe,
@@ -63,40 +55,43 @@ async def transcribe(
         description="Language to transcribe",
         enum=list(whisperx.utils.LANGUAGES.keys()),
     ),
-    file: UploadFile = File(...),
+    file: UploadFile = File(..., description="Audio file to transcribe"),
     session: Session = Depends(get_db_session),
     model: WhisperModel = Query(
-        default=WHISPER_MODEL, description="Model to use for transcription"
+        default=WHISPER_MODEL, description="Name of the Whisper model to use"
     ),
     device: Device = Query(
-        default=device, description="Device to run the model",
+        default=device,
+        description="Device to use for PyTorch inference",
     ),
-    device_index: int = 0,
-    batch_size: int = 8,
+    device_index: int = Query(
+        default=0,
+        description="Device index to use for FasterWhisper inference",
+    ),
+    batch_size: int = Query(
+        default=8, description="The preferred batch size for inference"
+    ),
     compute_type: ComputeType = Query(
         default="float16", description="Type of computation"
     ),
 ) -> Response:
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
-    if language:
-        validate_language_code(language)
 
     temp_file = save_temporary_file(file.file, file.filename)
     audio = whisperx.load_audio(temp_file)
 
     identifier = add_task_to_db(
-        # identifier=identifier,
         status="processing",
         file_name=file.filename,
         language=language,
         task_type="transcription",
         task_params={
-            'batch_size': batch_size,
-            'model': model,
-            'device': device,
-            'device_index': device_index,
-            'compute_type': compute_type
+            "batch_size": batch_size,
+            "model": model,
+            "device": device,
+            "device_index": device_index,
+            "compute_type": compute_type,
         },
         session=session,
     )

@@ -4,21 +4,26 @@ The whisperX API is a tool for enhancing and analyzing audio content. This API p
 
 ## Documentation
 
-Swagger UI is available at `/docs` for all the services, dump of OpenAPI definition is awailable in folder `app/docs` as well. You can explore it in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
+Swagger UI is available at `/docs` for all the services, dump of OpenAPI definition is awailable in folder `app/docs` as well. You can explore it directly in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
 
 See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details on whisperX functions.
 
-## Language and Whisper model settings
+### Language and Whisper model settings
 
-- in `whisperx_services.py` you can define default Language constant `LANG = "en"` (you can also set it in the request)
-- `.env` contains defintion of Whisper model using `WHISPER_MODEL` variable
+- in `whisperx_services.py` you can define default Language `LANG = "en"` (you can also set it in the request)
+- `.env` contains defintion of Whisper model using `WHISPER_MODEL` (you can also set it in the request)
 
-## Task management and result storage
+### Task management and result storage
+
+![Service chart](app/docs/service_chart.svg)
 
 Status and result of each tasks are stored in db using ORM Sqlalchemy, db connection is defined by enviroment variable `DB_URL` if value is not specified `db.py` sets default db as  `sqlite:///records.db`
 
 See documentation for driver definition at [Sqlalchemy Engine configuration](https://docs.sqlalchemy.org/en/20/core/engines.html) if you want to connect other type of db than Sqlite.
 
+#### Database schema
+
+Structure of the of the db is described in [DB Schema](app/docs/db_schema.md)
 
 ## Getting Started
 

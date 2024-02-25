@@ -61,4 +61,3 @@ class Task(Base):
         onupdate=datetime.utcnow,
         comment="Date and time of last update",
     )
-

@@ -3,6 +3,7 @@ from typing import Optional, List, Any
 from enum import Enum
 from whisperx import utils
 
+
 class Response(BaseModel):
     identifier: str
     message: str
@@ -106,6 +107,7 @@ class WhisperModel(str, Enum):
     large_v2 = "large-v2"
     large_v3 = "large-v3"
 
+
 class Device(str, Enum):
     cuda = "cuda"
     cpu = "cpu"
@@ -115,4 +117,3 @@ class Language(str, Enum):
     def __init__(self):
         for code, name in utils.LANGUAGES.items():
             setattr(Language, code, name)
-
