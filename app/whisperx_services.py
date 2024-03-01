@@ -1,22 +1,25 @@
-import whisperx
+from whisperx import (
+    load_model,
+    DiarizationPipeline,
+    load_align_model,
+    align,
+    assign_word_speakers,
+)
 
-from fastapi import Depends
 from datetime import datetime
 import torch
 import os
-
-from sqlalchemy.orm import Session
-
 
 from .tasks import (
     update_task_status_in_db,
 )
 
-from .db import get_db_session
+from .schemas import AlignedTranscription, SpeechToTextProcessingParams
+from .transcript import filter_aligned_transcription
 
 import gc
 
-LANG = "en"
+LANG = os.getenv("DEFAULT_LANG")
 HF_TOKEN = os.getenv("HF_TOKEN")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
@@ -25,8 +28,16 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 def transcribe_with_whisper(
     audio,
-    language=LANG,
+    task,
+    asr_options,
+    vad_options,
+    language,
     batch_size: int = 16,
+    model: str = WHISPER_MODEL,
+    device: str = device,
+    device_index: int = 0,
+    compute_type: str = "float16",
+    threads: int = 0,
 ):
     """
     Transcribe an audio file using the Whisper model.
@@ -34,11 +45,30 @@ def transcribe_with_whisper(
     Args:
        audio (Audio): The audio to transcribe.
        batch_size (int): Batch size for transcription (default 16).
+       model (str): Name of the Whisper model to use.
+       device (str): Device to use for PyTorch inference.
+       device_index (int): Device index to use for FasterWhisper inference.
+       compute_type (str): Compute type for computation.
 
     Returns:
        Transcript: The transcription result.
     """
-    model = whisperx.load_model(WHISPER_MODEL, device)
+    faster_whisper_threads = 4
+    if (threads := threads) > 0:
+        torch.set_num_threads(threads)
+        faster_whisper_threads = threads
+
+    model = load_model(
+        model,
+        device,
+        device_index=device_index,
+        compute_type=compute_type,
+        asr_options=asr_options,
+        vad_options=vad_options,
+        language=language,
+        task=task,
+        threads=faster_whisper_threads,
+    )
     result = model.transcribe(
         audio=audio, batch_size=batch_size, language=language
     )
@@ -51,7 +81,7 @@ def transcribe_with_whisper(
     return result
 
 
-def diarize(audio):
+def diarize(audio, device, min_speakers=None, max_speakers=None):
     """
     Diarize an audio file using the PyAnnotate model.
 
@@ -61,10 +91,12 @@ def diarize(audio):
     Returns:
        Diarizartion: The diarization result.
     """
-    model = whisperx.DiarizationPipeline(
+    model = DiarizationPipeline(
         use_auth_token=HF_TOKEN, device=device
     )
-    result = model(audio)
+    result = model(
+        audio=audio, min_speakers=min_speakers, max_speakers=max_speakers
+    )
 
     # delete model
     gc.collect()
@@ -74,30 +106,42 @@ def diarize(audio):
     return result
 
 
-def align_whisper_output(transcript, audio, language_code):
+def align_whisper_output(
+    transcript,
+    audio,
+    language_code,
+    device: str = device,
+    align_model: str = None,
+    interpolate_method: str = "nearest",
+    return_char_alignments: bool = False,
+):
     """
     Align the transcript to the original audio.
 
     Args:
-       Transcript: The text transcript.
-       audio (Audio): The original audio.
-       language_code (str): The language code.
+       transcript: The text transcript.
+       audio: The original audio.
+       language_code: The language code.
+       align_model: Name of phoneme-level ASR model to do alignment.
+       interpolate_method: For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.
+       return_char_alignments: Whether to return character-level alignments in the output json file.
 
     Returns:
-       Transcript: The aligned transcript.
+       The aligned transcript.
     """
 
-    align_model, align_metadata = whisperx.load_align_model(
-        language_code=language_code, device=device
+    align_model, align_metadata = load_align_model(
+        language_code=language_code, device=device, model_name=align_model
     )
 
-    result = whisperx.align(
+    result = align(
         transcript,
         align_model,
         align_metadata,
         audio,
         device,
-        return_char_alignments=False,
+        interpolate_method=interpolate_method,
+        return_char_alignments=return_char_alignments,
     )
 
     # delete model
@@ -109,12 +153,7 @@ def align_whisper_output(transcript, audio, language_code):
     return result
 
 
-def process_audio_common(
-    audio,
-    identifier,
-    session: Session = Depends(get_db_session),
-    language=LANG,
-):
+def process_audio_common(params: SpeechToTextProcessingParams, session):
     """
     Process an audio clip to generate a transcript with speaker labels.
 
@@ -127,19 +166,43 @@ def process_audio_common(
     """
     try:
         start_time = datetime.now()
+
+        print(params.whisper_model_params.task.value)
         segments_before_alignment = transcribe_with_whisper(
-            audio, language=language
+            audio=params.audio,
+            task=params.whisper_model_params.task,
+            asr_options=params.asr_options,
+            vad_options=params.vad_options,
+            language=params.whisper_model_params.language,
+            batch_size=params.whisper_model_params.batch_size,
+            model=params.whisper_model_params.model,
+            device=params.whisper_model_params.device,
+            device_index=params.whisper_model_params.device_index,
+            compute_type=params.whisper_model_params.compute_type,
+            threads=params.whisper_model_params.threads,
         )
+
         segments_transcript = align_whisper_output(
             transcript=segments_before_alignment["segments"],
-            audio=audio,
+            audio=params.audio,
             language_code=segments_before_alignment["language"],
+            align_model=params.alignment_params.align_model,
+            interpolate_method=params.alignment_params.interpolate_method,
+            return_char_alignments=params.alignment_params.return_char_alignments,
+        )
+        transcript = AlignedTranscription(**segments_transcript)
+        # removing words within each segment that have missing start, end, or score values
+        transcript = filter_aligned_transcription(transcript).model_dump()
+
+        diarization_segments = diarize(
+            params.audio,
+            device=params.whisper_model_params.device,
+            min_speakers=params.diarization_params.min_speakers,
+            max_speakers=params.diarization_params.max_speakers,
         )
 
-        diarization_segments = diarize(audio)
-
-        result = whisperx.assign_word_speakers(
-            diarization_segments, segments_transcript
+        result = assign_word_speakers(
+            diarization_segments, transcript
         )
 
         for segment in result["segments"]:
@@ -151,7 +214,7 @@ def process_audio_common(
         duration = (end_time - start_time).total_seconds()
 
         update_task_status_in_db(
-            identifier=identifier,
+            identifier=params.identifier,
             update_data={
                 "status": "completed",
                 "result": result,
@@ -161,7 +224,7 @@ def process_audio_common(
         )
     except Exception as e:
         update_task_status_in_db(
-            identifier=identifier,
+            identifier=params.identifier,
             update_data={
                 "status": "failed",
                 "error": str(e),

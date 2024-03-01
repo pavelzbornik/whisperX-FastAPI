@@ -6,6 +6,11 @@ from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
+
 # Create engine and session
 db_url = os.getenv("DB_URL", "sqlite:///records.db")
 engine = create_engine(db_url, connect_args={"check_same_thread": False})
