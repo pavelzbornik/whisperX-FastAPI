@@ -16,6 +16,7 @@ def add_task_to_db(
     task_params=None,
     file_name=None,
     url=None,
+    audio_duration=None,
 ):
     task = Task(
         status=status,
@@ -24,6 +25,7 @@ def add_task_to_db(
         url=url,
         task_type=task_type,
         task_params=task_params,
+        audio_duration=audio_duration,
     )
     session.add(task)
     session.commit()

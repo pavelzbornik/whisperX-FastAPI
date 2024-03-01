@@ -1,9 +1,8 @@
-
 from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy import Column, String, Float, JSON, Integer, DateTime
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
@@ -45,7 +44,10 @@ class Task(Base):
         String, comment="Name of the file associated with the task"
     )
     url = Column(String, comment="URL of the file associated with the task")
-    language = Column(String, comment="Language of the file associated with the task")
+    audio_duration = Column(Float, comment="Duration of the audio in seconds")
+    language = Column(
+        String, comment="Language of the file associated with the task"
+    )
     task_type = Column(String, comment="Type/category of the task")
     task_params = Column(JSON, comment="Parameters of the task")
     duration = Column(Float, comment="Duration of the task execution")
