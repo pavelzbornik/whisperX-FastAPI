@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.mp3'', ''.amr'', ''.wav'', ''.oga'', ''.m4a'', ''.wma'',
-    ''.awb'', ''.ogg'', ''.aac''}
+    AUDIO_EXTENSIONS = {''.mp3'', ''.aac'', ''.oga'', ''.awb'', ''.m4a'', ''.ogg'',
+    ''.wav'', ''.wma'', ''.amr''}
 
 
-    VIDEO_EXTENSIONS = {''.mp4'', ''.mov'', ''.avi'', ''.wmv'', ''.mkv''}
+    VIDEO_EXTENSIONS = {''.mkv'', ''.wmv'', ''.mp4'', ''.mov'', ''.avi''}
 
 
     '
@@ -52,9 +52,8 @@ paths:
       - Speech-2-Text
       summary: Speech To Text
       description: "Process an audio/video file in the background in full process.\n\
-        \nArgs:\n    background_tasks (BackgroundTasks): The BackgroundTasks object.\n\
-        \    audio_file (UploadFile): The audio file to process.\n\nReturns:\n   \
-        \ dict: A dictionary containing the identifier and a message. The message\
+        \nArgs:\n    audio_file (UploadFile): The audio file to process.\n\nReturns:\n\
+        \    dict: A dictionary containing the identifier and a message. The message\
         \ is \"Task queued\". The identifier is a unique identifier for the transcription\
         \ request."
       operationId: speech_to_text_speech_to_text_post

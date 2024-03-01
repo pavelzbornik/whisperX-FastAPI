@@ -1,9 +1,9 @@
 from fastapi import Query
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Any
-from enum import Enum
+from enum import Enum,EnumMeta
 from whisperx import utils
-
+import numpy as np
 import os
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
@@ -129,9 +129,21 @@ class InterpolateMethod(str, Enum):
     ignore = "ignore"
 
 
+# class DualEnumMeta(EnumMeta):
+#     def __prepare__(cls, name, bases):
+#         return {}
+
+#     def __new__(cls, clsname, bases, clsdict):
+#         enums = {code: code for code, lang in utils.LANGUAGES.items()}
+#         return super().__new__(cls, clsname, bases, enums)
+
+
 LanguageEnum = Enum(
     "LanguageEnum", {code: code for code, lang in utils.LANGUAGES.items()}
 )
+
+# class Language(str, Enum, metaclass=DualEnumMeta):
+#     pass
 
 # Language = create_model("Language", ** {code: code for code, lang in utils.LANGUAGES.items()})
 
@@ -203,70 +215,6 @@ class ASROptions(BaseModel):
         return value
 
 
-# class VADOptions(BaseModel):
-#     vad_onset: float = Field(
-#         0.500,
-#         description="Onset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected",
-#     )
-#     vad_offset: float = Field(
-#         0.363,
-#         description="Offset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected.",
-#     )
-
-# class WhsiperModelParams(BaseModel):
-#     language: LanguageEnum = Field(
-#         "en",
-#         description="Language to transcribe",
-#         enum=list(utils.LANGUAGES.keys()),
-#     )
-#     task: TaskEnum = Field(
-#         "transcribe",
-#         description="Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-#     )
-#     model: WhisperModel = Field(
-#         default=WHISPER_MODEL, description="Name of the Whisper model to use"
-#     )
-#     device: Device = Field(
-#         default="cuda",
-#         description="Device to use for PyTorch inference",
-#     )
-#     device_index: int = Field(
-#         0, description="Device index to use for FasterWhisper inference"
-#     )
-#     threads: int = Field(
-#         0,
-#         description="Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
-#     )
-#     batch_size: int = Field(
-#         8, description="The preferred batch size for inference"
-#     )
-#     compute_type: ComputeType = Field(
-#         "float16", description="Type of computation"
-#     )
-
-
-# class AligmentParams(BaseModel):
-
-#     align_model: Optional[str] = Field(
-#         None, description="Name of phoneme-level ASR model to do alignment"
-#     )
-#     interpolate_method: InterpolateMethod = Field(
-#         "nearest",
-#         description="For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-#     )
-#     return_char_alignments: bool = Field(
-#         False,
-#         description="Return character-level alignments in the output json file",
-#     )
-
-
-# class DiarizationParams(BaseModel):
-#     min_speakers: Optional[int] = Field(
-#         None, description="Minimum number of speakers to in audio file"
-#     )
-#     max_speakers: Optional[int] = Field(
-#         None, description="Maximum number of speakers to in audio file"
-#     )
 class VADOptions(BaseModel):
     vad_onset: float = Field(
         Query(
@@ -285,14 +233,14 @@ class VADOptions(BaseModel):
 class WhsiperModelParams(BaseModel):
     language: LanguageEnum = Field(
         Query(
-            "en",
+            default="en",
             description="Language to transcribe",
             enum=list(utils.LANGUAGES.keys()),
         )
     )
     task: TaskEnum = Field(
         Query(
-            "transcribe",
+            default="transcribe",
             description="Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
         )
     )
@@ -325,7 +273,7 @@ class WhsiperModelParams(BaseModel):
     )
 
 
-class AligmentParams(BaseModel):
+class AlignmentParams(BaseModel):
 
     align_model: Optional[str] = Field(
         Query(
@@ -353,3 +301,18 @@ class DiarizationParams(BaseModel):
     max_speakers: Optional[int] = Field(
         Query(None, description="Maximum number of speakers to in audio file")
     )
+
+
+class SpeechToTextProcessingParams(BaseModel):
+    audio: (
+        np.ndarray
+    )  # NumPy array containing the audio waveform, float32 dtype
+    identifier: str
+    vad_options: VADOptions
+    asr_options: ASROptions
+    whisper_model_params: WhsiperModelParams
+    alignment_params: AlignmentParams
+    diarization_params: DiarizationParams
+    
+    class Config:
+        arbitrary_types_allowed = True

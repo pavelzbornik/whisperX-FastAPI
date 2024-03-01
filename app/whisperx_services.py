@@ -13,7 +13,7 @@ from .tasks import (
 )
 
 from .db import get_db_session, db_session
-from .schemas import AlignedTranscription
+from .schemas import AlignedTranscription, SpeechToTextProcessingParams
 from .transcript import filter_aligned_transcription
 
 import gc
@@ -152,26 +152,27 @@ def align_whisper_output(
     return result
 
 
-def process_audio_common(
-    audio,
-    identifier,
-    task,
-    asr_options,
-    vad_options,
-    # session: Session = Depends(get_db_session),
-    language=LANG,
-    batch_size: int = 16,
-    model: str = WHISPER_MODEL,
-    device: str = device,
-    device_index: int = 0,
-    compute_type: str = "float16",
-    threads: int = 0,
-    align_model: str = None,
-    interpolate_method: str = "nearest",
-    return_char_alignments: bool = False,
-    min_speakers: int = None,
-    max_speakers: int = None,
-):
+# def process_audio_common(
+#     audio,
+#     identifier,
+#     task,
+#     asr_options,
+#     vad_options,
+#     # session: Session = Depends(get_db_session),
+#     language=LANG,
+#     batch_size: int = 16,
+#     model: str = WHISPER_MODEL,
+#     device: str = device,
+#     device_index: int = 0,
+#     compute_type: str = "float16",
+#     threads: int = 0,
+#     align_model: str = None,
+#     interpolate_method: str = "nearest",
+#     return_char_alignments: bool = False,
+#     min_speakers: int = None,
+#     max_speakers: int = None,
+# ):
+def process_audio_common(params: SpeechToTextProcessingParams):
     """
     Process an audio clip to generate a transcript with speaker labels.
 
@@ -185,42 +186,67 @@ def process_audio_common(
     # try:
     session = db_session.get()
     start_time = datetime.now()
+    # segments_before_alignment = transcribe_with_whisper(
+    #     audio=audio,
+    #     task=task,
+    #     asr_options=asr_options,
+    #     vad_options=vad_options,
+    #     language=language,
+    #     batch_size=batch_size,
+    #     model=model,
+    #     device=device,
+    #     device_index=device_index,
+    #     compute_type=compute_type,
+    #     threads=threads,
+    # )
+    print(params.whisper_model_params.task.value)
     segments_before_alignment = transcribe_with_whisper(
-        audio=audio,
-        task=task,
-        asr_options=asr_options,
-        vad_options=vad_options,
-        language=language,
-        batch_size=batch_size,
-        model=model,
-        device=device,
-        device_index=device_index,
-        compute_type=compute_type,
-        threads=threads,
+        audio=params.audio,
+        task=params.whisper_model_params.task.value,
+        asr_options=params.asr_options,
+        vad_options=params.vad_options,
+        language=params.whisper_model_params.language.value,
+        batch_size=params.whisper_model_params.batch_size,
+        model=params.whisper_model_params.model,
+        device=params.whisper_model_params.device,
+        device_index=params.whisper_model_params.device_index,
+        compute_type=params.whisper_model_params.compute_type,
+        threads=params.whisper_model_params.threads,
     )
+    # segments_transcript = align_whisper_output(
+    #     transcript=segments_before_alignment["segments"],
+    #     audio=audio,
+    #     language_code=segments_before_alignment["language"],
+    #     align_model=align_model,
+    #     interpolate_method=interpolate_method,
+    #     return_char_alignments=return_char_alignments,
+    # )
     segments_transcript = align_whisper_output(
         transcript=segments_before_alignment["segments"],
-        audio=audio,
+        audio=params.audio,
         language_code=segments_before_alignment["language"],
-        align_model=align_model,
-        interpolate_method=interpolate_method,
-        return_char_alignments=return_char_alignments,
+        align_model=params.alignment_params.align_model,
+        interpolate_method=params.alignment_params.interpolate_method,
+        return_char_alignments=params.alignment_params.return_char_alignments,
     )
-
     transcript = AlignedTranscription(**segments_transcript)
     # removing words within each segment that have missing start, end, or score values
     transcript = filter_aligned_transcription(transcript).model_dump()
 
+    # diarization_segments = diarize(
+    #     audio,
+    #     device=device,
+    #     min_speakers=min_speakers,
+    #     max_speakers=max_speakers,
+    # )
     diarization_segments = diarize(
-        audio,
-        device=device,
-        min_speakers=min_speakers,
-        max_speakers=max_speakers,
+        params.audio,
+        device=params.whisper_model_params.device,
+        min_speakers=params.diarization_params.min_speakers,
+        max_speakers=params.diarization_params.max_speakers,
     )
 
-    result = whisperx.assign_word_speakers(
-        diarization_segments, transcript
-    )
+    result = whisperx.assign_word_speakers(diarization_segments, transcript)
 
     for segment in result["segments"]:
         del segment["words"]
@@ -231,7 +257,7 @@ def process_audio_common(
     duration = (end_time - start_time).total_seconds()
 
     update_task_status_in_db(
-        identifier=identifier,
+        identifier=params.identifier,
         update_data={
             "status": "completed",
             "result": result,
