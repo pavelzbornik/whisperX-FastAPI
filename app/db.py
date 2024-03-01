@@ -19,6 +19,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 db_session: ContextVar[Session] = ContextVar("db_session")
 
+
 def get_db_session():
     db = SessionLocal()
     try:

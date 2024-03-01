@@ -1,4 +1,3 @@
-from contextvars import ContextVar
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -19,7 +18,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 Base.metadata.create_all(bind=engine)
-
 
 
 @asynccontextmanager

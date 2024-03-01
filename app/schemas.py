@@ -1,12 +1,13 @@
 from fastapi import Query
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Any
-from enum import Enum,EnumMeta
+from enum import Enum
 from whisperx import utils
 import numpy as np
 import os
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
+LANG = "en"
 
 
 class Response(BaseModel):
@@ -21,6 +22,7 @@ class Metadata(BaseModel):
     file_name: Optional[str]
     url: Optional[str]
     duration: Optional[float]
+    audio_duration: Optional[float] = None
 
 
 class TaskSimple(BaseModel):
@@ -129,30 +131,6 @@ class InterpolateMethod(str, Enum):
     ignore = "ignore"
 
 
-# class DualEnumMeta(EnumMeta):
-#     def __prepare__(cls, name, bases):
-#         return {}
-
-#     def __new__(cls, clsname, bases, clsdict):
-#         enums = {code: code for code, lang in utils.LANGUAGES.items()}
-#         return super().__new__(cls, clsname, bases, enums)
-
-
-LanguageEnum = Enum(
-    "LanguageEnum", {code: code for code, lang in utils.LANGUAGES.items()}
-)
-
-# class Language(str, Enum, metaclass=DualEnumMeta):
-#     pass
-
-# Language = create_model("Language", ** {code: code for code, lang in utils.LANGUAGES.items()})
-
-# class Language(str, Enum):
-#     def __init__(self):
-#         for code, name in utils.LANGUAGES.items():
-#             setattr(Language, code, name)
-
-
 class ASROptions(BaseModel):
     beam_size: int = Field(
         Query(
@@ -231,9 +209,9 @@ class VADOptions(BaseModel):
 
 
 class WhsiperModelParams(BaseModel):
-    language: LanguageEnum = Field(
+    language: str = Field(
         Query(
-            default="en",
+            default=LANG,
             description="Language to transcribe",
             enum=list(utils.LANGUAGES.keys()),
         )
@@ -313,6 +291,6 @@ class SpeechToTextProcessingParams(BaseModel):
     whisper_model_params: WhsiperModelParams
     alignment_params: AlignmentParams
     diarization_params: DiarizationParams
-    
+
     class Config:
         arbitrary_types_allowed = True
