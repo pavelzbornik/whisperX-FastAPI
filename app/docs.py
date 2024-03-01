@@ -1,14 +1,18 @@
 from sqlalchemy import inspect
 import json
 import yaml
+import os
+
+DOCS_PATH = "app/docs"
 
 
-def save_openapi_json(app, path):
+def save_openapi_json(app, path=DOCS_PATH):
+    os.makedirs(path, exist_ok=True)
     openapi_data = app.openapi()
     # Change "openapi.json" to desired filename
-    with open(f"{path}openapi.json", "w") as file:
+    with open(f"{path}/openapi.json", "w") as file:
         json.dump(openapi_data, file, indent=2)
-    with open(f"{path}openapi.yaml", "w") as f:
+    with open(f"{path}/openapi.yaml", "w") as f:
         yaml.dump(openapi_data, f, sort_keys=False)
 
 
@@ -37,14 +41,15 @@ def generate_markdown_table(model):
     return markdown_table
 
 
-def write_markdown_to_file(markdown_table, filename):
-    with open(filename, "w") as file:
-        file.write(markdown_table)
+def write_markdown_to_file(markdown_tables, path=DOCS_PATH):
+    os.makedirs(path, exist_ok=True)
+    with open(f"{path}/db_schema.md", "w") as file:
+        file.write(markdown_tables)
 
 
-def generate_db_schema(models, filename):
-    markdown_table = "# Database schema \n\n"
+def generate_db_schema(models):
+    markdown_tables = "# Database schema \n\n"
     for model in models:
-        markdown_table += generate_markdown_table(model)
+        markdown_tables += generate_markdown_table(model)
 
-    write_markdown_to_file(markdown_table, filename)
+    write_markdown_to_file(markdown_tables)

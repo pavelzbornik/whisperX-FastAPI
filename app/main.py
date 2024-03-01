@@ -1,3 +1,4 @@
+from contextvars import ContextVar
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -13,16 +14,20 @@ from .docs import generate_db_schema, save_openapi_json
 
 from dotenv import load_dotenv
 
+
 # Load environment variables from .env
 load_dotenv()
 
 Base.metadata.create_all(bind=engine)
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    save_openapi_json(app, "app/docs/")
-    generate_db_schema(Base.metadata.tables.values(), "app/docs/db_schema.md")
+    save_openapi_json(app)
+    generate_db_schema(
+        Base.metadata.tables.values()
+    )
     yield
 
 

@@ -1,7 +1,12 @@
-from pydantic import BaseModel
+from fastapi import Query
+from pydantic import BaseModel, Field, validator
 from typing import Optional, List, Any
 from enum import Enum
 from whisperx import utils
+
+import os
+
+WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
 
 class Response(BaseModel):
@@ -43,12 +48,12 @@ class Segment(BaseModel):
 
 class Word(BaseModel):
     word: str
-    start: float
-    end: float
-    score: float
+    start: Optional[float] = None
+    end: Optional[float] = None
+    score: Optional[float] = None
 
 
-class AlingmentSegment(BaseModel):
+class AlignmentSegment(BaseModel):
     start: float
     end: float
     text: str
@@ -56,7 +61,7 @@ class AlingmentSegment(BaseModel):
 
 
 class AlignedTranscription(BaseModel):
-    segments: List[AlingmentSegment]
+    segments: List[AlignmentSegment]
     word_segments: List[Word]
 
 
@@ -113,7 +118,238 @@ class Device(str, Enum):
     cpu = "cpu"
 
 
-class Language(str, Enum):
-    def __init__(self):
-        for code, name in utils.LANGUAGES.items():
-            setattr(Language, code, name)
+class TaskEnum(str, Enum):
+    transcribe = "transcribe"
+    translate = "translate"
+
+
+class InterpolateMethod(str, Enum):
+    nearest = "nearest"
+    linear = "linear"
+    ignore = "ignore"
+
+
+LanguageEnum = Enum(
+    "LanguageEnum", {code: code for code, lang in utils.LANGUAGES.items()}
+)
+
+# Language = create_model("Language", ** {code: code for code, lang in utils.LANGUAGES.items()})
+
+# class Language(str, Enum):
+#     def __init__(self):
+#         for code, name in utils.LANGUAGES.items():
+#             setattr(Language, code, name)
+
+
+class ASROptions(BaseModel):
+    beam_size: int = Field(
+        Query(
+            5,
+            description="Number of beams in beam search, only applicable when temperature is zero",
+        )
+    )
+    patience: float = Field(
+        Query(
+            1.0, description="Optional patience value to use in beam decoding"
+        )
+    )
+    length_penalty: float = Field(
+        Query(1.0, description="Optional token length penalty coefficient")
+    )
+    temperatures: float = Field(
+        Query(0.0, description="Temperature to use for sampling")
+    )
+    compression_ratio_threshold: float = Field(
+        Query(
+            2.4,
+            description="If the gzip compression ratio is higher than this value, treat the decoding as failed",
+        )
+    )
+    log_prob_threshold: float = Field(
+        Query(
+            -1.0,
+            description="If the average log probability is lower than this value, treat the decoding as failed",
+        )
+    )
+    no_speech_threshold: float = Field(
+        Query(
+            0.6,
+            description="If the probability of the token is higher than this value AND the decoding has failed due to `logprob_threshold`, consider the segment as silence",
+        )
+    )
+    initial_prompt: Optional[str] = Field(
+        Query(
+            None,
+            description="Optional text to provide as a prompt for the first window.",
+        )
+    )
+    suppress_tokens: List[int] = Field(
+        Query(
+            [-1],
+            description="Comma-separated list of token ids to suppress during sampling",
+        )
+    )
+    suppress_numerals: Optional[bool] = Field(
+        Query(
+            False,
+            description="Whether to suppress numeric symbols and currency symbols during sampling",
+        )
+    )
+
+    @validator("suppress_tokens", pre=True)
+    def parse_suppress_tokens(cls, value):
+        if isinstance(value, str):
+            return [int(x) for x in value.split(",")]
+        return value
+
+
+# class VADOptions(BaseModel):
+#     vad_onset: float = Field(
+#         0.500,
+#         description="Onset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected",
+#     )
+#     vad_offset: float = Field(
+#         0.363,
+#         description="Offset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected.",
+#     )
+
+# class WhsiperModelParams(BaseModel):
+#     language: LanguageEnum = Field(
+#         "en",
+#         description="Language to transcribe",
+#         enum=list(utils.LANGUAGES.keys()),
+#     )
+#     task: TaskEnum = Field(
+#         "transcribe",
+#         description="Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
+#     )
+#     model: WhisperModel = Field(
+#         default=WHISPER_MODEL, description="Name of the Whisper model to use"
+#     )
+#     device: Device = Field(
+#         default="cuda",
+#         description="Device to use for PyTorch inference",
+#     )
+#     device_index: int = Field(
+#         0, description="Device index to use for FasterWhisper inference"
+#     )
+#     threads: int = Field(
+#         0,
+#         description="Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
+#     )
+#     batch_size: int = Field(
+#         8, description="The preferred batch size for inference"
+#     )
+#     compute_type: ComputeType = Field(
+#         "float16", description="Type of computation"
+#     )
+
+
+# class AligmentParams(BaseModel):
+
+#     align_model: Optional[str] = Field(
+#         None, description="Name of phoneme-level ASR model to do alignment"
+#     )
+#     interpolate_method: InterpolateMethod = Field(
+#         "nearest",
+#         description="For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
+#     )
+#     return_char_alignments: bool = Field(
+#         False,
+#         description="Return character-level alignments in the output json file",
+#     )
+
+
+# class DiarizationParams(BaseModel):
+#     min_speakers: Optional[int] = Field(
+#         None, description="Minimum number of speakers to in audio file"
+#     )
+#     max_speakers: Optional[int] = Field(
+#         None, description="Maximum number of speakers to in audio file"
+#     )
+class VADOptions(BaseModel):
+    vad_onset: float = Field(
+        Query(
+            0.500,
+            description="Onset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected",
+        )
+    )
+    vad_offset: float = Field(
+        Query(
+            0.363,
+            description="Offset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected.",
+        )
+    )
+
+
+class WhsiperModelParams(BaseModel):
+    language: LanguageEnum = Field(
+        Query(
+            "en",
+            description="Language to transcribe",
+            enum=list(utils.LANGUAGES.keys()),
+        )
+    )
+    task: TaskEnum = Field(
+        Query(
+            "transcribe",
+            description="Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
+        )
+    )
+    model: WhisperModel = Field(
+        Query(
+            default=WHISPER_MODEL,
+            description="Name of the Whisper model to use",
+        )
+    )
+    device: Device = Field(
+        Query(
+            default="cuda",
+            description="Device to use for PyTorch inference",
+        )
+    )
+    device_index: int = Field(
+        Query(0, description="Device index to use for FasterWhisper inference")
+    )
+    threads: int = Field(
+        Query(
+            0,
+            description="Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
+        )
+    )
+    batch_size: int = Field(
+        Query(8, description="The preferred batch size for inference")
+    )
+    compute_type: ComputeType = Field(
+        Query("float16", description="Type of computation")
+    )
+
+
+class AligmentParams(BaseModel):
+
+    align_model: Optional[str] = Field(
+        Query(
+            None, description="Name of phoneme-level ASR model to do alignment"
+        )
+    )
+    interpolate_method: InterpolateMethod = Field(
+        Query(
+            "nearest",
+            description="For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
+        )
+    )
+    return_char_alignments: bool = Field(
+        Query(
+            False,
+            description="Return character-level alignments in the output json file",
+        )
+    )
+
+
+class DiarizationParams(BaseModel):
+    min_speakers: Optional[int] = Field(
+        Query(None, description="Minimum number of speakers to in audio file")
+    )
+    max_speakers: Optional[int] = Field(
+        Query(None, description="Maximum number of speakers to in audio file")
+    )

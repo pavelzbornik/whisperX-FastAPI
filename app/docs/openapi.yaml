@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.oga'', ''.mp3'', ''.awb'', ''.aac'', ''.wma'', ''.m4a'',
-    ''.ogg'', ''.wav'', ''.amr''}
+    AUDIO_EXTENSIONS = {''.mp3'', ''.amr'', ''.wav'', ''.oga'', ''.m4a'', ''.wma'',
+    ''.awb'', ''.ogg'', ''.aac''}
 
 
-    VIDEO_EXTENSIONS = {''.mov'', ''.mkv'', ''.wmv'', ''.mp4'', ''.avi''}
+    VIDEO_EXTENSIONS = {''.mp4'', ''.mov'', ''.avi'', ''.wmv'', ''.mkv''}
 
 
     '
@@ -63,8 +63,365 @@ paths:
         in: query
         required: false
         schema:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: Language to transcribe
+          enum:
+          - en
+          - zh
+          - de
+          - es
+          - ru
+          - ko
+          - fr
+          - ja
+          - pt
+          - tr
+          - pl
+          - ca
+          - nl
+          - ar
+          - sv
+          - it
+          - id
+          - hi
+          - fi
+          - vi
+          - he
+          - uk
+          - el
+          - ms
+          - cs
+          - ro
+          - da
+          - hu
+          - ta
+          - 'no'
+          - th
+          - ur
+          - hr
+          - bg
+          - lt
+          - la
+          - mi
+          - ml
+          - cy
+          - sk
+          - te
+          - fa
+          - lv
+          - bn
+          - sr
+          - az
+          - sl
+          - kn
+          - et
+          - mk
+          - br
+          - eu
+          - is
+          - hy
+          - ne
+          - mn
+          - bs
+          - kk
+          - sq
+          - sw
+          - gl
+          - mr
+          - pa
+          - si
+          - km
+          - sn
+          - yo
+          - so
+          - af
+          - oc
+          - ka
+          - be
+          - tg
+          - sd
+          - gu
+          - am
+          - yi
+          - lo
+          - uz
+          - fo
+          - ht
+          - ps
+          - tk
+          - nn
+          - mt
+          - sa
+          - lb
+          - my
+          - bo
+          - tl
+          - mg
+          - as
+          - tt
+          - haw
+          - ln
+          - ha
+          - ba
+          - jw
+          - su
+          - yue
+          default: en
           title: Language
+        description: Language to transcribe
+      - name: task
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/TaskEnum'
+          description: Whether to perform X->X speech recognition ('transcribe') or
+            X->English translation ('translate')
+          default: transcribe
+          title: Task
+        description: Whether to perform X->X speech recognition ('transcribe') or
+          X->English translation ('translate')
+      - name: model
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/WhisperModel'
+          description: Name of the Whisper model to use
+          default: tiny
+          title: Model
+        description: Name of the Whisper model to use
+      - name: device
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/Device'
+          description: Device to use for PyTorch inference
+          default: cuda
+          title: Device
+        description: Device to use for PyTorch inference
+      - name: device_index
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Device index to use for FasterWhisper inference
+          default: 0
+          title: Device Index
+        description: Device index to use for FasterWhisper inference
+      - name: threads
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Number of threads used by torch for CPU inference; supercedes
+            MKL_NUM_THREADS/OMP_NUM_THREADS
+          default: 0
+          title: Threads
+        description: Number of threads used by torch for CPU inference; supercedes
+          MKL_NUM_THREADS/OMP_NUM_THREADS
+      - name: batch_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: The preferred batch size for inference
+          default: 8
+          title: Batch Size
+        description: The preferred batch size for inference
+      - name: compute_type
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/ComputeType'
+          description: Type of computation
+          default: float16
+          title: Compute Type
+        description: Type of computation
+      - name: align_model
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Name of phoneme-level ASR model to do alignment
+          title: Align Model
+        description: Name of phoneme-level ASR model to do alignment
+      - name: interpolate_method
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/InterpolateMethod'
+          description: For word .srt, method to assign timestamps to non-aligned words,
+            or merge them into neighboring.
+          default: nearest
+          title: Interpolate Method
+        description: For word .srt, method to assign timestamps to non-aligned words,
+          or merge them into neighboring.
+      - name: return_char_alignments
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Return character-level alignments in the output json file
+          default: false
+          title: Return Char Alignments
+        description: Return character-level alignments in the output json file
+      - name: min_speakers
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Minimum number of speakers to in audio file
+          title: Min Speakers
+        description: Minimum number of speakers to in audio file
+      - name: max_speakers
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          description: Maximum number of speakers to in audio file
+          title: Max Speakers
+        description: Maximum number of speakers to in audio file
+      - name: beam_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Number of beams in beam search, only applicable when temperature
+            is zero
+          default: 5
+          title: Beam Size
+        description: Number of beams in beam search, only applicable when temperature
+          is zero
+      - name: patience
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Optional patience value to use in beam decoding
+          default: 1.0
+          title: Patience
+        description: Optional patience value to use in beam decoding
+      - name: length_penalty
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Optional token length penalty coefficient
+          default: 1.0
+          title: Length Penalty
+        description: Optional token length penalty coefficient
+      - name: temperatures
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Temperature to use for sampling
+          default: 0.0
+          title: Temperatures
+        description: Temperature to use for sampling
+      - name: compression_ratio_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: If the gzip compression ratio is higher than this value, treat
+            the decoding as failed
+          default: 2.4
+          title: Compression Ratio Threshold
+        description: If the gzip compression ratio is higher than this value, treat
+          the decoding as failed
+      - name: log_prob_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: If the average log probability is lower than this value, treat
+            the decoding as failed
+          default: -1.0
+          title: Log Prob Threshold
+        description: If the average log probability is lower than this value, treat
+          the decoding as failed
+      - name: no_speech_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: If the probability of the token is higher than this value AND
+            the decoding has failed due to `logprob_threshold`, consider the segment
+            as silence
+          default: 0.6
+          title: No Speech Threshold
+        description: If the probability of the token is higher than this value AND
+          the decoding has failed due to `logprob_threshold`, consider the segment
+          as silence
+      - name: initial_prompt
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Optional text to provide as a prompt for the first window.
+          title: Initial Prompt
+        description: Optional text to provide as a prompt for the first window.
+      - name: suppress_tokens
+        in: query
+        required: false
+        schema:
+          type: array
+          items:
+            type: integer
+          description: Comma-separated list of token ids to suppress during sampling
+          default:
+          - -1
+          title: Suppress Tokens
+        description: Comma-separated list of token ids to suppress during sampling
+      - name: suppress_numerals
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: Whether to suppress numeric symbols and currency symbols during
+            sampling
+          default: false
+          title: Suppress Numerals
+        description: Whether to suppress numeric symbols and currency symbols during
+          sampling
+      - name: vad_onset
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Onset threshold for VAD (see pyannote.audio), reduce this if
+            speech is not being detected
+          default: 0.5
+          title: Vad Onset
+        description: Onset threshold for VAD (see pyannote.audio), reduce this if
+          speech is not being detected
+      - name: vad_offset
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Offset threshold for VAD (see pyannote.audio), reduce this
+            if speech is not being detected.
+          default: 0.363
+          title: Vad Offset
+        description: Offset threshold for VAD (see pyannote.audio), reduce this if
+          speech is not being detected.
       requestBody:
         required: true
         content:
@@ -96,7 +453,355 @@ paths:
         required: false
         schema:
           type: string
+          description: Language to transcribe
+          enum:
+          - en
+          - zh
+          - de
+          - es
+          - ru
+          - ko
+          - fr
+          - ja
+          - pt
+          - tr
+          - pl
+          - ca
+          - nl
+          - ar
+          - sv
+          - it
+          - id
+          - hi
+          - fi
+          - vi
+          - he
+          - uk
+          - el
+          - ms
+          - cs
+          - ro
+          - da
+          - hu
+          - ta
+          - 'no'
+          - th
+          - ur
+          - hr
+          - bg
+          - lt
+          - la
+          - mi
+          - ml
+          - cy
+          - sk
+          - te
+          - fa
+          - lv
+          - bn
+          - sr
+          - az
+          - sl
+          - kn
+          - et
+          - mk
+          - br
+          - eu
+          - is
+          - hy
+          - ne
+          - mn
+          - bs
+          - kk
+          - sq
+          - sw
+          - gl
+          - mr
+          - pa
+          - si
+          - km
+          - sn
+          - yo
+          - so
+          - af
+          - oc
+          - ka
+          - be
+          - tg
+          - sd
+          - gu
+          - am
+          - yi
+          - lo
+          - uz
+          - fo
+          - ht
+          - ps
+          - tk
+          - nn
+          - mt
+          - sa
+          - lb
+          - my
+          - bo
+          - tl
+          - mg
+          - as
+          - tt
+          - haw
+          - ln
+          - ha
+          - ba
+          - jw
+          - su
+          - yue
+          default: en
           title: Language
+        description: Language to transcribe
+      - name: task
+        in: query
+        required: false
+        schema:
+          type: string
+          description: whether to perform X->X speech recognition ('transcribe') or
+            X->English translation ('translate')
+          enum:
+          - transcribe
+          - translate
+          default: transcribe
+          title: Task
+        description: whether to perform X->X speech recognition ('transcribe') or
+          X->English translation ('translate')
+      - name: model
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/WhisperModel'
+          description: Name of the Whisper model to use
+          default: tiny
+          title: Model
+        description: Name of the Whisper model to use
+      - name: device
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/Device'
+          description: Device to use for PyTorch inference
+          default: cuda
+          title: Device
+        description: Device to use for PyTorch inference
+      - name: device_index
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Device index to use for FasterWhisper inference
+          default: 0
+          title: Device Index
+        description: Device index to use for FasterWhisper inference
+      - name: batch_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: The preferred batch size for inference
+          default: 8
+          title: Batch Size
+        description: The preferred batch size for inference
+      - name: compute_type
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/ComputeType'
+          description: Type of computation
+          default: float16
+          title: Compute Type
+        description: Type of computation
+      - name: align_model
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Name of phoneme-level ASR model to do alignment
+          title: Align Model
+        description: Name of phoneme-level ASR model to do alignment
+      - name: interpolate_method
+        in: query
+        required: false
+        schema:
+          type: string
+          description: For word .srt, method to assign timestamps to non-aligned words,
+            or merge them into neighboring.
+          enum:
+          - nearest
+          - linear
+          - ignore
+          default: nearest
+          title: Interpolate Method
+        description: For word .srt, method to assign timestamps to non-aligned words,
+          or merge them into neighboring.
+      - name: return_char_alignments
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Return character-level alignments in the output json file
+          default: false
+          title: Return Char Alignments
+        description: Return character-level alignments in the output json file
+      - name: temperature
+        in: query
+        required: false
+        schema:
+          type: number
+          description: temperature to use for sampling
+          default: 0
+          title: Temperature
+        description: temperature to use for sampling
+      - name: beam_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: number of beams in beam search, only applicable when temperature
+            is zero
+          default: 5
+          title: Beam Size
+        description: number of beams in beam search, only applicable when temperature
+          is zero
+      - name: patience
+        in: query
+        required: false
+        schema:
+          type: number
+          description: optional patience value to use in beam decoding
+          default: 1.0
+          title: Patience
+        description: optional patience value to use in beam decoding
+      - name: length_penalty
+        in: query
+        required: false
+        schema:
+          type: number
+          description: optional token length penalty coefficient
+          default: 1.0
+          title: Length Penalty
+        description: optional token length penalty coefficient
+      - name: suppress_tokens
+        in: query
+        required: false
+        schema:
+          type: string
+          description: comma-separated list of token ids to suppress during sampling
+          default: '-1'
+          title: Suppress Tokens
+        description: comma-separated list of token ids to suppress during sampling
+      - name: suppress_numerals
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: whether to suppress numeric symbols and currency symbols during
+            sampling
+          default: false
+          title: Suppress Numerals
+        description: whether to suppress numeric symbols and currency symbols during
+          sampling
+      - name: initial_prompt
+        in: query
+        required: false
+        schema:
+          type: string
+          description: optional text to provide as a prompt for the first window.
+          title: Initial Prompt
+        description: optional text to provide as a prompt for the first window.
+      - name: compression_ratio_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: if the gzip compression ratio is higher than this value, treat
+            the decoding as failed
+          default: 2.4
+          title: Compression Ratio Threshold
+        description: if the gzip compression ratio is higher than this value, treat
+          the decoding as failed
+      - name: logprob_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: if the average log probability is lower than this value, treat
+            the decoding as failed
+          default: -1.0
+          title: Logprob Threshold
+        description: if the average log probability is lower than this value, treat
+          the decoding as failed
+      - name: no_speech_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: if the probability of the token is higher than this value AND
+            the decoding has failed due to `logprob_threshold`, consider the segment
+            as silence
+          default: 0.6
+          title: No Speech Threshold
+        description: if the probability of the token is higher than this value AND
+          the decoding has failed due to `logprob_threshold`, consider the segment
+          as silence
+      - name: vad_onset
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Onset threshold for VAD (see pyannote.audio), reduce this if
+            speech is not being detected
+          default: 0.5
+          title: Vad Onset
+        description: Onset threshold for VAD (see pyannote.audio), reduce this if
+          speech is not being detected
+      - name: vad_offset
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Offset threshold for VAD (see pyannote.audio), reduce this
+            if speech is not being detected.
+          default: 0.363
+          title: Vad Offset
+        description: Offset threshold for VAD (see pyannote.audio), reduce this if
+          speech is not being detected.
+      - name: threads
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: number of threads used by torch for CPU inference; supercedes
+            MKL_NUM_THREADS/OMP_NUM_THREADS
+          default: 0
+          title: Threads
+        description: number of threads used by torch for CPU inference; supercedes
+          MKL_NUM_THREADS/OMP_NUM_THREADS
+      - name: min_speakers
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Minimum number of speakers to in audio file
+          title: Min Speakers
+        description: Minimum number of speakers to in audio file
+      - name: max_speakers
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Maximum number of speakers to in audio file
+          title: Max Speakers
+        description: Maximum number of speakers to in audio file
       requestBody:
         required: true
         content:
@@ -298,6 +1003,20 @@ paths:
           default: en
           title: Language
         description: Language to transcribe
+      - name: task
+        in: query
+        required: false
+        schema:
+          type: string
+          description: whether to perform X->X speech recognition ('transcribe') or
+            X->English translation ('translate')
+          enum:
+          - transcribe
+          - translate
+          default: transcribe
+          title: Task
+        description: whether to perform X->X speech recognition ('transcribe') or
+          X->English translation ('translate')
       - name: model
         in: query
         required: false
@@ -305,7 +1024,7 @@ paths:
           allOf:
           - $ref: '#/components/schemas/WhisperModel'
           description: Name of the Whisper model to use
-          default: medium
+          default: tiny
           title: Model
         description: Name of the Whisper model to use
       - name: device
@@ -346,6 +1065,140 @@ paths:
           default: float16
           title: Compute Type
         description: Type of computation
+      - name: temperature
+        in: query
+        required: false
+        schema:
+          type: number
+          description: temperature to use for sampling
+          default: 0
+          title: Temperature
+        description: temperature to use for sampling
+      - name: beam_size
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: number of beams in beam search, only applicable when temperature
+            is zero
+          default: 5
+          title: Beam Size
+        description: number of beams in beam search, only applicable when temperature
+          is zero
+      - name: patience
+        in: query
+        required: false
+        schema:
+          type: number
+          description: optional patience value to use in beam decoding
+          default: 1.0
+          title: Patience
+        description: optional patience value to use in beam decoding
+      - name: length_penalty
+        in: query
+        required: false
+        schema:
+          type: number
+          description: optional token length penalty coefficient
+          default: 1.0
+          title: Length Penalty
+        description: optional token length penalty coefficient
+      - name: suppress_tokens
+        in: query
+        required: false
+        schema:
+          type: string
+          description: comma-separated list of token ids to suppress during sampling
+          default: '-1'
+          title: Suppress Tokens
+        description: comma-separated list of token ids to suppress during sampling
+      - name: suppress_numerals
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: whether to suppress numeric symbols and currency symbols during
+            sampling
+          default: false
+          title: Suppress Numerals
+        description: whether to suppress numeric symbols and currency symbols during
+          sampling
+      - name: initial_prompt
+        in: query
+        required: false
+        schema:
+          type: string
+          description: optional text to provide as a prompt for the first window.
+          title: Initial Prompt
+        description: optional text to provide as a prompt for the first window.
+      - name: compression_ratio_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: if the gzip compression ratio is higher than this value, treat
+            the decoding as failed
+          default: 2.4
+          title: Compression Ratio Threshold
+        description: if the gzip compression ratio is higher than this value, treat
+          the decoding as failed
+      - name: logprob_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: if the average log probability is lower than this value, treat
+            the decoding as failed
+          default: -1.0
+          title: Logprob Threshold
+        description: if the average log probability is lower than this value, treat
+          the decoding as failed
+      - name: no_speech_threshold
+        in: query
+        required: false
+        schema:
+          type: number
+          description: if the probability of the token is higher than this value AND
+            the decoding has failed due to `logprob_threshold`, consider the segment
+            as silence
+          default: 0.6
+          title: No Speech Threshold
+        description: if the probability of the token is higher than this value AND
+          the decoding has failed due to `logprob_threshold`, consider the segment
+          as silence
+      - name: vad_onset
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Onset threshold for VAD (see pyannote.audio), reduce this if
+            speech is not being detected
+          default: 0.5
+          title: Vad Onset
+        description: Onset threshold for VAD (see pyannote.audio), reduce this if
+          speech is not being detected
+      - name: vad_offset
+        in: query
+        required: false
+        schema:
+          type: number
+          description: Offset threshold for VAD (see pyannote.audio), reduce this
+            if speech is not being detected.
+          default: 0.363
+          title: Vad Offset
+        description: Offset threshold for VAD (see pyannote.audio), reduce this if
+          speech is not being detected.
+      - name: threads
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: number of threads used by torch for CPU inference; supercedes
+            MKL_NUM_THREADS/OMP_NUM_THREADS
+          default: 0
+          title: Threads
+        description: number of threads used by torch for CPU inference; supercedes
+          MKL_NUM_THREADS/OMP_NUM_THREADS
       requestBody:
         required: true
         content:
@@ -371,12 +1224,55 @@ paths:
       - Speech-2-Text services
       summary: 2. Align Transcript
       operationId: 2__Align_Transcript_service_align_post
+      parameters:
+      - name: device
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/Device'
+          description: Device to use for PyTorch inference
+          default: cuda
+          title: Device
+        description: Device to use for PyTorch inference
+      - name: align_model
+        in: query
+        required: false
+        schema:
+          type: string
+          description: Name of phoneme-level ASR model to do alignment
+          title: Align Model
+        description: Name of phoneme-level ASR model to do alignment
+      - name: interpolate_method
+        in: query
+        required: false
+        schema:
+          type: string
+          description: For word .srt, method to assign timestamps to non-aligned words,
+            or merge them into neighboring.
+          enum:
+          - nearest
+          - linear
+          - ignore
+          default: nearest
+          title: Interpolate Method
+        description: For word .srt, method to assign timestamps to non-aligned words,
+          or merge them into neighboring.
+      - name: return_char_alignments
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: Return character-level alignments in the output json file
+          default: false
+          title: Return Char Alignments
+        description: Return character-level alignments in the output json file
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Body_2__Align_Transcript_service_align_post'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -395,12 +1291,39 @@ paths:
       - Speech-2-Text services
       summary: 3. Diarize
       operationId: 3__Diarize_service_diarize_post
+      parameters:
+      - name: device
+        in: query
+        required: false
+        schema:
+          allOf:
+          - $ref: '#/components/schemas/Device'
+          description: Device to use for PyTorch inference
+          default: cuda
+          title: Device
+        description: Device to use for PyTorch inference
+      - name: min_speakers
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Minimum number of speakers to in audio file
+          title: Min Speakers
+        description: Minimum number of speakers to in audio file
+      - name: max_speakers
+        in: query
+        required: false
+        schema:
+          type: integer
+          description: Maximum number of speakers to in audio file
+          title: Max Speakers
+        description: Maximum number of speakers to in audio file
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Body_3__Diarize_service_diarize_post'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -446,7 +1369,7 @@ components:
           type: string
           format: binary
           title: File
-          description: Audio file to transcribe
+          description: Audio/video file to transcribe
       type: object
       required:
       - file
@@ -457,10 +1380,12 @@ components:
           type: string
           format: binary
           title: Transcript
+          description: Whisper style transcript json file
         file:
           type: string
           format: binary
           title: File
+          description: Audio/video file which has been transcribed
       type: object
       required:
       - transcript
@@ -496,8 +1421,7 @@ components:
         file:
           type: string
           format: binary
-          title: Audio/Video File
-          description: File to be processed
+          title: File
       type: object
       required:
       - file
@@ -533,6 +1457,117 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    InterpolateMethod:
+      type: string
+      enum:
+      - nearest
+      - linear
+      - ignore
+      title: InterpolateMethod
+    LanguageEnum:
+      type: string
+      enum:
+      - en
+      - zh
+      - de
+      - es
+      - ru
+      - ko
+      - fr
+      - ja
+      - pt
+      - tr
+      - pl
+      - ca
+      - nl
+      - ar
+      - sv
+      - it
+      - id
+      - hi
+      - fi
+      - vi
+      - he
+      - uk
+      - el
+      - ms
+      - cs
+      - ro
+      - da
+      - hu
+      - ta
+      - 'no'
+      - th
+      - ur
+      - hr
+      - bg
+      - lt
+      - la
+      - mi
+      - ml
+      - cy
+      - sk
+      - te
+      - fa
+      - lv
+      - bn
+      - sr
+      - az
+      - sl
+      - kn
+      - et
+      - mk
+      - br
+      - eu
+      - is
+      - hy
+      - ne
+      - mn
+      - bs
+      - kk
+      - sq
+      - sw
+      - gl
+      - mr
+      - pa
+      - si
+      - km
+      - sn
+      - yo
+      - so
+      - af
+      - oc
+      - ka
+      - be
+      - tg
+      - sd
+      - gu
+      - am
+      - yi
+      - lo
+      - uz
+      - fo
+      - ht
+      - ps
+      - tk
+      - nn
+      - mt
+      - sa
+      - lb
+      - my
+      - bo
+      - tl
+      - mg
+      - as
+      - tt
+      - haw
+      - ln
+      - ha
+      - ba
+      - jw
+      - su
+      - yue
+      title: LanguageEnum
     Metadata:
       properties:
         task_type:
@@ -617,6 +1652,12 @@ components:
       required:
       - tasks
       title: ResultTasks
+    TaskEnum:
+      type: string
+      enum:
+      - transcribe
+      - translate
+      title: TaskEnum
     TaskSimple:
       properties:
         identifier:

@@ -20,16 +20,13 @@ from .tasks import (
 
 from .files import validate_extension, ALLOWED_EXTENSIONS
 
-from .db import get_db_session
+from .db import get_db_session, db_session
 
 from .whisperx_services import (
     transcribe_with_whisper,
     align_whisper_output,
     diarize,
-    LANG,
     process_audio_common,
-    WHISPER_MODEL,
-    device
 )
 
 
@@ -52,8 +49,22 @@ def validate_language_code(language_code):
 def download_and_process_file(
     url,
     background_tasks,
-    session,
-    language=None,
+    # session,
+    task,
+    asr_options,
+    vad_options,
+    language,
+    batch_size,
+    model,
+    device,
+    device_index,
+    compute_type,
+    align_model,
+    interpolate_method,
+    return_char_alignments,
+    threads,
+    min_speakers,
+    max_speakers,
 ):
     """
     Download an audio file from a URL and process it in the background.
@@ -80,13 +91,32 @@ def download_and_process_file(
             temp_audio_file.write(chunk)
 
     validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
-    if language:
-        validate_language_code(language)
+    # if language:
+    #     validate_language_code(language)
+
+    session = db_session.get()
 
     identifier = add_task_to_db(
         status="processing",
         file_name=temp_audio_file.name,
+        language=language,
         task_type="full_process",
+        task_params={
+            "batch_size": batch_size,
+            "model": model,
+            "device": device,
+            "device_index": device_index,
+            "compute_type": compute_type,
+            "align_model": align_model,
+            "interpolate_method": interpolate_method,
+            "return_char_alignments": return_char_alignments,
+            "asr_options": asr_options,
+            "vad_options": vad_options,
+            "threads": threads,
+            "min_speakers": min_speakers,
+            "max_speakers": max_speakers,
+        },
+        url=url,
         session=session,
     )
     audio = process_audio_file(temp_audio_file.name)
@@ -95,8 +125,22 @@ def download_and_process_file(
         process_audio_common,
         audio,
         identifier,
-        session,
+        task,
+        asr_options,
+        vad_options,
+        # session,
         language,
+        batch_size,
+        model,
+        device,
+        device_index,
+        compute_type,
+        threads,
+        align_model,
+        interpolate_method,
+        return_char_alignments,
+        min_speakers,
+        max_speakers,
     )
 
     # Return the identifier to the user
@@ -107,9 +151,10 @@ def process_audio_task(
     audio_processor,
     identifier: str,
     task_type: str,
-    session: Session = Depends(get_db_session),
+    # session: Session = Depends(get_db_session),
     *args,
 ):
+    session = db_session.get()
     try:
         start_time = datetime.now()
 
@@ -148,38 +193,54 @@ def process_audio_task(
 def process_transcribe(
     audio,
     identifier,
-    language=LANG,
-    session: Session = Depends(get_db_session),
-    batch_size: int = 16,
-    model: str = WHISPER_MODEL,  # Add CLI parameters to the function definition
-    device: str = device,
-    device_index: int = 0,
-    compute_type: str = "float16",
+    task,
+    language,
+    batch_size,
+    model,
+    device,
+    device_index,
+    compute_type,
+    asr_options,
+    vad_options,
+    threads,
+    # session: Session = Depends(get_db_session),
 ):
     process_audio_task(
         transcribe_with_whisper,
         identifier,
         "transcription",
-        session,
+        # session,
         audio,
+        task,
+        asr_options,
+        vad_options,
         language,
         batch_size,
         model,
         device,
         device_index,
         compute_type,
+        threads,
     )
 
 
 def process_diarize(
-    audio, identifier, session: Session = Depends(get_db_session)
+    audio,
+    identifier,
+    device,
+    min_speakers,
+    max_speakers,
+    # session: Session = Depends(get_db_session),
 ):
     process_audio_task(
         diarize,
         identifier,
         "diarization",
-        session,
+        # session,
         audio,
+        device,
+        min_speakers,
+        max_speakers,
     )
 
 
@@ -187,16 +248,24 @@ def process_alignment(
     audio,
     transcript,
     identifier,
-    session: Session = Depends(get_db_session),
+    device,
+    align_model,
+    interpolate_method,
+    return_char_alignments,
+    # session: Session = Depends(get_db_session),
 ):
     process_audio_task(
         align_whisper_output,
         identifier,
         "transcription_alignment",
-        session,
+        # session,
         transcript["segments"],
         audio,
         transcript["language"],
+        device,
+        align_model,
+        interpolate_method,
+        return_char_alignments,
     )
 
 
@@ -204,13 +273,13 @@ def process_speaker_assignment(
     diarization_segments,
     transcript,
     identifier,
-    session: Session = Depends(get_db_session),
+    # session: Session = Depends(get_db_session),
 ):
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,
         "combine_transcript&diarization",
-        session,
+        # session,
         diarization_segments,
         transcript,
     )
