@@ -19,7 +19,7 @@ from .transcript import filter_aligned_transcription
 
 import gc
 
-LANG = os.getenv("DEFAULT_LANG")
+LANG = os.getenv("DEFAULT_LANG", "en")
 HF_TOKEN = os.getenv("HF_TOKEN")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
@@ -91,9 +91,7 @@ def diarize(audio, device, min_speakers=None, max_speakers=None):
     Returns:
        Diarizartion: The diarization result.
     """
-    model = DiarizationPipeline(
-        use_auth_token=HF_TOKEN, device=device
-    )
+    model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
     result = model(
         audio=audio, min_speakers=min_speakers, max_speakers=max_speakers
     )
@@ -201,9 +199,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
             max_speakers=params.diarization_params.max_speakers,
         )
 
-        result = assign_word_speakers(
-            diarization_segments, transcript
-        )
+        result = assign_word_speakers(diarization_segments, transcript)
 
         for segment in result["segments"]:
             del segment["words"]

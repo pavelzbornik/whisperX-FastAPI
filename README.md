@@ -10,7 +10,7 @@ See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details
 
 ### Language and Whisper model settings
 
-- in `whisperx_services.py` you can define default Language `LANG = "en"` (you can also set it in the request)
+- in `.env` you can define default Language `DEFAULT_LANG`, if not defined **en** is used (you can also set it in the request)
 - `.env` contains defintion of Whisper model using `WHISPER_MODEL` (you can also set it in the request)
 
 ### Task management and result storage
