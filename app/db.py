@@ -1,7 +1,6 @@
-from contextvars import ContextVar
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
 from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
@@ -16,8 +15,6 @@ load_dotenv()
 db_url = os.getenv("DB_URL", "sqlite:///records.db")
 engine = create_engine(db_url, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-db_session: ContextVar[Session] = ContextVar("db_session")
 
 
 def get_db_session():

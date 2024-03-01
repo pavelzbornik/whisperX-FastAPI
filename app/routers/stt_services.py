@@ -93,7 +93,7 @@ async def transcribe(
         model_params,
         asr_options_params,
         vad_options_params,
-        # session,
+        session,
     )
 
     return Response(identifier=identifier, message="Task queued")
@@ -156,6 +156,7 @@ def align(
         identifier,
         device,
         align_params,
+        session
     )
 
     return Response(identifier=identifier, message="Task queued")
@@ -199,8 +200,8 @@ async def diarize(
         audio,
         identifier,
         device,
-        diarize_params
-        # session,
+        diarize_params,
+        session,
     )
 
     return Response(identifier=identifier, message="Task queued")
@@ -257,7 +258,7 @@ async def combine(
         ),
         transcript.model_dump(),
         identifier,
-        # session,
+        session,
     )
 
     return Response(identifier=identifier, message="Task queued")

@@ -15,9 +15,6 @@ from .schemas import (
     DiarizationParams,
 )
 
-from .db import db_session, get_db_session
-
-from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from .whisperx_services import (
@@ -47,10 +44,9 @@ def process_audio_task(
     audio_processor,
     identifier: str,
     task_type: str,
+    session: Session,
     *args,
 ):
-    session: Session = db_session.get(default=None)
-    print("Session:", session)
     try:
         start_time = datetime.now()
 
@@ -92,13 +88,13 @@ def process_transcribe(
     model_params: WhsiperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
-    # session: Session = Depends(get_db_session),
+    session: Session,
 ):
     process_audio_task(
         transcribe_with_whisper,
         identifier,
         "transcription",
-        # session,
+        session,
         audio,
         model_params.task,
         asr_options_params.model_dump(),
@@ -118,12 +114,13 @@ def process_diarize(
     identifier,
     device,
     diarize_params: DiarizationParams,
-    # session: Session = Depends(get_db_session),
+    session: Session,
 ):
     process_audio_task(
         diarize,
         identifier,
         "diarization",
+        session,
         audio,
         device,
         diarize_params.min_speakers,
@@ -137,11 +134,13 @@ def process_alignment(
     identifier,
     device,
     align_params: AlignmentParams,
+    session: Session,
 ):
     process_audio_task(
         align_whisper_output,
         identifier,
         "transcription_alignment",
+        session,
         transcript["segments"],
         audio,
         transcript["language"],
@@ -156,13 +155,13 @@ def process_speaker_assignment(
     diarization_segments,
     transcript,
     identifier,
-    # session: Session = Depends(get_db_session),
+    session: Session,
 ):
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,
         "combine_transcript&diarization",
-        # session,
+        session,
         diarization_segments,
         transcript,
     )
