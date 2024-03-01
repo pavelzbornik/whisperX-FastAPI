@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.mp3'', ''.ogg'', ''.m4a'', ''.awb'', ''.oga'', ''.wav'',
-    ''.wma'', ''.aac'', ''.amr''}
+    AUDIO_EXTENSIONS = {''.ogg'', ''.wma'', ''.mp3'', ''.oga'', ''.aac'', ''.awb'',
+    ''.wav'', ''.amr'', ''.m4a''}
 
 
-    VIDEO_EXTENSIONS = {''.mkv'', ''.wmv'', ''.mp4'', ''.mov'', ''.avi''}
+    VIDEO_EXTENSIONS = {''.wmv'', ''.mkv'', ''.mov'', ''.avi'', ''.mp4''}
 
 
     '

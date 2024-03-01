@@ -42,7 +42,7 @@ from ..whisperx_services import process_audio_common
 import requests
 from tempfile import NamedTemporaryFile
 
-from ..db import get_db_session, db_session
+from ..db import get_db_session
 
 stt_router = APIRouter()
 
@@ -73,8 +73,6 @@ async def speech_to_text(
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
 
-    db_session.set(session)
-
     identifier = add_task_to_db(
         status="processing",
         file_name=file.filename,
@@ -102,7 +100,7 @@ async def speech_to_text(
     )
 
     # Call add_task with the process_audio_common function and the audio_params object
-    background_tasks.add_task(process_audio_common, audio_params)
+    background_tasks.add_task(process_audio_common, audio_params, session)
 
     return Response(identifier=identifier, message="Task queued")
 
@@ -118,8 +116,6 @@ async def speech_to_text_url(
     url: str = Form(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
-
-    db_session.set(session)
 
     filename = os.path.basename(urlparse(url).path)
 
@@ -167,6 +163,6 @@ async def speech_to_text_url(
     )
 
     # Call add_task with the process_audio_common function and the audio_params object
-    background_tasks.add_task(process_audio_common, audio_params)
+    background_tasks.add_task(process_audio_common, audio_params, session)
 
     return Response(identifier=identifier, message="Task queued")

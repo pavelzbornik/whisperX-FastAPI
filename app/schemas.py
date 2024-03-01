@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
-LANG = "en"
+LANG = os.getenv("DEFAULT_LANG")
 
 
 class Response(BaseModel):

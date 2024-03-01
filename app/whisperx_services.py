@@ -1,4 +1,10 @@
-import whisperx
+from whisperx import (
+    load_model,
+    DiarizationPipeline,
+    load_align_model,
+    align,
+    assign_word_speakers,
+)
 
 from datetime import datetime
 import torch
@@ -8,13 +14,12 @@ from .tasks import (
     update_task_status_in_db,
 )
 
-from .db import db_session
 from .schemas import AlignedTranscription, SpeechToTextProcessingParams
 from .transcript import filter_aligned_transcription
 
 import gc
 
-LANG = "en"
+LANG = os.getenv("DEFAULT_LANG")
 HF_TOKEN = os.getenv("HF_TOKEN")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
@@ -53,7 +58,7 @@ def transcribe_with_whisper(
         torch.set_num_threads(threads)
         faster_whisper_threads = threads
 
-    model = whisperx.load_model(
+    model = load_model(
         model,
         device,
         device_index=device_index,
@@ -86,7 +91,7 @@ def diarize(audio, device, min_speakers=None, max_speakers=None):
     Returns:
        Diarizartion: The diarization result.
     """
-    model = whisperx.DiarizationPipeline(
+    model = DiarizationPipeline(
         use_auth_token=HF_TOKEN, device=device
     )
     result = model(
@@ -125,11 +130,11 @@ def align_whisper_output(
        The aligned transcript.
     """
 
-    align_model, align_metadata = whisperx.load_align_model(
+    align_model, align_metadata = load_align_model(
         language_code=language_code, device=device, model_name=align_model
     )
 
-    result = whisperx.align(
+    result = align(
         transcript,
         align_model,
         align_metadata,
@@ -148,7 +153,7 @@ def align_whisper_output(
     return result
 
 
-def process_audio_common(params: SpeechToTextProcessingParams):
+def process_audio_common(params: SpeechToTextProcessingParams, session):
     """
     Process an audio clip to generate a transcript with speaker labels.
 
@@ -159,7 +164,6 @@ def process_audio_common(params: SpeechToTextProcessingParams):
     Returns:
         None: The result is saved in the transcription requests dict.
     """
-    session = db_session.get()
     try:
         start_time = datetime.now()
 
@@ -197,7 +201,7 @@ def process_audio_common(params: SpeechToTextProcessingParams):
             max_speakers=params.diarization_params.max_speakers,
         )
 
-        result = whisperx.assign_word_speakers(
+        result = assign_word_speakers(
             diarization_segments, transcript
         )
 

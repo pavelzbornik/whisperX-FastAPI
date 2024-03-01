@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
 
 from sqlalchemy.orm import Session
-from ..db import get_db_session, db_session
+from ..db import get_db_session
 
 from ..tasks import add_task_to_db
 
@@ -70,7 +70,6 @@ async def transcribe(
 
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
-    db_session.set(session)
 
     identifier = add_task_to_db(
         status="processing",
@@ -131,8 +130,6 @@ def align(
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
-    db_session.set(session)
-
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
 
@@ -178,8 +175,6 @@ async def diarize(
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
-    db_session.set(session)
-
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
 
@@ -221,8 +216,6 @@ async def combine(
 
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})
-
-    db_session.set(session)
 
     try:
         # Read the content of the transcript file
