@@ -1,9 +1,11 @@
-import whisperx
+from whisperx import load_audio
 
 from tempfile import NamedTemporaryFile
 import subprocess
 
 from .files import check_file_extension, VIDEO_EXTENSIONS
+
+from whisperx.audio import SAMPLE_RATE
 
 
 def convert_video_to_audio(file):
@@ -47,4 +49,15 @@ def process_audio_file(audio_file):
 
     if check_file_extension(audio_file) in VIDEO_EXTENSIONS:
         audio_file = convert_video_to_audio(audio_file)
-    return whisperx.load_audio(audio_file)
+    return load_audio(audio_file)
+
+
+def get_audio_duration(audio):
+    """
+    Get the duration of the audio file.
+    Args:
+        audio_file (str): The path to the audio file.
+    Returns:
+        float: The duration of the audio file.
+    """
+    return len(audio) / SAMPLE_RATE

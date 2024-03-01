@@ -12,12 +12,20 @@ def add_task_to_db(
     session,
     status,
     task_type,
-    file_name=None
+    language=None,
+    task_params=None,
+    file_name=None,
+    url=None,
+    audio_duration=None,
 ):
     task = Task(
         status=status,
+        language=language,
         file_name=file_name,
+        url=url,
         task_type=task_type,
+        task_params=task_params,
+        audio_duration=audio_duration,
     )
     session.add(task)
     session.commit()
@@ -62,7 +70,10 @@ def get_task_status_from_db(
             "result": task.result,
             "metadata": {
                 "task_type": task.task_type,
+                "task_params": task.task_params,
+                "language": task.language,
                 "file_name": task.file_name,
+                "url": task.url,
                 "duration": task.duration,
             },
             "error": task.error,

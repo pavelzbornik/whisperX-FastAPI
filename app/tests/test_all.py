@@ -9,6 +9,10 @@ client = TestClient(main.app)
 
 AUDIO_FILE = "test_files/audio_en.mp3"
 
+# for tiny models a and the can be mixed
+TRANSCRIPT_RESULT_1 = " This is a test audio"
+TRANSCRIPT_RESULT_2 = " This is the test audio"
+
 
 @pytest.fixture(autouse=True)
 def set_env_variable(monkeypatch):
@@ -28,12 +32,14 @@ def get_task_status(identifier):
     return None
 
 
-def wait_for_task_completion(identifier, max_attempts=10, delay=10):
+def wait_for_task_completion(identifier, max_attempts=2, delay=10):
     attempts = 0
     while attempts < max_attempts:
         status = get_task_status(identifier)
         if status == "completed":
             return True
+        if status == "failed":
+            raise ValueError("Task failed")
         time.sleep(delay)
         attempts += 1
     return False
@@ -60,7 +66,9 @@ def generic_transcription(client_url):
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
-    assert seg_0_text.startswith(" This is a test audio")
+    assert seg_0_text.startswith(TRANSCRIPT_RESULT_1) or seg_0_text.startswith(
+        TRANSCRIPT_RESULT_2
+    )
 
     return task_result.json()["result"]
 
@@ -175,7 +183,9 @@ def test_flow():
     ) as diarization_file:
 
         # Write the transcription result to the temporary transcript file
-        json.dump(generic_transcription("/service/transcribe"), transcript_file)
+        json.dump(
+            generic_transcription("/service/transcribe"), transcript_file
+        )
         transcript_file.flush()  # Ensure data is written to the file
 
         # Write the aligned transcription result to the temporary aligned transcript file
@@ -188,9 +198,7 @@ def test_flow():
 
         result = combine(aligned_transcript_file.name, diarization_file.name)
 
-        assert result["segments"][0]["text"].startswith(
-            " This is a test audio"
-        )
+        assert result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_2)
 
 
 def test_combine():
@@ -198,7 +206,9 @@ def test_combine():
         "test_files/aligned_transcript.json", "test_files/diarazition.json"
     )
 
-    assert result["segments"][0]["text"].startswith(" This is a test audio")
+    assert result["segments"][0]["text"].startswith(
+        TRANSCRIPT_RESULT_1
+    ) or result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_2)
 
 
 def test_speech_to_text_url():
@@ -222,7 +232,9 @@ def test_speech_to_text_url():
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
-    assert seg_0_text.startswith(" This is a test audio")
+    assert seg_0_text.startswith(TRANSCRIPT_RESULT_1) or seg_0_text.startswith(
+        TRANSCRIPT_RESULT_2
+    )
 
 
 def test_get_all_tasks_status():
