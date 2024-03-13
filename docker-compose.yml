@@ -20,4 +20,5 @@ services:
       - "8000:8000"            
     volumes:
       - ./.cache:/root/.cache
+      - ./app:/app
     network_mode: "host"

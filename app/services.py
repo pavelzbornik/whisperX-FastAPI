@@ -1,39 +1,27 @@
 import whisperx
-import requests
-from tempfile import NamedTemporaryFile
 
 import logging
 from fastapi import HTTPException
 from datetime import datetime
-import torch
-import os
-from dotenv import load_dotenv
-from urllib.parse import urlparse
 
-from .models import Response
-from .audio import process_audio_file
-from .tasks import generate_unique_identifier, update_transcription_status
+from .tasks import (
+    update_task_status_in_db,
+)
+from .schemas import (
+    AlignmentParams,
+    WhsiperModelParams,
+    ASROptions,
+    VADOptions,
+    DiarizationParams,
+)
 
-from .files import validate_extension, ALLOWED_EXTENSIONS
+from sqlalchemy.orm import Session
 
-import gc
-
-# Load environment variables from .env
-load_dotenv()
-
-LANG = "en"
-HF_TOKEN = os.getenv("HF_TOKEN")
-WHISPER_MODEL = os.getenv("WHISPER_MODEL")
-
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-# transcription_model = whisperx.load_model(WHISPER_MODEL, device)
-# diarize_model = whisperx.DiarizationPipeline(
-#     use_auth_token=HF_TOKEN, device=device
-# )
-# align_model, align_metadata = whisperx.load_align_model(
-#     language_code=LANG, device=device
-# )
+from .whisperx_services import (
+    transcribe_with_whisper,
+    align_whisper_output,
+    diarize,
+)
 
 
 def validate_language_code(language_code):
@@ -52,196 +40,13 @@ def validate_language_code(language_code):
         )
 
 
-def transcribe_with_whisper(
-    audio,
-    language=LANG,
-    batch_size: int = 16,
+def process_audio_task(
+    audio_processor,
+    identifier: str,
+    task_type: str,
+    session: Session,
+    *args,
 ):
-    """
-    Transcribe an audio file using the Whisper model.
-
-    Args:
-       audio (Audio): The audio to transcribe.
-       batch_size (int): Batch size for transcription (default 16).
-
-    Returns:
-       Transcript: The transcription result.
-    """
-    model = whisperx.load_model(WHISPER_MODEL, device)
-    result = model.transcribe(
-        audio=audio, batch_size=batch_size, language=language
-    )
-
-    # delete model
-    gc.collect()
-    torch.cuda.empty_cache()
-    del model
-
-    return result
-
-
-def diarize(audio):
-    """
-    Diarize an audio file using the PyAnnotate model.
-
-    Args:
-       audio (Audio): The audio to diarize.
-
-    Returns:
-       Diarizartion: The diarization result.
-    """
-    model = whisperx.DiarizationPipeline(
-        use_auth_token=HF_TOKEN, device=device
-    )
-    result = model(audio)
-
-    # delete model
-    gc.collect()
-    torch.cuda.empty_cache()
-    del model
-
-    return result
-
-
-def align_whisper_output(transcript, audio, language_code):
-    """
-    Align the transcript to the original audio.
-
-    Args:
-       Transcript: The text transcript.
-       audio (Audio): The original audio.
-       language_code (str): The language code.
-
-    Returns:
-       Transcript: The aligned transcript.
-    """
-
-    align_model, align_metadata = whisperx.load_align_model(
-        language_code=language_code, device=device
-    )
-
-    result = whisperx.align(
-        transcript,
-        align_model,
-        align_metadata,
-        audio,
-        device,
-        return_char_alignments=False,
-    )
-
-    # delete model
-    gc.collect()
-    torch.cuda.empty_cache()
-    del align_model
-    del align_metadata
-
-    return result
-
-
-def process_audio_common(audio, identifier, language=LANG):
-    """
-    Process an audio clip to generate a transcript with speaker labels.
-
-    Args:
-        audio (Audio): The input audio
-        identifier (str): The identifier for the request
-
-    Returns:
-        None: The result is saved in the transcription requests dict.
-    """
-    try:
-        start_time = datetime.now()
-        segments_before_alignment = transcribe_with_whisper(
-            audio, language=language
-        )
-        segments_transcript = align_whisper_output(
-            transcript=segments_before_alignment["segments"],
-            audio=audio,
-            language_code=segments_before_alignment["language"],
-        )
-
-        diarization_segments = diarize(audio)
-
-        result = whisperx.assign_word_speakers(
-            diarization_segments, segments_transcript
-        )
-
-        for segment in result["segments"]:
-            del segment["words"]
-
-        del result["word_segments"]
-
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-
-        update_transcription_status(
-            identifier=identifier,
-            status="completed",
-            result=result,
-            task_type="full_process",
-            duration=duration,
-        )
-    except Exception as e:
-        update_transcription_status(
-            identifier=identifier,
-            status="failed",
-            result=None,
-            task_type="full_process",
-            duration=None,
-            error=str(e),
-        )
-
-
-def download_and_process_file(url, background_tasks, language=None):
-    """
-    Download an audio file from a URL and process it in the background.
-
-    Args:
-        audio_url (str): The URL of the audio file to download.
-        background_tasks (BackgroundTasks): The BackgroundTasks object.
-
-    Returns:
-        None: The result is saved in the transcription requests dict.
-    """
-    filename = os.path.basename(urlparse(url).path)
-
-    _, original_extension = os.path.splitext(filename)
-
-    # Create a temporary file with the original extension
-
-    temp_audio_file = NamedTemporaryFile(
-        suffix=original_extension, delete=False
-    )
-    with requests.get(url, stream=True) as response:
-        response.raise_for_status()
-        for chunk in response.iter_content(chunk_size=8192):
-            temp_audio_file.write(chunk)
-
-    # Generate a unique identifier for the transcription request
-    identifier = generate_unique_identifier()
-
-    validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
-    if language:
-        validate_language_code(language)
-
-    # Save the identifier and set the initial status to "processing"
-    update_transcription_status(
-        identifier=identifier,
-        status="processing",
-        file_name=temp_audio_file.name,
-        task_type="full_process",
-    )
-    audio = process_audio_file(temp_audio_file.name)
-    # Use background tasks to perform the audio processing
-    background_tasks.add_task(
-        process_audio_common, audio, identifier, language
-    )
-
-    # Return the identifier to the user
-    return Response(identifier=identifier, message="Task queued")
-
-
-def process_audio_task(audio_processor, identifier, task_type, *args):
     try:
         start_time = datetime.now()
 
@@ -253,58 +58,110 @@ def process_audio_task(audio_processor, identifier, task_type, *args):
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
 
-        update_transcription_status(
-            identifier,
-            "completed",
-            result,
-            task_type=task_type,
-            duration=duration,
+        update_task_status_in_db(
+            identifier=identifier,
+            update_data={
+                "status": "completed",
+                "result": result,
+                "duration": duration,
+            },
+            session=session,
         )
 
     except Exception as e:
         logging.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
-        update_transcription_status(
-            identifier,
-            "failed",
-            result=None,
-            task_type=task_type,
-            duration=None,
-            error=str(e),
+        update_task_status_in_db(
+            identifier=identifier,
+            update_data={
+                "status": "failed",
+                "error": str(e),
+            },
+            session=session,
         )
 
 
-def process_transcribe(audio, identifier, language=LANG):
+def process_transcribe(
+    audio,
+    identifier,
+    model_params: WhsiperModelParams,
+    asr_options_params: ASROptions,
+    vad_options_params: VADOptions,
+    session: Session,
+):
     process_audio_task(
         transcribe_with_whisper,
         identifier,
         "transcription",
+        session,
         audio,
-        language,
+        model_params.task,
+        asr_options_params.model_dump(),
+        vad_options_params.model_dump(),
+        model_params.language,
+        model_params.batch_size,
+        model_params.model,
+        model_params.device,
+        model_params.device_index,
+        model_params.compute_type,
+        model_params.threads,
     )
 
 
-def process_diarize(audio, identifier):
-    process_audio_task(diarize, identifier, "diarization", audio)
+def process_diarize(
+    audio,
+    identifier,
+    device,
+    diarize_params: DiarizationParams,
+    session: Session,
+):
+    process_audio_task(
+        diarize,
+        identifier,
+        "diarization",
+        session,
+        audio,
+        device,
+        diarize_params.min_speakers,
+        diarize_params.max_speakers,
+    )
 
 
-def process_alignment(audio, transcript, identifier):
+def process_alignment(
+    audio,
+    transcript,
+    identifier,
+    device,
+    align_params: AlignmentParams,
+    session: Session,
+):
     process_audio_task(
         align_whisper_output,
         identifier,
         "transcription_alignment",
+        session,
         transcript["segments"],
         audio,
         transcript["language"],
+        device,
+        align_params.align_model,
+        align_params.interpolate_method,
+        align_params.return_char_alignments,
     )
 
 
-def process_speaker_assignment(diarization_segments, transcript, identifier):
+def process_speaker_assignment(
+    diarization_segments,
+    transcript,
+    identifier,
+    session: Session,
+):
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,
         "combine_transcript&diarization",
+        session,
         diarization_segments,
         transcript,
     )
