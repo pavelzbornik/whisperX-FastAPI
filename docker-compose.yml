@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: whisperx-service
+    image: whisperx-service2:2024-11-16
     deploy:
       resources:
         reservations:
