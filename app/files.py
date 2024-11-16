@@ -33,7 +33,7 @@ def validate_extension(filename, allowed_extensions: dict):
     """
     file_extension = os.path.splitext(filename)[1].lower()
     if file_extension not in allowed_extensions:
-        logger.info("Received file upload request: %s", file.filename)
+        logger.info("Received file upload request: %s", filename)
         raise HTTPException(
             status_code=400,
             detail=f"Invalid file extension for file {filename} . Allowed: {allowed_extensions}",
