@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   whisperx-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
+
     image: whisperx-service2:2024-11-16
     deploy:
       resources:
