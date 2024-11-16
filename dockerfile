@@ -7,10 +7,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     python${PYTHON_VERSION} \
     python3-pip \
-    && apt-get -y 
-    ffmpeg \
-    git \
-    sudo wget
+
+RUN export DEBIAN_FRONTEND=noninteractive \
+    apt-get -y ffmpeg git sudo wget
 
 RUN ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
     ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
