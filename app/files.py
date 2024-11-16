@@ -1,7 +1,11 @@
 from tempfile import NamedTemporaryFile
 
+import logging
 import os
 from fastapi import HTTPException
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 AUDIO_EXTENSIONS = {
@@ -29,9 +33,10 @@ def validate_extension(filename, allowed_extensions: dict):
     """
     file_extension = os.path.splitext(filename)[1].lower()
     if file_extension not in allowed_extensions:
+        logger.info("Received file upload request: %s", file.filename)
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid file extension: {file_extension}. Allowed: {allowed_extensions}",
+            detail=f"Invalid file extension for file {filename} . Allowed: {allowed_extensions}",
         )
 
 
