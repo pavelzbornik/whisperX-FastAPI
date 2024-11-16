@@ -118,25 +118,25 @@ async def speech_to_text_url(
 ) -> Response:
     logger.info("Received URL for processing: %s", url)
 
-# Extract filename from HTTP response headers or URL
-with requests.get(url, stream=True) as response:
-    response.raise_for_status()
-    
-    # Check for filename in Content-Disposition header
-    content_disposition = response.headers.get('Content-Disposition')
-    if content_disposition and 'filename=' in content_disposition:
-        filename = content_disposition.split('filename=')[1].strip('"')
-    else:
-        # Fall back to extracting from the URL path
-        filename = os.path.basename(url)
-    
-    # Get the file extension
-    _, original_extension = os.path.splitext(filename)
+    # Extract filename from HTTP response headers or URL
+    with requests.get(url, stream=True) as response:
+        response.raise_for_status()
+        
+        # Check for filename in Content-Disposition header
+        content_disposition = response.headers.get('Content-Disposition')
+        if content_disposition and 'filename=' in content_disposition:
+            filename = content_disposition.split('filename=')[1].strip('"')
+        else:
+            # Fall back to extracting from the URL path
+            filename = os.path.basename(url)
+        
+        # Get the file extension
+        _, original_extension = os.path.splitext(filename)
 
-    # Save the file to a temporary location
-    temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
-    for chunk in response.iter_content(chunk_size=8192):
-        temp_audio_file.write(chunk)
+        # Save the file to a temporary location
+        temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
+        for chunk in response.iter_content(chunk_size=8192):
+            temp_audio_file.write(chunk)
 
     logger.info("File downloaded and saved temporarily: %s", temp_audio_file.name)
     validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
