@@ -1,4 +1,3 @@
-import logging
 from fastapi import (
     File,
     UploadFile,
@@ -45,11 +44,8 @@ from tempfile import NamedTemporaryFile
 
 from ..db import get_db_session
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 stt_router = APIRouter()
+
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
 async def speech_to_text(
@@ -62,15 +58,20 @@ async def speech_to_text(
     file: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
-    logger.info("Received file upload request: %s", file.filename)
+    """
+    Process an audio/video file in the background in full process.
+
+    Args:
+        audio_file (UploadFile): The audio file to process.
+
+    Returns:
+        dict: A dictionary containing the identifier and a message. The message is "Task queued". The identifier is a unique identifier for the transcription request.
+    """
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
-    logger.info("Temporary file saved: %s", temp_file)
-
     audio = process_audio_file(temp_file)
-    logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
 
     identifier = add_task_to_db(
         status="processing",
@@ -87,8 +88,7 @@ async def speech_to_text(
         },
         session=session,
     )
-    logger.info("Task added to database: ID %s", identifier)
-
+    # Create an instance of AudioProcessingParams
     audio_params = SpeechToTextProcessingParams(
         audio=audio,
         identifier=identifier,
@@ -99,8 +99,8 @@ async def speech_to_text(
         diarization_params=diarize_params,
     )
 
+    # Call add_task with the process_audio_common function and the audio_params object
     background_tasks.add_task(process_audio_common, audio_params, session)
-    logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
 
@@ -116,33 +116,24 @@ async def speech_to_text_url(
     url: str = Form(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
-    logger.info("Received URL for processing: %s", url)
 
-    # Extract filename from HTTP response headers or URL
+    filename = os.path.basename(urlparse(url).path)
+
+    _, original_extension = os.path.splitext(filename)
+
+    # Create a temporary file with the original extension
+
+    temp_audio_file = NamedTemporaryFile(
+        suffix=original_extension, delete=False
+    )
     with requests.get(url, stream=True) as response:
         response.raise_for_status()
-        
-        # Check for filename in Content-Disposition header
-        content_disposition = response.headers.get('Content-Disposition')
-        if content_disposition and 'filename=' in content_disposition:
-            filename = content_disposition.split('filename=')[1].strip('"')
-        else:
-            # Fall back to extracting from the URL path
-            filename = os.path.basename(url)
-        
-        # Get the file extension
-        _, original_extension = os.path.splitext(filename)
-
-        # Save the file to a temporary location
-        temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
         for chunk in response.iter_content(chunk_size=8192):
             temp_audio_file.write(chunk)
 
-    logger.info("File downloaded and saved temporarily: %s", temp_audio_file.name)
     validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
 
     audio = process_audio_file(temp_audio_file.name)
-    logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
 
     identifier = add_task_to_db(
         status="processing",
@@ -160,8 +151,7 @@ async def speech_to_text_url(
         url=url,
         session=session,
     )
-    logger.info("Task added to database: ID %s", identifier)
-
+    # Create an instance of AudioProcessingParams
     audio_params = SpeechToTextProcessingParams(
         audio=audio,
         identifier=identifier,
@@ -172,7 +162,7 @@ async def speech_to_text_url(
         diarization_params=diarize_params,
     )
 
+    # Call add_task with the process_audio_common function and the audio_params object
     background_tasks.add_task(process_audio_common, audio_params, session)
-    logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
