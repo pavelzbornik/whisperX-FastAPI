@@ -2,10 +2,7 @@ version: '3.8'
 
 services:
   whisperx-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: whisperx-service
+    image: whisperx-service2:2024-11-16a
     deploy:
       resources:
         reservations:
@@ -17,11 +14,11 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"            
+      - "8000:8000"
     volumes:
-      - whisperx-models-cache:/root/.cache
-      - whisperx-app-volume:/app
+      - "/data/whisperx/cache:/root/.cache"
+      - "/data/whisperx/tmp:/tmp"
 
 volumes:
-  whisperx-models-cache: 
+  whisperx-models-cache:
   whisperx-app-volume:
