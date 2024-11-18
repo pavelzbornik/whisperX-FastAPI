@@ -9,7 +9,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3-pip \
     ffmpeg \
     git \
-    && rm -rf /var/lib/apt/lists/*
+    wget
+
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb \
+    && dpkg -i cuda-keyring_1.1-1_all.deb \
+    && apt-get update \
+    && apt-get -y install cudnn
 
 RUN ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
     ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
