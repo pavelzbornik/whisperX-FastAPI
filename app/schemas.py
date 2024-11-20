@@ -113,6 +113,7 @@ class WhisperModel(str, Enum):
     large_v1 = "large-v1"
     large_v2 = "large-v2"
     large_v3 = "large-v3"
+    large_v3_turbo = "large-v3-turbo"
 
 
 class Device(str, Enum):
