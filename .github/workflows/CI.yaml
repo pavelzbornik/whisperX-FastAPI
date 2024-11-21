@@ -35,4 +35,4 @@ jobs:
       run: docker buildx build --cache-from=type=local,src=/tmp/.buildx-cache --cache-to=type=local,dest=/tmp/.buildx-cache --output=type=docker -t my-app .
 
     - name: Run tests
-      run: docker run my-app pytest
+      run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en my-app pytest
