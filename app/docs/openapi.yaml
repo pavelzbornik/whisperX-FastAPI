@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.wav'', ''.aac'', ''.amr'', ''.wma'', ''.ogg'', ''.awb'',
-    ''.oga'', ''.mp3'', ''.m4a''}
+    AUDIO_EXTENSIONS = {''.amr'', ''.m4a'', ''.awb'', ''.aac'', ''.oga'', ''.wav'',
+    ''.mp3'', ''.ogg'', ''.wma''}
 
 
-    VIDEO_EXTENSIONS = {''.avi'', ''.mov'', ''.wmv'', ''.mkv'', ''.mp4''}
+    VIDEO_EXTENSIONS = {''.wmv'', ''.mkv'', ''.mp4'', ''.avi'', ''.mov''}
 
 
     '
@@ -51,11 +51,6 @@ paths:
       tags:
       - Speech-2-Text
       summary: Speech To Text
-      description: "Process an audio/video file in the background in full process.\n\
-        \nArgs:\n    audio_file (UploadFile): The audio file to process.\n\nReturns:\n\
-        \    dict: A dictionary containing the identifier and a message. The message\
-        \ is \"Task queued\". The identifier is a unique identifier for the transcription\
-        \ request."
       operationId: speech_to_text_speech_to_text_post
       parameters:
       - name: language
@@ -1592,6 +1587,7 @@ components:
       - large-v1
       - large-v2
       - large-v3
+      - large-v3-turbo
       title: WhisperModel
 tags:
 - name: Speech-2-Text
