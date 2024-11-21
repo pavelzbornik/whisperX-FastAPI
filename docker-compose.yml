@@ -19,9 +19,10 @@ services:
     ports:
       - "8000:8000"            
     volumes:
-      - whisperx-models-cache:/root/.cache
-      - whisperx-app-volume:/app
+      - "/data/whisperx/cache:/root/.cache"
+      - "/data/whisperx/tmp:/tmp"
 
 volumes:
   whisperx-models-cache: 
   whisperx-app-volume:
+
