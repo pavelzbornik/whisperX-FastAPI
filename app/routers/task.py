@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from ..db import get_db_session
 from ..schemas import Response, Result, ResultTasks
-
 from ..tasks import (
-    get_task_status_from_db,
-    get_all_tasks_status_from_db,
     delete_task_from_db,
+    get_all_tasks_status_from_db,
+    get_task_status_from_db,
 )
 
 task_router = APIRouter()

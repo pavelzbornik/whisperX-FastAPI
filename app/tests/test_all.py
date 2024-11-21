@@ -1,9 +1,11 @@
-from fastapi.testclient import TestClient
-from app import main
-import time
-import tempfile
 import json
+import tempfile
+import time
+
 import pytest
+from fastapi.testclient import TestClient
+
+from app import main
 
 client = TestClient(main.app)
 
@@ -49,7 +51,6 @@ def wait_for_task_completion(identifier, max_attempts=2, delay=10):
 
 
 def generic_transcription(client_url):
-
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
@@ -128,7 +129,6 @@ def diarize():
 
 
 def combine(aligned_transcript_file, diarazition_file):
-
     with open(aligned_transcript_file, "rb") as transcript_file, open(
         diarazition_file, "rb"
     ) as diarization_result:
@@ -166,12 +166,10 @@ def test_transcribe():
 
 
 def test_align():
-
     assert align("app/tests/test_files/transcript.json") is not None
 
 
 def test_diarize():
-
     assert diarize() is not None
 
 
@@ -184,11 +182,8 @@ def test_flow():
     ) as aligned_transcript_file, tempfile.NamedTemporaryFile(
         mode="w", delete=False
     ) as diarization_file:
-
         # Write the transcription result to the temporary transcript file
-        json.dump(
-            generic_transcription("/service/transcribe"), transcript_file
-        )
+        json.dump(generic_transcription("/service/transcribe"), transcript_file)
         transcript_file.flush()  # Ensure data is written to the file
 
         # Write the aligned transcription result to the temporary aligned transcript file
@@ -210,9 +205,9 @@ def test_combine():
         "app/tests/test_files/diarazition.json",
     )
 
-    assert result["segments"][0]["text"].startswith(
-        TRANSCRIPT_RESULT_1
-    ) or result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_2)
+    assert result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_1) or result[
+        "segments"
+    ][0]["text"].startswith(TRANSCRIPT_RESULT_2)
 
 
 def test_speech_to_text_url():

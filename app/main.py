@@ -1,18 +1,14 @@
 from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 
-from .models import Base
-from .files import (
-    AUDIO_EXTENSIONS,
-    VIDEO_EXTENSIONS,
-)
 from .db import engine
-from .routers import task, stt_services, stt
 from .docs import generate_db_schema, save_openapi_json
-
-from dotenv import load_dotenv
-
+from .files import AUDIO_EXTENSIONS, VIDEO_EXTENSIONS
+from .models import Base
+from .routers import stt, stt_services, task
 
 # Load environment variables from .env
 load_dotenv()
@@ -23,9 +19,7 @@ Base.metadata.create_all(bind=engine)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     save_openapi_json(app)
-    generate_db_schema(
-        Base.metadata.tables.values()
-    )
+    generate_db_schema(Base.metadata.tables.values())
     yield
 
 

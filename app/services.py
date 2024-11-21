@@ -1,27 +1,19 @@
-import whisperx
-
 import logging
-from fastapi import HTTPException
 from datetime import datetime
 
-from .tasks import (
-    update_task_status_in_db,
-)
-from .schemas import (
-    AlignmentParams,
-    WhsiperModelParams,
-    ASROptions,
-    VADOptions,
-    DiarizationParams,
-)
-
+import whisperx
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .whisperx_services import (
-    transcribe_with_whisper,
-    align_whisper_output,
-    diarize,
+from .schemas import (
+    AlignmentParams,
+    ASROptions,
+    DiarizationParams,
+    VADOptions,
+    WhsiperModelParams,
 )
+from .tasks import update_task_status_in_db
+from .whisperx_services import align_whisper_output, diarize, transcribe_with_whisper
 
 
 def validate_language_code(language_code):

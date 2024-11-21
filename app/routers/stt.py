@@ -1,55 +1,33 @@
 import logging
-from fastapi import (
-    File,
-    UploadFile,
-    Form,
-    Depends,
-    APIRouter,
-)
-from fastapi import BackgroundTasks
-
 import os
+from tempfile import NamedTemporaryFile
 from urllib.parse import urlparse
 
-from ..schemas import (
-    Response,
-    ASROptions,
-    VADOptions,
-    WhsiperModelParams,
-    AlignmentParams,
-    DiarizationParams,
-    SpeechToTextProcessingParams,
-)
-
+import requests
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
-from ..audio import (
-    process_audio_file,
-    get_audio_duration,
-)
-
-from ..files import (
-    save_temporary_file,
-    validate_extension,
-    ALLOWED_EXTENSIONS,
-)
-
-from ..tasks import (
-    add_task_to_db,
-)
-
-from ..whisperx_services import process_audio_common
-
-import requests
-from tempfile import NamedTemporaryFile
-
+from ..audio import get_audio_duration, process_audio_file
 from ..db import get_db_session
+from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..schemas import (
+    AlignmentParams,
+    ASROptions,
+    DiarizationParams,
+    Response,
+    SpeechToTextProcessingParams,
+    VADOptions,
+    WhsiperModelParams,
+)
+from ..tasks import add_task_to_db
+from ..whisperx_services import process_audio_common
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 stt_router = APIRouter()
+
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
 async def speech_to_text(
@@ -121,15 +99,15 @@ async def speech_to_text_url(
     # Extract filename from HTTP response headers or URL
     with requests.get(url, stream=True) as response:
         response.raise_for_status()
-        
+
         # Check for filename in Content-Disposition header
-        content_disposition = response.headers.get('Content-Disposition')
-        if content_disposition and 'filename=' in content_disposition:
-            filename = content_disposition.split('filename=')[1].strip('"')
+        content_disposition = response.headers.get("Content-Disposition")
+        if content_disposition and "filename=" in content_disposition:
+            filename = content_disposition.split("filename=")[1].strip('"')
         else:
             # Fall back to extracting from the URL path
             filename = os.path.basename(url)
-        
+
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
 

@@ -1,9 +1,11 @@
-from typing import Dict, Any
-from .models import Task
-from .schemas import TaskSimple, ResultTasks
-from .db import handle_database_errors, get_db_session
-from sqlalchemy.orm import Session
+from typing import Any, Dict
+
 from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from .db import get_db_session, handle_database_errors
+from .models import Task
+from .schemas import ResultTasks, TaskSimple
 
 
 # Add tasks to the database
@@ -59,9 +61,7 @@ def update_task_status_in_db(
 
 # Retrieve task status from the database
 @handle_database_errors
-def get_task_status_from_db(
-    identifier, session: Session = Depends(get_db_session)
-):
+def get_task_status_from_db(identifier, session: Session = Depends(get_db_session)):
     # task = session.query(Task).filter_by(id=identifier).first()
     task = session.query(Task).filter(Task.uuid == identifier).first()
     if task:

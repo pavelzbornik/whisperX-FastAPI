@@ -1,12 +1,11 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 from functools import wraps
-from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException
 
 from dotenv import load_dotenv
+from fastapi import HTTPException
+from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
 
 # Load environment variables from .env
 load_dotenv()

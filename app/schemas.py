@@ -1,10 +1,11 @@
+import os
+from enum import Enum
+from typing import Any, List, Optional
+
+import numpy as np
 from fastapi import Query
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Any
-from enum import Enum
 from whisperx import utils
-import numpy as np
-import os
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 LANG = os.getenv("DEFAULT_LANG", "en")
@@ -140,9 +141,7 @@ class ASROptions(BaseModel):
         )
     )
     patience: float = Field(
-        Query(
-            1.0, description="Optional patience value to use in beam decoding"
-        )
+        Query(1.0, description="Optional patience value to use in beam decoding")
     )
     length_penalty: float = Field(
         Query(1.0, description="Optional token length penalty coefficient")
@@ -253,11 +252,8 @@ class WhsiperModelParams(BaseModel):
 
 
 class AlignmentParams(BaseModel):
-
     align_model: Optional[str] = Field(
-        Query(
-            None, description="Name of phoneme-level ASR model to do alignment"
-        )
+        Query(None, description="Name of phoneme-level ASR model to do alignment")
     )
     interpolate_method: InterpolateMethod = Field(
         Query(
@@ -283,9 +279,7 @@ class DiarizationParams(BaseModel):
 
 
 class SpeechToTextProcessingParams(BaseModel):
-    audio: (
-        np.ndarray
-    )  # NumPy array containing the audio waveform, float32 dtype
+    audio: np.ndarray  # NumPy array containing the audio waveform, float32 dtype
     identifier: str
     vad_options: VADOptions
     asr_options: ASROptions

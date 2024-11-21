@@ -1,23 +1,19 @@
+import gc
+import os
+from datetime import datetime
+
+import torch
 from whisperx import (
-    load_model,
     DiarizationPipeline,
-    load_align_model,
     align,
     assign_word_speakers,
-)
-
-from datetime import datetime
-import torch
-import os
-
-from .tasks import (
-    update_task_status_in_db,
+    load_align_model,
+    load_model,
 )
 
 from .schemas import AlignedTranscription, SpeechToTextProcessingParams
+from .tasks import update_task_status_in_db
 from .transcript import filter_aligned_transcription
-
-import gc
 
 LANG = os.getenv("DEFAULT_LANG", "en")
 HF_TOKEN = os.getenv("HF_TOKEN")
@@ -69,9 +65,7 @@ def transcribe_with_whisper(
         task=task,
         threads=faster_whisper_threads,
     )
-    result = model.transcribe(
-        audio=audio, batch_size=batch_size, language=language
-    )
+    result = model.transcribe(audio=audio, batch_size=batch_size, language=language)
 
     # delete model
     gc.collect()
@@ -92,9 +86,7 @@ def diarize(audio, device, min_speakers=None, max_speakers=None):
        Diarizartion: The diarization result.
     """
     model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
-    result = model(
-        audio=audio, min_speakers=min_speakers, max_speakers=max_speakers
-    )
+    result = model(audio=audio, min_speakers=min_speakers, max_speakers=max_speakers)
 
     # delete model
     gc.collect()

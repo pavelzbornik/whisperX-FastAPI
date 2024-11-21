@@ -1,11 +1,10 @@
-from whisperx import load_audio
-
-from tempfile import NamedTemporaryFile
 import subprocess
+from tempfile import NamedTemporaryFile
 
-from .files import check_file_extension, VIDEO_EXTENSIONS
-
+from whisperx import load_audio
 from whisperx.audio import SAMPLE_RATE
+
+from .files import VIDEO_EXTENSIONS, check_file_extension
 
 
 def convert_video_to_audio(file):

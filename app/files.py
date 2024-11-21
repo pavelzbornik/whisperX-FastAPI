@@ -1,7 +1,7 @@
-from tempfile import NamedTemporaryFile
-
 import logging
 import os
+from tempfile import NamedTemporaryFile
+
 from fastapi import HTTPException
 
 logging.basicConfig(level=logging.INFO)
@@ -60,9 +60,7 @@ def save_temporary_file(temporary_file, original_filename):
     _, original_extension = os.path.splitext(original_filename)
 
     # Create a temporary file with the original extension
-    temp_filename = NamedTemporaryFile(
-        suffix=original_extension, delete=False
-    ).name
+    temp_filename = NamedTemporaryFile(suffix=original_extension, delete=False).name
 
     # Write the contents of the SpooledTemporaryFile to the temporary file
     with open(temp_filename, "wb") as dest:

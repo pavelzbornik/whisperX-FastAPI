@@ -1,51 +1,41 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
-
-from sqlalchemy.orm import Session
-from ..db import get_db_session
-
-from ..tasks import add_task_to_db
-
-from fastapi import BackgroundTasks
-
-from ..schemas import (
-    Response,
-    Transcript,
-    AlignedTranscription,
-    DiarizationSegment,
-    Device,
-    AlignmentParams,
-    WhsiperModelParams,
-    DiarizationParams,
-    ASROptions,
-    VADOptions
-)
-
-from pydantic import ValidationError
-
-import pandas as pd
-
 import json
 
+import pandas as pd
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+)
+from pydantic import ValidationError
+from sqlalchemy.orm import Session
+
+from ..audio import get_audio_duration, process_audio_file
+from ..db import get_db_session
+from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..schemas import (
+    AlignedTranscription,
+    AlignmentParams,
+    ASROptions,
+    Device,
+    DiarizationParams,
+    DiarizationSegment,
+    Response,
+    Transcript,
+    VADOptions,
+    WhsiperModelParams,
+)
 from ..services import (
-    process_transcribe,
-    process_diarize,
     process_alignment,
+    process_diarize,
     process_speaker_assignment,
+    process_transcribe,
 )
-
-from ..audio import (
-    process_audio_file,
-    get_audio_duration,
-)
-
+from ..tasks import add_task_to_db
 from ..transcript import filter_aligned_transcription
-
-from ..files import (
-    save_temporary_file,
-    validate_extension,
-    ALLOWED_EXTENSIONS,
-)
-
 from ..whisperx_services import device
 
 service_router = APIRouter()
@@ -63,9 +53,7 @@ async def transcribe(
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
     session: Session = Depends(get_db_session),
-
 ) -> Response:
-
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -124,9 +112,7 @@ def align(
         # Read the content of the transcript file
         transcript = Transcript(**json.loads(transcript.file.read()))
     except ValidationError as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON content. {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -153,7 +139,7 @@ def align(
         identifier,
         device,
         align_params,
-        session
+        session,
     )
 
     return Response(identifier=identifier, message="Task queued")
@@ -172,7 +158,6 @@ async def diarize(
     ),
     diarize_params: DiarizationParams = Depends(),
 ) -> Response:
-
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -213,30 +198,23 @@ async def combine(
     diarization_result: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ):
-
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})
 
     try:
         # Read the content of the transcript file
-        transcript = AlignedTranscription(
-            **json.loads(aligned_transcript.file.read())
-        )
+        transcript = AlignedTranscription(**json.loads(aligned_transcript.file.read()))
         # removing words within each segment that have missing start, end, or score values
         transcript = filter_aligned_transcription(transcript)
     except ValidationError as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON content. {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
     try:
         # Map JSON to list of models
         diarization_segments = []
         for item in json.loads(diarization_result.file.read()):
             diarization_segments.append(DiarizationSegment(**item))
     except ValidationError as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON content. {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     identifier = add_task_to_db(
         status="processing",
@@ -246,9 +224,7 @@ async def combine(
     )
     background_tasks.add_task(
         process_speaker_assignment,
-        pd.json_normalize(
-            [segment.model_dump() for segment in diarization_segments]
-        ),
+        pd.json_normalize([segment.model_dump() for segment in diarization_segments]),
         transcript.model_dump(),
         identifier,
         session,

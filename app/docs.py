@@ -1,7 +1,8 @@
-from sqlalchemy import inspect
 import json
-import yaml
 import os
+
+import yaml
+from sqlalchemy import inspect
 
 DOCS_PATH = "app/docs"
 
