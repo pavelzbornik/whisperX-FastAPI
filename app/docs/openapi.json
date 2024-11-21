@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.ogg', '.wma', '.mp3', '.oga', '.aac', '.awb', '.wav', '.amr', '.m4a'}\n\nVIDEO_EXTENSIONS = {'.wmv', '.mkv', '.mov', '.avi', '.mp4'}\n\n",
+    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.wav', '.aac', '.amr', '.wma', '.ogg', '.awb', '.oga', '.mp3', '.m4a'}\n\nVIDEO_EXTENSIONS = {'.avi', '.mov', '.wmv', '.mkv', '.mp4'}\n\n",
     "version": "0.0.1"
   },
   "paths": {
@@ -134,14 +134,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/TaskEnum"
-                }
-              ],
+              "$ref": "#/components/schemas/TaskEnum",
               "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-              "default": "transcribe",
-              "title": "Task"
+              "default": "transcribe"
             },
             "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')"
           },
@@ -150,14 +145,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/WhisperModel"
-                }
-              ],
+              "$ref": "#/components/schemas/WhisperModel",
               "description": "Name of the Whisper model to use",
-              "default": "tiny",
-              "title": "Model"
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -166,14 +156,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -218,14 +203,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ComputeType"
-                }
-              ],
+              "$ref": "#/components/schemas/ComputeType",
               "description": "Type of computation",
-              "default": "float16",
-              "title": "Compute Type"
+              "default": "float16"
             },
             "description": "Type of computation"
           },
@@ -252,14 +232,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/InterpolateMethod"
-                }
-              ],
+              "$ref": "#/components/schemas/InterpolateMethod",
               "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-              "default": "nearest",
-              "title": "Interpolate Method"
+              "default": "nearest"
             },
             "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring."
           },
@@ -635,14 +610,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/TaskEnum"
-                }
-              ],
+              "$ref": "#/components/schemas/TaskEnum",
               "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-              "default": "transcribe",
-              "title": "Task"
+              "default": "transcribe"
             },
             "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')"
           },
@@ -651,14 +621,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/WhisperModel"
-                }
-              ],
+              "$ref": "#/components/schemas/WhisperModel",
               "description": "Name of the Whisper model to use",
-              "default": "tiny",
-              "title": "Model"
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -667,14 +632,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -719,14 +679,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ComputeType"
-                }
-              ],
+              "$ref": "#/components/schemas/ComputeType",
               "description": "Type of computation",
-              "default": "float16",
-              "title": "Compute Type"
+              "default": "float16"
             },
             "description": "Type of computation"
           },
@@ -753,14 +708,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/InterpolateMethod"
-                }
-              ],
+              "$ref": "#/components/schemas/InterpolateMethod",
               "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-              "default": "nearest",
-              "title": "Interpolate Method"
+              "default": "nearest"
             },
             "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring."
           },
@@ -1241,14 +1191,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/TaskEnum"
-                }
-              ],
+              "$ref": "#/components/schemas/TaskEnum",
               "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-              "default": "transcribe",
-              "title": "Task"
+              "default": "transcribe"
             },
             "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')"
           },
@@ -1257,14 +1202,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/WhisperModel"
-                }
-              ],
+              "$ref": "#/components/schemas/WhisperModel",
               "description": "Name of the Whisper model to use",
-              "default": "tiny",
-              "title": "Model"
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -1273,14 +1213,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1325,14 +1260,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ComputeType"
-                }
-              ],
+              "$ref": "#/components/schemas/ComputeType",
               "description": "Type of computation",
-              "default": "float16",
-              "title": "Compute Type"
+              "default": "float16"
             },
             "description": "Type of computation"
           },
@@ -1546,14 +1476,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1580,14 +1505,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/InterpolateMethod"
-                }
-              ],
+              "$ref": "#/components/schemas/InterpolateMethod",
               "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-              "default": "nearest",
-              "title": "Interpolate Method"
+              "default": "nearest"
             },
             "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring."
           },
@@ -1649,14 +1569,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },

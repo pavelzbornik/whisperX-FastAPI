@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.ogg'', ''.wma'', ''.mp3'', ''.oga'', ''.aac'', ''.awb'',
-    ''.wav'', ''.amr'', ''.m4a''}
+    AUDIO_EXTENSIONS = {''.wav'', ''.aac'', ''.amr'', ''.wma'', ''.ogg'', ''.awb'',
+    ''.oga'', ''.mp3'', ''.m4a''}
 
 
-    VIDEO_EXTENSIONS = {''.wmv'', ''.mkv'', ''.mov'', ''.avi'', ''.mp4''}
+    VIDEO_EXTENSIONS = {''.avi'', ''.mov'', ''.wmv'', ''.mkv'', ''.mp4''}
 
 
     '
@@ -172,33 +172,27 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/TaskEnum'
+          $ref: '#/components/schemas/TaskEnum'
           description: Whether to perform X->X speech recognition ('transcribe') or
             X->English translation ('translate')
           default: transcribe
-          title: Task
         description: Whether to perform X->X speech recognition ('transcribe') or
           X->English translation ('translate')
       - name: model
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/WhisperModel'
+          $ref: '#/components/schemas/WhisperModel'
           description: Name of the Whisper model to use
           default: tiny
-          title: Model
         description: Name of the Whisper model to use
       - name: device
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/Device'
+          $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
           default: cuda
-          title: Device
         description: Device to use for PyTorch inference
       - name: device_index
         in: query
@@ -233,11 +227,9 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/ComputeType'
+          $ref: '#/components/schemas/ComputeType'
           description: Type of computation
           default: float16
-          title: Compute Type
         description: Type of computation
       - name: align_model
         in: query
@@ -253,12 +245,10 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/InterpolateMethod'
+          $ref: '#/components/schemas/InterpolateMethod'
           description: For word .srt, method to assign timestamps to non-aligned words,
             or merge them into neighboring.
           default: nearest
-          title: Interpolate Method
         description: For word .srt, method to assign timestamps to non-aligned words,
           or merge them into neighboring.
       - name: return_char_alignments
@@ -560,33 +550,27 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/TaskEnum'
+          $ref: '#/components/schemas/TaskEnum'
           description: Whether to perform X->X speech recognition ('transcribe') or
             X->English translation ('translate')
           default: transcribe
-          title: Task
         description: Whether to perform X->X speech recognition ('transcribe') or
           X->English translation ('translate')
       - name: model
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/WhisperModel'
+          $ref: '#/components/schemas/WhisperModel'
           description: Name of the Whisper model to use
           default: tiny
-          title: Model
         description: Name of the Whisper model to use
       - name: device
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/Device'
+          $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
           default: cuda
-          title: Device
         description: Device to use for PyTorch inference
       - name: device_index
         in: query
@@ -621,11 +605,9 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/ComputeType'
+          $ref: '#/components/schemas/ComputeType'
           description: Type of computation
           default: float16
-          title: Compute Type
         description: Type of computation
       - name: align_model
         in: query
@@ -641,12 +623,10 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/InterpolateMethod'
+          $ref: '#/components/schemas/InterpolateMethod'
           description: For word .srt, method to assign timestamps to non-aligned words,
             or merge them into neighboring.
           default: nearest
-          title: Interpolate Method
         description: For word .srt, method to assign timestamps to non-aligned words,
           or merge them into neighboring.
       - name: return_char_alignments
@@ -1013,33 +993,27 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/TaskEnum'
+          $ref: '#/components/schemas/TaskEnum'
           description: Whether to perform X->X speech recognition ('transcribe') or
             X->English translation ('translate')
           default: transcribe
-          title: Task
         description: Whether to perform X->X speech recognition ('transcribe') or
           X->English translation ('translate')
       - name: model
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/WhisperModel'
+          $ref: '#/components/schemas/WhisperModel'
           description: Name of the Whisper model to use
           default: tiny
-          title: Model
         description: Name of the Whisper model to use
       - name: device
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/Device'
+          $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
           default: cuda
-          title: Device
         description: Device to use for PyTorch inference
       - name: device_index
         in: query
@@ -1074,11 +1048,9 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/ComputeType'
+          $ref: '#/components/schemas/ComputeType'
           description: Type of computation
           default: float16
-          title: Compute Type
         description: Type of computation
       - name: beam_size
         in: query
@@ -1240,11 +1212,9 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/Device'
+          $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
           default: cuda
-          title: Device
         description: Device to use for PyTorch inference
       - name: align_model
         in: query
@@ -1260,12 +1230,10 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/InterpolateMethod'
+          $ref: '#/components/schemas/InterpolateMethod'
           description: For word .srt, method to assign timestamps to non-aligned words,
             or merge them into neighboring.
           default: nearest
-          title: Interpolate Method
         description: For word .srt, method to assign timestamps to non-aligned words,
           or merge them into neighboring.
       - name: return_char_alignments
@@ -1306,11 +1274,9 @@ paths:
         in: query
         required: false
         schema:
-          allOf:
-          - $ref: '#/components/schemas/Device'
+          $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
           default: cuda
-          title: Device
         description: Device to use for PyTorch inference
       - name: min_speakers
         in: query

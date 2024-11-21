@@ -7,7 +7,10 @@ import pytest
 
 client = TestClient(main.app)
 
-AUDIO_FILE = "test_files/audio_en.mp3"
+import os
+
+AUDIO_FILE = "app/tests/test_files/audio_en.mp3"
+assert os.path.exists(AUDIO_FILE), f"Audio file not found: {AUDIO_FILE}"
 
 # for tiny models a and the can be mixed
 TRANSCRIPT_RESULT_1 = " This is a test audio"
@@ -164,7 +167,7 @@ def test_transcribe():
 
 def test_align():
 
-    assert align("test_files/transcript.json") is not None
+    assert align("app/tests/test_files/transcript.json") is not None
 
 
 def test_diarize():
@@ -203,7 +206,8 @@ def test_flow():
 
 def test_combine():
     result = combine(
-        "test_files/aligned_transcript.json", "test_files/diarazition.json"
+        "app/tests/test_files/aligned_transcript.json",
+        "app/tests/test_files/diarazition.json",
     )
 
     assert result["segments"][0]["text"].startswith(
