@@ -22,6 +22,8 @@ TRANSCRIPT_RESULT_2 = " This is the test audio"
 @pytest.fixture(autouse=True)
 def set_env_variable(monkeypatch):
     monkeypatch.setenv("DB_URL", "sqlite:///:memory:")
+    # monkeypatch.setenv("DEVICE", "cpu")
+    # monkeypatch.setenv("COMPUTE_TYPE", "int8")
 
 
 def test_index():
@@ -54,7 +56,7 @@ def generic_transcription(client_url):
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            f"{client_url}",
+            f"{client_url}?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
             files=files,
         )
     assert response.status_code == 200
@@ -82,7 +84,7 @@ def align(transcript_file):
         AUDIO_FILE, "rb"
     ) as audio_file:
         response = client.post(
-            "/service/align",
+            f"/service/align?device={os.getenv('DEVICE')}",
             files={
                 "transcript": ("transcript.json", transcript_file),
                 "file": ("audio_file.mp3", audio_file),
@@ -109,7 +111,7 @@ def diarize():
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            "/service/diarize",
+            f"/service/diarize?device={os.getenv('DEVICE')}",
             files=files,
         )
     assert response.status_code == 200
@@ -158,7 +160,7 @@ def combine(aligned_transcript_file, diarazition_file):
 
 
 def test_speech_to_text():
-    assert generic_transcription("/speech-to-text?language=en") is not None
+    assert generic_transcription("/speech-to-text") is not None
 
 
 def test_transcribe():
@@ -213,7 +215,7 @@ def test_combine():
 def test_speech_to_text_url():
     # There is sometimes issue with CUDA memory better run this test individually
     response = client.post(
-        "/speech-to-text-url?language=en",
+        f"/speech-to-text-url?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
         data={
             "url": "https://github.com/tijszwinkels/whisperX-api/raw/main/audio_en.mp3"
         },
@@ -248,7 +250,7 @@ def test_delete_task():
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            "/service/transcribe",
+            f"/service/transcribe?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
             files=files,
         )
     assert response.status_code == 200

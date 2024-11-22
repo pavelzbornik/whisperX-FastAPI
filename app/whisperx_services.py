@@ -19,8 +19,10 @@ LANG = os.getenv("DEFAULT_LANG", "en")
 HF_TOKEN = os.getenv("HF_TOKEN")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-compute_type = "float16" if torch.cuda.is_available() else "int8"
+device = os.getenv("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
+compute_type = os.getenv(
+    "COMPUTE_TYPE", "float16" if torch.cuda.is_available() else "int8"
+)
 
 
 def transcribe_with_whisper(
