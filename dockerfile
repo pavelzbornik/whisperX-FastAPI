@@ -29,9 +29,11 @@ RUN pip install -U pip setuptools --no-cache-dir
 RUN pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 -i https://download.pytorch.org/whl/cu124 --no-cache-dir
 RUN pip install git+https://github.com/m-bain/whisperx.git --no-cache-dir
 
-COPY . .
+COPY requirements requirements
+RUN pip install --no-cache -r requirements/prod.txt
 
-RUN pip install -r requirements.txt --no-cache-dir
+COPY app app
+COPY tests tests
 
 EXPOSE 8000
 ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]

@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.amr'', ''.m4a'', ''.awb'', ''.aac'', ''.oga'', ''.wav'',
-    ''.mp3'', ''.ogg'', ''.wma''}
+    AUDIO_EXTENSIONS = {''.m4a'', ''.awb'', ''.oga'', ''.ogg'', ''.amr'', ''.mp3'',
+    ''.aac'', ''.wma'', ''.wav''}
 
 
-    VIDEO_EXTENSIONS = {''.wmv'', ''.mkv'', ''.mp4'', ''.avi'', ''.mov''}
+    VIDEO_EXTENSIONS = {''.mp4'', ''.mkv'', ''.mov'', ''.avi'', ''.wmv''}
 
 
     '
@@ -1209,7 +1209,7 @@ paths:
         schema:
           $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
-          default: cuda
+          default: cpu
         description: Device to use for PyTorch inference
       - name: align_model
         in: query
@@ -1271,7 +1271,7 @@ paths:
         schema:
           $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
-          default: cuda
+          default: cpu
         description: Device to use for PyTorch inference
       - name: min_speakers
         in: query

@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import time
 
@@ -9,9 +10,8 @@ from app import main
 
 client = TestClient(main.app)
 
-import os
 
-AUDIO_FILE = "app/tests/test_files/audio_en.mp3"
+AUDIO_FILE = "tests/test_files/audio_en.mp3"
 assert os.path.exists(AUDIO_FILE), f"Audio file not found: {AUDIO_FILE}"
 
 # for tiny models a and the can be mixed
@@ -161,6 +161,7 @@ def combine(aligned_transcript_file, diarazition_file):
     return task_result.json()["result"]
 
 
+@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_speech_to_text():
     assert generic_transcription("/speech-to-text") is not None
 
@@ -170,13 +171,15 @@ def test_transcribe():
 
 
 def test_align():
-    assert align("app/tests/test_files/transcript.json") is not None
+    assert align("tests/test_files/transcript.json") is not None
 
 
+@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_diarize():
     assert diarize() is not None
 
 
+@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_flow():
     # Create temporary files for transcript, aligned transcript, and diarization
     with tempfile.NamedTemporaryFile(
@@ -205,8 +208,8 @@ def test_flow():
 
 def test_combine():
     result = combine(
-        "app/tests/test_files/aligned_transcript.json",
-        "app/tests/test_files/diarazition.json",
+        "tests/test_files/aligned_transcript.json",
+        "tests/test_files/diarazition.json",
     )
 
     assert result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_1) or result[
@@ -214,6 +217,7 @@ def test_combine():
     ][0]["text"].startswith(TRANSCRIPT_RESULT_2)
 
 
+@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_speech_to_text_url():
     # There is sometimes issue with CUDA memory better run this test individually
     response = client.post(

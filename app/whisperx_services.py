@@ -78,7 +78,7 @@ def transcribe_with_whisper(
     return result
 
 
-def diarize(audio, device, min_speakers=None, max_speakers=None):
+def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     """
     Diarize an audio file using the PyAnnotate model.
 

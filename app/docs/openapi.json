@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.amr', '.m4a', '.awb', '.aac', '.oga', '.wav', '.mp3', '.ogg', '.wma'}\n\nVIDEO_EXTENSIONS = {'.wmv', '.mkv', '.mp4', '.avi', '.mov'}\n\n",
+    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.m4a', '.awb', '.oga', '.ogg', '.amr', '.mp3', '.aac', '.wma', '.wav'}\n\nVIDEO_EXTENSIONS = {'.mp4', '.mkv', '.mov', '.avi', '.wmv'}\n\n",
     "version": "0.0.1"
   },
   "paths": {
@@ -1477,7 +1477,7 @@
             "schema": {
               "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda"
+              "default": "cpu"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1570,7 +1570,7 @@
             "schema": {
               "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda"
+              "default": "cpu"
             },
             "description": "Device to use for PyTorch inference"
           },
