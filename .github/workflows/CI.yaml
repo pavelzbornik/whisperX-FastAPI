@@ -36,9 +36,9 @@ jobs:
       with:
         context: .
         push: false
-        tags: whisperX-FastAPI:latest
+        tags: whisperx-fastapi:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
     - name: Run tests
-      run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --entrypoint pytest whisperX-FastAPI:latest
+      run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --entrypoint pytest whisperx-fastapi:latest
