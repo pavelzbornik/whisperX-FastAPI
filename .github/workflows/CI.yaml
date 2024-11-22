@@ -31,17 +31,15 @@ jobs:
         docker-images: false
         swap-storage: true
 
-    - name: Build Docker image
+    - name: Build and export to Docker
       uses: docker/build-push-action@v6
       with:
         context: .
+        load: true
         push: false
         tags: whisperx-fastapi:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
-
-    - name: Load Docker image
-      run: docker load -i $(docker save whisperx-fastapi:latest -o whisperx-fastapi.tar)
 
     - name: Run tests
       run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --entrypoint pytest whisperx-fastapi:latest

@@ -20,6 +20,7 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+compute_type = "float16" if torch.cuda.is_available() else "int8"
 
 
 def transcribe_with_whisper(
@@ -32,7 +33,7 @@ def transcribe_with_whisper(
     model: str = WHISPER_MODEL,
     device: str = device,
     device_index: int = 0,
-    compute_type: str = "float16",
+    compute_type: str = compute_type,
     threads: int = 0,
 ):
     """
