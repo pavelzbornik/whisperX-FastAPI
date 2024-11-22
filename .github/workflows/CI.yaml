@@ -10,7 +10,7 @@ on:
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
-  build-and-push:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +27,7 @@ jobs:
         android: true
         dotnet: true
         haskell: true
-        large-packages: true
+        large-packages: false
         docker-images: false
         swap-storage: true
 
@@ -39,6 +39,9 @@ jobs:
         tags: whisperx-fastapi:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
+    - name: Load Docker image
+      run: docker load -i $(docker save whisperx-fastapi:latest -o whisperx-fastapi.tar)
 
     - name: Run tests
       run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --entrypoint pytest whisperx-fastapi:latest
