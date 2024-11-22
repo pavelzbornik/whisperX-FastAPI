@@ -1,6 +1,7 @@
 """This module contains the schema definitions for the WhisperX FastAPI application."""
 
 import os
+from datetime import datetime
 from enum import Enum
 from typing import Any, List, Optional
 
@@ -30,6 +31,8 @@ class Metadata(BaseModel):
     url: Optional[str]
     duration: Optional[float]
     audio_duration: Optional[float] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
 
 class TaskSimple(BaseModel):

@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from ..audio import get_audio_duration, process_audio_file
 from ..db import get_db_session
 from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..logger import logger  # Import the logger from the new module
 from ..schemas import (
     AlignmentParams,
     ASROptions,
@@ -30,7 +31,6 @@ from ..whisperx_services import process_audio_common
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 stt_router = APIRouter()
 
@@ -67,10 +67,11 @@ async def speech_to_text(
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
-    logger.info("Temporary file saved: %s", temp_file)
+    logger.info("%s saved as temporary file: %s", file.filename, temp_file)
 
     audio = process_audio_file(temp_file)
-    logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
+    audio_duration = get_audio_duration(audio)
+    logger.info("Audio file %s lenght: %s seconds", file.filename, audio_duration)
 
     identifier = add_task_to_db(
         status="processing",

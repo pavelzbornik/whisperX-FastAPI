@@ -1,12 +1,12 @@
 """This module provides services for processing audio tasks including transcription, diarization, alignment, and speaker assignment using WhisperX and FastAPI."""
 
-import logging
 from datetime import datetime
 
 import whisperx
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from .logger import logger  # Import the logger from the new module
 from .schemas import (
     AlignmentParams,
     ASROptions,
@@ -53,6 +53,7 @@ def process_audio_task(
     """
     try:
         start_time = datetime.now()
+        logger.info(f"Starting {task_type} task for identifier {identifier}")
 
         result = audio_processor(*args)
 
@@ -61,6 +62,9 @@ def process_audio_task(
 
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
+        logger.info(
+            f"Completed {task_type} task for identifier {identifier}. Duration: {duration}s"
+        )
 
         update_task_status_in_db(
             identifier=identifier,
@@ -75,7 +79,7 @@ def process_audio_task(
         )
 
     except (ValueError, TypeError, RuntimeError) as e:
-        logging.error(
+        logger.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
         update_task_status_in_db(
@@ -84,12 +88,12 @@ def process_audio_task(
             session=session,
         )
     except MemoryError as e:
-        logging.error(
+        logger.error(
             f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
         )
         update_task_status_in_db(
             identifier=identifier,
-            update_data={"status": "failed", "error": "Out of memory"},
+            update_data={"status": "failed", "error": str(e)},
             session=session,
         )
 

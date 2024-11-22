@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from ..audio import get_audio_duration, process_audio_file
 from ..db import get_db_session
 from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..logger import logger  # Import the logger from the new module
 from ..schemas import (
     AlignedTranscription,
     AlignmentParams,
@@ -75,6 +76,8 @@ async def transcribe(
     Returns:
         Response: Confirmation message of task queuing.
     """
+    logger.info("Received transcription request for file: %s", file.filename)
+
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -105,6 +108,7 @@ async def transcribe(
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")
 
 
@@ -127,7 +131,7 @@ def align(
     ),
     align_params: AlignmentParams = Depends(),
     session: Session = Depends(get_db_session),
-):
+) -> Response:
     """
     Align a transcript with an audio file.
 
@@ -142,12 +146,19 @@ def align(
     Returns:
         Response: Confirmation message of task queuing.
     """
+    logger.info(
+        "Received alignment request for file: %s and transcript: %s",
+        file.filename,
+        transcript.filename,
+    )
+
     validate_extension(transcript.filename, {".json"})
 
     try:
         # Read the content of the transcript file
         transcript = Transcript(**json.loads(transcript.file.read()))
     except ValidationError as e:
+        logger.error("Invalid JSON content in transcript file: %s", str(e))
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
@@ -179,6 +190,7 @@ def align(
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")
 
 
@@ -208,6 +220,8 @@ async def diarize(
     Returns:
         Response: Confirmation message of task queuing.
     """
+    logger.info("Received diarization request for file: %s", file.filename)
+
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -235,6 +249,7 @@ async def diarize(
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")
 
 
@@ -248,7 +263,7 @@ async def combine(
     aligned_transcript: UploadFile = File(...),
     diarization_result: UploadFile = File(...),
     session: Session = Depends(get_db_session),
-):
+) -> Response:
     """
     Combine a transcript with diarization results.
 
@@ -261,6 +276,12 @@ async def combine(
     Returns:
         Response: Confirmation message of task queuing.
     """
+    logger.info(
+        "Received combine request for aligned transcript: %s and diarization result: %s",
+        aligned_transcript.filename,
+        diarization_result.filename,
+    )
+
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})
 
@@ -270,6 +291,7 @@ async def combine(
         # removing words within each segment that have missing start, end, or score values
         transcript = filter_aligned_transcription(transcript)
     except ValidationError as e:
+        logger.error("Invalid JSON content in aligned transcript file: %s", str(e))
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
     try:
         # Map JSON to list of models
@@ -277,6 +299,7 @@ async def combine(
         for item in json.loads(diarization_result.file.read()):
             diarization_segments.append(DiarizationSegment(**item))
     except ValidationError as e:
+        logger.error("Invalid JSON content in diarization result file: %s", str(e))
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     identifier = add_task_to_db(
@@ -294,4 +317,5 @@ async def combine(
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")

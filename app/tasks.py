@@ -108,6 +108,7 @@ def get_task_status_from_db(identifier, session: Session = Depends(get_db_sessio
                 "file_name": task.file_name,
                 "url": task.url,
                 "duration": task.duration,
+                "audio_duration": task.audio_duration,
                 "start_time": task.start_time,
                 "end_time": task.end_time,
             },

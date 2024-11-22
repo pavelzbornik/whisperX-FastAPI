@@ -15,6 +15,8 @@
 | `task_type` | Type/category of the task | VARCHAR | True | None | False |
 | `task_params` | Parameters of the task | JSON | True | None | False |
 | `duration` | Duration of the task execution | FLOAT | True | None | False |
+| `start_time` | Start time of the task execution | DATETIME | True | None | False |
+| `end_time` | End time of the task execution | DATETIME | True | None | False |
 | `error` | Error message, if any, associated with the task | VARCHAR | True | None | False |
 | `created_at` | Date and time of creation | DATETIME | True | None | False |
 | `updated_at` | Date and time of last update | DATETIME | True | None | False |

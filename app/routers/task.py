@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..db import get_db_session
+from ..logger import logger  # Import the logger from the new module
 from ..schemas import Response, Result, ResultTasks
 from ..tasks import (
     delete_task_from_db,
@@ -27,6 +28,7 @@ async def get_all_tasks_status(
     Returns:
         ResultTasks: The status of all tasks.
     """
+    logger.info("Retrieving status of all tasks")
     return get_all_tasks_status_from_db(session)
 
 
@@ -48,15 +50,14 @@ async def get_transcription_status(
     Raises:
         HTTPException: If the identifier is not found.
     """
-    # Check if the identifier exists in the transcription_requests dictionary
-
+    logger.info("Retrieving status for task ID: %s", identifier)
     status = get_task_status_from_db(identifier, session)
 
     if status is not None:
-        # If the identifier is found, return the status
+        logger.info("Status retrieved for task ID: %s", identifier)
         return status
     else:
-        # If the identifier is not found, return a 404 response
+        logger.error("Task ID not found: %s", identifier)
         raise HTTPException(status_code=404, detail="Identifier not found")
 
 
@@ -78,7 +79,10 @@ async def delete_task(
     Raises:
         HTTPException: If the task is not found.
     """
+    logger.info("Deleting task ID: %s", identifier)
     if delete_task_from_db(identifier, session):
+        logger.info("Task deleted: ID %s", identifier)
         return Response(identifier=identifier, message="Task deleted")
     else:
+        logger.error("Task not found: ID %s", identifier)
         raise HTTPException(status_code=404, detail="Task not found")

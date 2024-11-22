@@ -1,5 +1,9 @@
 """Main entry point for the FastAPI application."""
 
+from .warnings_filter import filter_warnings
+
+filter_warnings()
+
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -81,6 +85,7 @@ VIDEO_EXTENSIONS = {VIDEO_EXTENSIONS}
     lifespan=lifespan,
 )
 
+# Include routers
 app.include_router(stt.stt_router)
 app.include_router(task.task_router)
 app.include_router(stt_services.service_router)

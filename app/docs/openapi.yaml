@@ -36,11 +36,11 @@ info:
 
     ## Supported file extensions:
 
-    AUDIO_EXTENSIONS = {''.m4a'', ''.awb'', ''.oga'', ''.ogg'', ''.amr'', ''.mp3'',
-    ''.aac'', ''.wma'', ''.wav''}
+    AUDIO_EXTENSIONS = {''.mp3'', ''.wma'', ''.wav'', ''.oga'', ''.ogg'', ''.awb'',
+    ''.aac'', ''.amr'', ''.m4a''}
 
 
-    VIDEO_EXTENSIONS = {''.mp4'', ''.mkv'', ''.mov'', ''.avi'', ''.wmv''}
+    VIDEO_EXTENSIONS = {''.mp4'', ''.wmv'', ''.mkv'', ''.avi'', ''.mov''}
 
 
     '
@@ -51,6 +51,15 @@ paths:
       tags:
       - Speech-2-Text
       summary: Speech To Text
+      description: "Process an uploaded audio file for speech-to-text conversion.\n\
+        \nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n\
+        \    model_params (WhsiperModelParams): Whisper model parameters.\n    align_params\
+        \ (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams):\
+        \ Diarization parameters.\n    asr_options_params (ASROptions): ASR options\
+        \ parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n\
+        \    file (UploadFile): Uploaded audio file.\n    session (Session): Database\
+        \ session dependency.\n\nReturns:\n    Response: Confirmation message of task\
+        \ queuing."
       operationId: speech_to_text_speech_to_text_post
       parameters:
       - name: language
@@ -429,6 +438,14 @@ paths:
       tags:
       - Speech-2-Text
       summary: Speech To Text Url
+      description: "Process an audio file from a URL for speech-to-text conversion.\n\
+        \nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n\
+        \    model_params (WhsiperModelParams): Whisper model parameters.\n    align_params\
+        \ (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams):\
+        \ Diarization parameters.\n    asr_options_params (ASROptions): ASR options\
+        \ parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n\
+        \    url (str): URL of the audio file.\n    session (Session): Database session\
+        \ dependency.\n\nReturns:\n    Response: Confirmation message of task queuing."
       operationId: speech_to_text_url_speech_to_text_url_post
       parameters:
       - name: language
@@ -807,6 +824,9 @@ paths:
       tags:
       - Tasks Management
       summary: Get All Tasks Status
+      description: "Retrieve the status of all tasks.\n\nArgs:\n    session (Session):\
+        \ Database session dependency.\n\nReturns:\n    ResultTasks: The status of\
+        \ all tasks."
       operationId: get_all_tasks_status_task_all_get
       responses:
         '200':
@@ -820,6 +840,10 @@ paths:
       tags:
       - Tasks Management
       summary: Get Transcription Status
+      description: "Retrieve the status of a specific task by its identifier.\n\n\
+        Args:\n    identifier (str): The identifier of the task.\n    session (Session):\
+        \ Database session dependency.\n\nReturns:\n    Result: The status of the\
+        \ task.\n\nRaises:\n    HTTPException: If the identifier is not found."
       operationId: get_transcription_status_task__identifier__get
       parameters:
       - name: identifier
@@ -846,6 +870,10 @@ paths:
       tags:
       - Tasks Management
       summary: Delete Task
+      description: "Delete a specific task by its identifier.\n\nArgs:\n    identifier\
+        \ (str): The identifier of the task.\n    session (Session): Database session\
+        \ dependency.\n\nReturns:\n    Response: Confirmation message of task deletion.\n\
+        \nRaises:\n    HTTPException: If the task is not found."
       operationId: delete_task_task__identifier__delete_delete
       parameters:
       - name: identifier
@@ -872,6 +900,13 @@ paths:
       tags:
       - Speech-2-Text services
       summary: 1. Transcribe
+      description: "Transcribe an uploaded audio file.\n\nArgs:\n    background_tasks\
+        \ (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams):\
+        \ Whisper model parameters.\n    asr_options_params (ASROptions): ASR options\
+        \ parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n\
+        \    file (UploadFile): Uploaded audio file.\n    session (Session): Database\
+        \ session dependency.\n\nReturns:\n    Response: Confirmation message of task\
+        \ queuing."
       operationId: 1__Transcribe_service_transcribe_post
       parameters:
       - name: language
@@ -1201,6 +1236,12 @@ paths:
       tags:
       - Speech-2-Text services
       summary: 2. Align Transcript
+      description: "Align a transcript with an audio file.\n\nArgs:\n    background_tasks\
+        \ (BackgroundTasks): Background tasks dependency.\n    transcript (UploadFile):\
+        \ Uploaded transcript file.\n    file (UploadFile): Uploaded audio file.\n\
+        \    device (Device): Device for PyTorch inference.\n    align_params (AlignmentParams):\
+        \ Alignment parameters.\n    session (Session): Database session dependency.\n\
+        \nReturns:\n    Response: Confirmation message of task queuing."
       operationId: 2__Align_Transcript_service_align_post
       parameters:
       - name: device
@@ -1209,7 +1250,7 @@ paths:
         schema:
           $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
-          default: cpu
+          default: cuda
         description: Device to use for PyTorch inference
       - name: align_model
         in: query
@@ -1251,7 +1292,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Response'
         '422':
           description: Validation Error
           content:
@@ -1263,6 +1305,12 @@ paths:
       tags:
       - Speech-2-Text services
       summary: 3. Diarize
+      description: "Perform diarization on an uploaded audio file.\n\nArgs:\n    background_tasks\
+        \ (BackgroundTasks): Background tasks dependency.\n    file (UploadFile):\
+        \ Uploaded audio file.\n    session (Session): Database session dependency.\n\
+        \    device (Device): Device for PyTorch inference.\n    diarize_params (DiarizationParams):\
+        \ Diarization parameters.\n\nReturns:\n    Response: Confirmation message\
+        \ of task queuing."
       operationId: 3__Diarize_service_diarize_post
       parameters:
       - name: device
@@ -1271,7 +1319,7 @@ paths:
         schema:
           $ref: '#/components/schemas/Device'
           description: Device to use for PyTorch inference
-          default: cpu
+          default: cuda
         description: Device to use for PyTorch inference
       - name: min_speakers
         in: query
@@ -1317,6 +1365,12 @@ paths:
       tags:
       - Speech-2-Text services
       summary: 4. Combine Transcript And Diarization Result
+      description: "Combine a transcript with diarization results.\n\nArgs:\n    background_tasks\
+        \ (BackgroundTasks): Background tasks dependency.\n    aligned_transcript\
+        \ (UploadFile): Uploaded aligned transcript file.\n    diarization_result\
+        \ (UploadFile): Uploaded diarization result file.\n    session (Session):\
+        \ Database session dependency.\n\nReturns:\n    Response: Confirmation message\
+        \ of task queuing."
       operationId: 4__Combine_Transcript_and_Diarization_result_service_combine_post
       requestBody:
         content:
@@ -1329,7 +1383,8 @@ paths:
           description: Successful Response
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: '#/components/schemas/Response'
         '422':
           description: Validation Error
           content:
@@ -1417,12 +1472,14 @@ components:
       - float32
       - int8
       title: ComputeType
+      description: Enum for compute types.
     Device:
       type: string
       enum:
       - cuda
       - cpu
       title: Device
+      description: Enum for device types.
     HTTPValidationError:
       properties:
         detail:
@@ -1439,6 +1496,7 @@ components:
       - linear
       - ignore
       title: InterpolateMethod
+      description: Enum for interpolation methods.
     Metadata:
       properties:
         task_type:
@@ -1474,6 +1532,18 @@ components:
           - type: number
           - type: 'null'
           title: Audio Duration
+        start_time:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Start Time
+        end_time:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: End Time
       type: object
       required:
       - task_type
@@ -1483,6 +1553,7 @@ components:
       - url
       - duration
       title: Metadata
+      description: Metadata model for task information.
     Response:
       properties:
         identifier:
@@ -1496,6 +1567,7 @@ components:
       - identifier
       - message
       title: Response
+      description: Response model for API responses.
     Result:
       properties:
         status:
@@ -1517,6 +1589,8 @@ components:
       - metadata
       - error
       title: Result
+      description: Model for a result with status, result data, metadata, and optional
+        error.
     ResultTasks:
       properties:
         tasks:
@@ -1528,12 +1602,14 @@ components:
       required:
       - tasks
       title: ResultTasks
+      description: Model for a list of simple tasks.
     TaskEnum:
       type: string
       enum:
       - transcribe
       - translate
       title: TaskEnum
+      description: Enum for task types.
     TaskSimple:
       properties:
         identifier:
@@ -1551,6 +1627,7 @@ components:
       - status
       - task_type
       title: TaskSimple
+      description: Simple task model with basic task information.
     ValidationError:
       properties:
         loc:
@@ -1589,6 +1666,7 @@ components:
       - large-v3
       - large-v3-turbo
       title: WhisperModel
+      description: Enum for Whisper model types.
 tags:
 - name: Speech-2-Text
   description: Operations related to transcript

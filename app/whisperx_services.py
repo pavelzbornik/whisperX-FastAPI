@@ -1,4 +1,5 @@
 """This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
+
 import gc
 import os
 from datetime import datetime
@@ -12,6 +13,7 @@ from whisperx import (
     load_model,
 )
 
+from .logger import logger  # Import the logger from the new module
 from .schemas import AlignedTranscription, SpeechToTextProcessingParams
 from .tasks import update_task_status_in_db
 from .transcript import filter_aligned_transcription
@@ -53,6 +55,11 @@ def transcribe_with_whisper(
     Returns:
        Transcript: The transcription result.
     """
+    logger.debug(
+        "Starting transcription with Whisper model: %s on device: %s",
+        WHISPER_MODEL,
+        device,
+    )
     faster_whisper_threads = 4
     if (threads := threads) > 0:
         torch.set_num_threads(threads)
@@ -76,6 +83,7 @@ def transcribe_with_whisper(
     torch.cuda.empty_cache()
     del model
 
+    logger.debug("Completed transcription")
     return result
 
 
@@ -89,6 +97,7 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     Returns:
        Diarizartion: The diarization result.
     """
+    logger.debug("Starting diarization with device: %s", device)
     model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
     result = model(audio=audio, min_speakers=min_speakers, max_speakers=max_speakers)
 
@@ -97,6 +106,7 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     torch.cuda.empty_cache()
     del model
 
+    logger.debug("Completed diarization with device: %s", device)
     return result
 
 
@@ -123,6 +133,11 @@ def align_whisper_output(
     Returns:
        The aligned transcript.
     """
+    logger.debug(
+        "Starting alignment for language code: %s on device: %s",
+        language_code,
+        device,
+    )
     align_model, align_metadata = load_align_model(
         language_code=language_code, device=device, model_name=align_model
     )
@@ -143,6 +158,7 @@ def align_whisper_output(
     del align_model
     del align_metadata
 
+    logger.debug("Completed alignment")
     return result
 
 
@@ -159,8 +175,11 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
     """
     try:
         start_time = datetime.now()
+        logger.info(
+            "Starting full audio processing for identifier: %s",
+            params.identifier,
+        )
 
-        print(params.whisper_model_params.task.value)
         segments_before_alignment = transcribe_with_whisper(
             audio=params.audio,
             task=params.whisper_model_params.task,
@@ -203,6 +222,11 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
 
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
+        logger.info(
+            "Completed full audio processing for identifier: %s. Duration: %ss",
+            params.identifier,
+            duration,
+        )
 
         update_task_status_in_db(
             identifier=params.identifier,
@@ -210,15 +234,31 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
                 "status": "completed",
                 "result": result,
                 "duration": duration,
+                "start_time": start_time,
+                "end_time": end_time,
             },
             session=session,
         )
     except (RuntimeError, ValueError, KeyError) as e:
+        logger.error(
+            "Audio processing failed for identifier: %s. Error: %s",
+            params.identifier,
+            str(e),
+        )
         update_task_status_in_db(
             identifier=params.identifier,
             update_data={
                 "status": "failed",
                 "error": str(e),
             },
+            session=session,
+        )
+    except MemoryError as e:
+        logger.error(
+            f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
+        )
+        update_task_status_in_db(
+            identifier=params.identifier,
+            update_data={"status": "failed", "error": str(e)},
             session=session,
         )
