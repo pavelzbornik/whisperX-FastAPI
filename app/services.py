@@ -68,6 +68,8 @@ def process_audio_task(
                 "status": "completed",
                 "result": result,
                 "duration": duration,
+                "start_time": start_time,
+                "end_time": end_time,
             },
             session=session,
         )
@@ -79,6 +81,15 @@ def process_audio_task(
         update_task_status_in_db(
             identifier=identifier,
             update_data={"status": "failed", "error": str(e)},
+            session=session,
+        )
+    except MemoryError as e:
+        logging.error(
+            f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
+        )
+        update_task_status_in_db(
+            identifier=identifier,
+            update_data={"status": "failed", "error": "Out of memory"},
             session=session,
         )
 

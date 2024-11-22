@@ -21,6 +21,8 @@ def add_task_to_db(
     file_name=None,
     url=None,
     audio_duration=None,
+    start_time=None,
+    end_time=None,
 ):
     """
     Add a new task to the database.
@@ -34,6 +36,8 @@ def add_task_to_db(
         file_name (str, optional): Name of the file associated with the task. Defaults to None.
         url (str, optional): URL associated with the task. Defaults to None.
         audio_duration (float, optional): Duration of the audio file. Defaults to None.
+        start_time (datetime, optional): Start time of the task. Defaults to None.
+        end_time (datetime, optional): End time of the task. Defaults to None.
 
     Returns:
         str: UUID of the newly created task.
@@ -46,6 +50,8 @@ def add_task_to_db(
         task_type=task_type,
         task_params=task_params,
         audio_duration=audio_duration,
+        start_time=start_time,
+        end_time=end_time,
     )
     session.add(task)
     session.commit()
@@ -102,6 +108,8 @@ def get_task_status_from_db(identifier, session: Session = Depends(get_db_sessio
                 "file_name": task.file_name,
                 "url": task.url,
                 "duration": task.duration,
+                "start_time": task.start_time,
+                "end_time": task.end_time,
             },
             "error": task.error,
         }

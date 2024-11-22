@@ -47,6 +47,8 @@ class Task(Base):
     task_type = Column(String, comment="Type/category of the task")
     task_params = Column(JSON, comment="Parameters of the task")
     duration = Column(Float, comment="Duration of the task execution")
+    start_time = Column(DateTime, comment="Start time of the task execution")
+    end_time = Column(DateTime, comment="End time of the task execution")
     error = Column(String, comment="Error message, if any, associated with the task")
     created_at = Column(
         DateTime, default=datetime.utcnow, comment="Date and time of creation"

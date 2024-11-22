@@ -6,6 +6,7 @@ It includes endpoints for processing uploaded audio files and audio files from U
 
 import logging
 import os
+from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 import requests
@@ -84,6 +85,7 @@ async def speech_to_text(
             "vad_options": vad_options_params.model_dump(),
             **diarize_params.model_dump(),
         },
+        start_time=datetime.utcnow(),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
@@ -173,6 +175,7 @@ async def speech_to_text_url(
             **diarize_params.model_dump(),
         },
         url=url,
+        start_time=datetime.utcnow(),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
