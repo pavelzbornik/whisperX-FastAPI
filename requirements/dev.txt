@@ -1,8 +1,6 @@
 # Everything the developer needs in addition to the production requirements
 -r prod.txt
 
-# Testing
-pytest==8.3.3
 
 # Lint and code style
 black==24.10.0

@@ -1,3 +1,5 @@
+"""This module provides database connection and session management."""
+
 import os
 from functools import wraps
 
@@ -17,6 +19,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db_session():
+    """Provide a transactional scope around a series of operations."""
     db = SessionLocal()
     try:
         yield db
@@ -25,6 +28,8 @@ def get_db_session():
 
 
 def handle_database_errors(func):
+    """Handle database errors and raise HTTP exceptions."""
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:

@@ -1,3 +1,5 @@
+"""This module provides utility functions for file handling."""
+
 import logging
 import os
 from tempfile import NamedTemporaryFile
@@ -53,8 +55,9 @@ def check_file_extension(file):
 
 def save_temporary_file(temporary_file, original_filename):
     """
-    Save the contents of a SpooledTemporaryFile to a named temporary file
-    and return the file path while preserving the original file extension.
+    Save the contents of a SpooledTemporaryFile to a named temporary file.
+
+    Return the file path while preserving the original file extension.
     """
     # Extract the original file extension
     _, original_extension = os.path.splitext(original_filename)

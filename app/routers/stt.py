@@ -1,7 +1,12 @@
+"""
+This module contains the FastAPI routes for speech-to-text processing.
+
+It includes endpoints for processing uploaded audio files and audio files from URLs.
+"""
+
 import logging
 import os
 from tempfile import NamedTemporaryFile
-from urllib.parse import urlparse
 
 import requests
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
@@ -40,6 +45,22 @@ async def speech_to_text(
     file: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
+    """
+    Process an uploaded audio file for speech-to-text conversion.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        model_params (WhsiperModelParams): Whisper model parameters.
+        align_params (AlignmentParams): Alignment parameters.
+        diarize_params (DiarizationParams): Diarization parameters.
+        asr_options_params (ASROptions): ASR options parameters.
+        vad_options_params (VADOptions): VAD options parameters.
+        file (UploadFile): Uploaded audio file.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
     logger.info("Received file upload request: %s", file.filename)
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
@@ -94,6 +115,22 @@ async def speech_to_text_url(
     url: str = Form(...),
     session: Session = Depends(get_db_session),
 ) -> Response:
+    """
+    Process an audio file from a URL for speech-to-text conversion.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        model_params (WhsiperModelParams): Whisper model parameters.
+        align_params (AlignmentParams): Alignment parameters.
+        diarize_params (DiarizationParams): Diarization parameters.
+        asr_options_params (ASROptions): ASR options parameters.
+        vad_options_params (VADOptions): VAD options parameters.
+        url (str): URL of the audio file.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
     logger.info("Received URL for processing: %s", url)
 
     # Extract filename from HTTP response headers or URL

@@ -1,3 +1,5 @@
+"""This module defines the database models for the application."""
+
 from datetime import datetime
 from uuid import uuid4
 

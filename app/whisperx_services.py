@@ -1,3 +1,4 @@
+"""This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
 import gc
 import os
 from datetime import datetime
@@ -122,7 +123,6 @@ def align_whisper_output(
     Returns:
        The aligned transcript.
     """
-
     align_model, align_metadata = load_align_model(
         language_code=language_code, device=device, model_name=align_model
     )
@@ -213,7 +213,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
             },
             session=session,
         )
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError) as e:
         update_task_status_in_db(
             identifier=params.identifier,
             update_data={

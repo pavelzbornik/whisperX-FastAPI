@@ -1,3 +1,9 @@
+"""
+This module provides API endpoints for speech-to-text services including transcription.
+
+Alignment, diarization, and combining transcripts with diarization results.
+"""
+
 import json
 
 import pandas as pd
@@ -54,6 +60,20 @@ async def transcribe(
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
     session: Session = Depends(get_db_session),
 ) -> Response:
+    """
+    Transcribe an uploaded audio file.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        model_params (WhsiperModelParams): Whisper model parameters.
+        asr_options_params (ASROptions): ASR options parameters.
+        vad_options_params (VADOptions): VAD options parameters.
+        file (UploadFile): Uploaded audio file.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -106,6 +126,20 @@ def align(
     align_params: AlignmentParams = Depends(),
     session: Session = Depends(get_db_session),
 ):
+    """
+    Align a transcript with an audio file.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        transcript (UploadFile): Uploaded transcript file.
+        file (UploadFile): Uploaded audio file.
+        device (Device): Device for PyTorch inference.
+        align_params (AlignmentParams): Alignment parameters.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
     validate_extension(transcript.filename, {".json"})
 
     try:
@@ -158,6 +192,19 @@ async def diarize(
     ),
     diarize_params: DiarizationParams = Depends(),
 ) -> Response:
+    """
+    Perform diarization on an uploaded audio file.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        file (UploadFile): Uploaded audio file.
+        session (Session): Database session dependency.
+        device (Device): Device for PyTorch inference.
+        diarize_params (DiarizationParams): Diarization parameters.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
     temp_file = save_temporary_file(file.file, file.filename)
@@ -198,6 +245,18 @@ async def combine(
     diarization_result: UploadFile = File(...),
     session: Session = Depends(get_db_session),
 ):
+    """
+    Combine a transcript with diarization results.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        aligned_transcript (UploadFile): Uploaded aligned transcript file.
+        diarization_result (UploadFile): Uploaded diarization result file.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})
 

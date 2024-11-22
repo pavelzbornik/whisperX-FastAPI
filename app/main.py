@@ -1,3 +1,5 @@
+"""Main entry point for the FastAPI application."""
+
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -18,6 +20,15 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for the FastAPI application.
+
+    This function is used to perform startup and shutdown tasks for the FastAPI application.
+    It saves the OpenAPI JSON and generates the database schema.
+
+    Args:
+        app (FastAPI): The FastAPI application instance.
+    """
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
     yield
@@ -77,8 +88,5 @@ app.include_router(stt_services.service_router)
 
 @app.get("/", response_class=RedirectResponse, include_in_schema=False)
 async def index():
-    """
-    Redirect to the documentation.
-
-    """
+    """Redirect to the documentation."""
     return "/docs"

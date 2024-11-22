@@ -14,3 +14,16 @@ repos:
     rev: 23.9.1  # Use the latest stable version of Black
     hooks:
       - id: black
+
+  # Add isort for sorting imports in Python
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort (python)
+
+  # Add pydocstyle for checking docstrings
+  - repo: https://github.com/PyCQA/pydocstyle
+    rev: 6.3.0  # Use the latest stable version of pydocstyle
+    hooks:
+      - id: pydocstyle

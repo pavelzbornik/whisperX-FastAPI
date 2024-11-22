@@ -1,3 +1,5 @@
+"""This module provides services for processing audio tasks including transcription, diarization, alignment, and speaker assignment using WhisperX and FastAPI."""
+
 import logging
 from datetime import datetime
 
@@ -39,6 +41,16 @@ def process_audio_task(
     session: Session,
     *args,
 ):
+    """
+    Process an audio task.
+
+    Args:
+        audio_processor (callable): The function to process the audio.
+        identifier (str): The task identifier.
+        task_type (str): The type of the task.
+        session (Session): The database session.
+        *args: Additional arguments for the audio processor.
+    """
     try:
         start_time = datetime.now()
 
@@ -60,16 +72,13 @@ def process_audio_task(
             session=session,
         )
 
-    except Exception as e:
+    except (ValueError, TypeError, RuntimeError) as e:
         logging.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
         update_task_status_in_db(
             identifier=identifier,
-            update_data={
-                "status": "failed",
-                "error": str(e),
-            },
+            update_data={"status": "failed", "error": str(e)},
             session=session,
         )
 
@@ -82,6 +91,17 @@ def process_transcribe(
     vad_options_params: VADOptions,
     session: Session,
 ):
+    """
+    Process a transcription task.
+
+    Args:
+        audio: The audio data.
+        identifier (str): The task identifier.
+        model_params (WhsiperModelParams): The model parameters.
+        asr_options_params (ASROptions): The ASR options.
+        vad_options_params (VADOptions): The VAD options.
+        session (Session): The database session.
+    """
     process_audio_task(
         transcribe_with_whisper,
         identifier,
@@ -108,6 +128,16 @@ def process_diarize(
     diarize_params: DiarizationParams,
     session: Session,
 ):
+    """
+    Process a diarization task.
+
+    Args:
+        audio: The audio data.
+        identifier (str): The task identifier.
+        device: The device to use.
+        diarize_params (DiarizationParams): The diarization parameters.
+        session (Session): The database session.
+    """
     process_audio_task(
         diarize,
         identifier,
@@ -128,6 +158,17 @@ def process_alignment(
     align_params: AlignmentParams,
     session: Session,
 ):
+    """
+    Process a transcription alignment task.
+
+    Args:
+        audio: The audio data.
+        transcript: The transcript data.
+        identifier (str): The task identifier.
+        device: The device to use.
+        align_params (AlignmentParams): The alignment parameters.
+        session (Session): The database session.
+    """
     process_audio_task(
         align_whisper_output,
         identifier,
@@ -149,6 +190,15 @@ def process_speaker_assignment(
     identifier,
     session: Session,
 ):
+    """
+    Process a speaker assignment task.
+
+    Args:
+        diarization_segments: The diarization segments.
+        transcript: The transcript data.
+        identifier (str): The task identifier.
+        session (Session): The database session.
+    """
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,

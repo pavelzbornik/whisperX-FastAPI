@@ -1,10 +1,12 @@
+"""This module contains the schema definitions for the WhisperX FastAPI application."""
+
 import os
 from enum import Enum
 from typing import Any, List, Optional
 
 import numpy as np
 from fastapi import Query
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from whisperx import utils
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
@@ -12,11 +14,15 @@ LANG = os.getenv("DEFAULT_LANG", "en")
 
 
 class Response(BaseModel):
+    """Response model for API responses."""
+
     identifier: str
     message: str
 
 
 class Metadata(BaseModel):
+    """Metadata model for task information."""
+
     task_type: str
     task_params: Optional[dict]
     language: Optional[str]
@@ -27,22 +33,30 @@ class Metadata(BaseModel):
 
 
 class TaskSimple(BaseModel):
+    """Simple task model with basic task information."""
+
     identifier: str
     status: str
     task_type: str
 
 
 class ResultTasks(BaseModel):
+    """Model for a list of simple tasks."""
+
     tasks: List[TaskSimple]
 
 
 class TranscriptionSegment(BaseModel):
+    """Model for a segment of transcription."""
+
     start: float
     end: float
     text: str
 
 
 class Segment(BaseModel):
+    """Model for a segment with optional speaker information."""
+
     start: float
     end: float
     text: Optional[str]
@@ -50,6 +64,8 @@ class Segment(BaseModel):
 
 
 class Word(BaseModel):
+    """Model for a word with optional timing and score information."""
+
     word: str
     start: Optional[float] = None
     end: Optional[float] = None
@@ -57,6 +73,8 @@ class Word(BaseModel):
 
 
 class AlignmentSegment(BaseModel):
+    """Model for a segment with word alignments."""
+
     start: float
     end: float
     text: str
@@ -64,11 +82,15 @@ class AlignmentSegment(BaseModel):
 
 
 class AlignedTranscription(BaseModel):
+    """Model for aligned transcription with segments and word segments."""
+
     segments: List[AlignmentSegment]
     word_segments: List[Word]
 
 
 class DiarizationSegment(BaseModel):
+    """Model for a diarization segment with speaker information."""
+
     label: str
     speaker: str
     start: float
@@ -76,19 +98,27 @@ class DiarizationSegment(BaseModel):
 
 
 class DiaredTrancript(BaseModel):
+    """Model for a diarized transcript with segments."""
+
     segments: List[Segment]
 
 
 class Transcript(BaseModel):
+    """Model for a transcript with segments and language."""
+
     segments: List[TranscriptionSegment]
     language: Optional[str]
 
 
 class TranscriptInput(BaseModel):
+    """Input model for a transcript."""
+
     transcript: Transcript
 
 
 class Result(BaseModel):
+    """Model for a result with status, result data, metadata, and optional error."""
+
     status: str
     result: Any
     metadata: Metadata
@@ -96,12 +126,16 @@ class Result(BaseModel):
 
 
 class ComputeType(str, Enum):
+    """Enum for compute types."""
+
     float16 = "float16"
     float32 = "float32"
     int8 = "int8"
 
 
 class WhisperModel(str, Enum):
+    """Enum for Whisper model types."""
+
     tiny = "tiny"
     tiny_en = "tiny.en"
     base = "base"
@@ -118,22 +152,30 @@ class WhisperModel(str, Enum):
 
 
 class Device(str, Enum):
+    """Enum for device types."""
+
     cuda = "cuda"
     cpu = "cpu"
 
 
 class TaskEnum(str, Enum):
+    """Enum for task types."""
+
     transcribe = "transcribe"
     translate = "translate"
 
 
 class InterpolateMethod(str, Enum):
+    """Enum for interpolation methods."""
+
     nearest = "nearest"
     linear = "linear"
     ignore = "ignore"
 
 
 class ASROptions(BaseModel):
+    """Model for ASR options."""
+
     beam_size: int = Field(
         Query(
             5,
@@ -186,14 +228,17 @@ class ASROptions(BaseModel):
         )
     )
 
-    @validator("suppress_tokens", pre=True)
+    @field_validator("suppress_tokens", mode="before")
     def parse_suppress_tokens(cls, value):
+        """Parse suppress tokens from a comma-separated string of token IDs into a list of integers."""
         if isinstance(value, str):
             return [int(x) for x in value.split(",")]
         return value
 
 
 class VADOptions(BaseModel):
+    """Model for VAD options."""
+
     vad_onset: float = Field(
         Query(
             0.500,
@@ -209,6 +254,8 @@ class VADOptions(BaseModel):
 
 
 class WhsiperModelParams(BaseModel):
+    """Model for Whisper model parameters."""
+
     language: str = Field(
         Query(
             default=LANG,
@@ -252,6 +299,8 @@ class WhsiperModelParams(BaseModel):
 
 
 class AlignmentParams(BaseModel):
+    """Model for alignment parameters."""
+
     align_model: Optional[str] = Field(
         Query(None, description="Name of phoneme-level ASR model to do alignment")
     )
@@ -270,6 +319,8 @@ class AlignmentParams(BaseModel):
 
 
 class DiarizationParams(BaseModel):
+    """Model for diarization parameters."""
+
     min_speakers: Optional[int] = Field(
         Query(None, description="Minimum number of speakers to in audio file")
     )
@@ -279,6 +330,8 @@ class DiarizationParams(BaseModel):
 
 
 class SpeechToTextProcessingParams(BaseModel):
+    """Model for speech-to-text processing parameters."""
+
     audio: np.ndarray  # NumPy array containing the audio waveform, float32 dtype
     identifier: str
     vad_options: VADOptions
@@ -288,4 +341,6 @@ class SpeechToTextProcessingParams(BaseModel):
     diarization_params: DiarizationParams
 
     class Config:
+        """Configuration for the SpeechToTextProcessingParams model."""
+
         arbitrary_types_allowed = True

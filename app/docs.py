@@ -1,3 +1,5 @@
+"""This module provides functions to generate and save API documentation and database schema."""
+
 import json
 import os
 
@@ -8,6 +10,13 @@ DOCS_PATH = "app/docs"
 
 
 def save_openapi_json(app, path=DOCS_PATH):
+    """
+    Save the OpenAPI documentation of the FastAPI app in JSON and YAML formats.
+
+    Args:
+        app: The FastAPI app instance.
+        path: The directory path where the documentation files will be saved. Defaults to DOCS_PATH.
+    """
     os.makedirs(path, exist_ok=True)
     openapi_data = app.openapi()
     # Change "openapi.json" to desired filename
@@ -18,6 +27,15 @@ def save_openapi_json(app, path=DOCS_PATH):
 
 
 def generate_markdown_table(model):
+    """
+    Generate a markdown table for a given SQLAlchemy model.
+
+    Args:
+        model: The SQLAlchemy model to generate the table for.
+
+    Returns:
+        A string containing the markdown table.
+    """
     inspector = inspect(model)
     columns = inspector.columns
 
@@ -43,12 +61,25 @@ def generate_markdown_table(model):
 
 
 def write_markdown_to_file(markdown_tables, path=DOCS_PATH):
+    """
+    Write the markdown tables to a file.
+
+    Args:
+        markdown_tables: The markdown tables to write to the file.
+        path: The directory path where the markdown file will be saved. Defaults to DOCS_PATH.
+    """
     os.makedirs(path, exist_ok=True)
     with open(f"{path}/db_schema.md", "w") as file:
         file.write(markdown_tables)
 
 
 def generate_db_schema(models):
+    """
+    Generate and save the database schema in markdown format.
+
+    Args:
+        models: A list of SQLAlchemy models to generate the schema for.
+    """
     markdown_tables = "# Database schema \n\n"
     for model in models:
         markdown_tables += generate_markdown_table(model)
