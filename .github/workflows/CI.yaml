@@ -23,6 +23,19 @@ jobs:
         install: true
         driver-opts: image=moby/buildkit:v0.10.3,network=host
 
+    - name: Free Disk Space (Ubuntu)
+      uses: jlumbroso/free-disk-space@main
+      with:
+        # this might remove tools that are actually needed,
+        # if set to "true" but frees about 6 GB
+        tool-cache: false
+
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: false
+        swap-storage: true
     - name: Cache Docker layers
       uses: actions/cache@v3
       with:
