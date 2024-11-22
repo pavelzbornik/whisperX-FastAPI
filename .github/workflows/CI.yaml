@@ -10,42 +10,35 @@ on:
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      with:
-        install: true
-        driver-opts: image=moby/buildkit:v0.10.3,network=host
 
     - name: Free Disk Space (Ubuntu)
       uses: jlumbroso/free-disk-space@main
       with:
-        # this might remove tools that are actually needed,
-        # if set to "true" but frees about 6 GB
         tool-cache: false
-
         android: true
         dotnet: true
         haskell: true
         large-packages: true
         docker-images: false
         swap-storage: true
-    - name: Cache Docker layers
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
 
     - name: Build Docker image
-      run: docker buildx build --cache-from=type=local,src=/tmp/.buildx-cache --cache-to=type=local,dest=/tmp/.buildx-cache --output=type=docker -t my-app .
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: false
+        tags: whisperX-FastAPI:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
     - name: Run tests
-      run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --entrypoint pytest my-app
+      run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --entrypoint pytest whisperX-FastAPI:latest
