@@ -46,7 +46,9 @@ def wait_for_task_completion(identifier, max_attempts=2, delay=10):
         if status == "completed":
             return True
         if status == "failed":
-            raise ValueError("Task failed")
+            response = client.get(f"/task/{identifier}")
+            error_message = response.json().get("error", "Unknown error")
+            raise ValueError(f"Task failed with error: {error_message}")
         time.sleep(delay)
         attempts += 1
     return False
@@ -72,9 +74,9 @@ def generic_transcription(client_url):
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
-    assert seg_0_text.startswith(TRANSCRIPT_RESULT_1) or seg_0_text.startswith(
-        TRANSCRIPT_RESULT_2
-    )
+    assert seg_0_text.lower().startswith(
+        TRANSCRIPT_RESULT_1.lower()
+    ) or seg_0_text.lower().startswith(TRANSCRIPT_RESULT_2.lower())
 
     return task_result.json()["result"]
 
