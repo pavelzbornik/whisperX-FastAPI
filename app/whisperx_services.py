@@ -1,29 +1,28 @@
-from whisperx import (
-    load_model,
-    DiarizationPipeline,
-    load_align_model,
-    align,
-    assign_word_speakers,
-)
-
-from datetime import datetime
-import torch
-import os
-
-from .tasks import (
-    update_task_status_in_db,
-)
-
-from .schemas import AlignedTranscription, SpeechToTextProcessingParams
-from .transcript import filter_aligned_transcription
+"""This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
 
 import gc
+from datetime import datetime
 
-LANG = os.getenv("DEFAULT_LANG", "en")
-HF_TOKEN = os.getenv("HF_TOKEN")
-WHISPER_MODEL = os.getenv("WHISPER_MODEL")
+import torch
+from whisperx import (
+    DiarizationPipeline,
+    align,
+    assign_word_speakers,
+    load_align_model,
+    load_model,
+)
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+from .config import Config
+from .logger import logger  # Import the logger from the new module
+from .schemas import AlignedTranscription, SpeechToTextProcessingParams
+from .tasks import update_task_status_in_db
+from .transcript import filter_aligned_transcription
+
+LANG = Config.LANG
+HF_TOKEN = Config.HF_TOKEN
+WHISPER_MODEL = Config.WHISPER_MODEL
+device = Config.DEVICE
+compute_type = Config.COMPUTE_TYPE
 
 
 def transcribe_with_whisper(
@@ -36,7 +35,7 @@ def transcribe_with_whisper(
     model: str = WHISPER_MODEL,
     device: str = device,
     device_index: int = 0,
-    compute_type: str = "float16",
+    compute_type: str = compute_type,
     threads: int = 0,
 ):
     """
@@ -53,11 +52,30 @@ def transcribe_with_whisper(
     Returns:
        Transcript: The transcription result.
     """
+    logger.debug(
+        "Starting transcription with Whisper model: %s on device: %s",
+        WHISPER_MODEL,
+        device,
+    )
+    # Log GPU memory before loading model
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory before loading model - used: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
     faster_whisper_threads = 4
     if (threads := threads) > 0:
         torch.set_num_threads(threads)
         faster_whisper_threads = threads
 
+    logger.debug(
+        "Loading model with config - model: %s, device: %s, compute_type: %s, threads: %d, task: %s, language: %s",
+        model,
+        device,
+        compute_type,
+        faster_whisper_threads,
+        task,
+        language,
+    )
     model = load_model(
         model,
         device,
@@ -69,19 +87,31 @@ def transcribe_with_whisper(
         task=task,
         threads=faster_whisper_threads,
     )
-    result = model.transcribe(
-        audio=audio, batch_size=batch_size, language=language
-    )
+    logger.debug("Transcription model loaded successfully")
+    result = model.transcribe(audio=audio, batch_size=batch_size, language=language)
+
+    # Log GPU memory before cleanup
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory before cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
 
     # delete model
     gc.collect()
     torch.cuda.empty_cache()
     del model
 
+    # Log GPU memory after cleanup
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
+
+    logger.debug("Completed transcription")
     return result
 
 
-def diarize(audio, device, min_speakers=None, max_speakers=None):
+def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     """
     Diarize an audio file using the PyAnnotate model.
 
@@ -91,16 +121,35 @@ def diarize(audio, device, min_speakers=None, max_speakers=None):
     Returns:
        Diarizartion: The diarization result.
     """
+    logger.debug("Starting diarization with device: %s", device)
+
+    # Log GPU memory before loading model
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory before loading model - used: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
+
     model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
-    result = model(
-        audio=audio, min_speakers=min_speakers, max_speakers=max_speakers
-    )
+    result = model(audio=audio, min_speakers=min_speakers, max_speakers=max_speakers)
+
+    # Log GPU memory before cleanup
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory before cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
 
     # delete model
     gc.collect()
     torch.cuda.empty_cache()
     del model
 
+    # Log GPU memory after cleanup
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
+
+    logger.debug("Completed diarization with device: %s", device)
     return result
 
 
@@ -127,7 +176,25 @@ def align_whisper_output(
     Returns:
        The aligned transcript.
     """
+    logger.debug(
+        "Starting alignment for language code: %s on device: %s",
+        language_code,
+        device,
+    )
 
+    # Log GPU memory before loading model
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory before loading model - used: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
+
+    logger.debug(
+        "Loading align model with config - language_code: %s, device: %s, interpolate_method: %s, return_char_alignments: %s",
+        language_code,
+        device,
+        interpolate_method,
+        return_char_alignments,
+    )
     align_model, align_metadata = load_align_model(
         language_code=language_code, device=device, model_name=align_model
     )
@@ -142,12 +209,25 @@ def align_whisper_output(
         return_char_alignments=return_char_alignments,
     )
 
+    # Log GPU memory before cleanup
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory before cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
+
     # delete model
     gc.collect()
     torch.cuda.empty_cache()
     del align_model
     del align_metadata
 
+    # Log GPU memory after cleanup
+    if torch.cuda.is_available():
+        logger.debug(
+            f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+        )
+
+    logger.debug("Completed alignment")
     return result
 
 
@@ -164,8 +244,23 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
     """
     try:
         start_time = datetime.now()
+        logger.info(
+            "Starting speech-to-text processing for identifier: %s",
+            params.identifier,
+        )
 
-        print(params.whisper_model_params.task.value)
+        logger.debug(
+            "Transcription parameters - task: %s, language: %s, batch_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
+            params.whisper_model_params.task,
+            params.whisper_model_params.language,
+            params.whisper_model_params.batch_size,
+            params.whisper_model_params.model,
+            params.whisper_model_params.device,
+            params.whisper_model_params.device_index,
+            params.whisper_model_params.compute_type,
+            params.whisper_model_params.threads,
+        )
+
         segments_before_alignment = transcribe_with_whisper(
             audio=params.audio,
             task=params.whisper_model_params.task,
@@ -180,6 +275,13 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
             threads=params.whisper_model_params.threads,
         )
 
+        logger.debug(
+            "Alignment parameters - align_model: %s, interpolate_method: %s, return_char_alignments: %s, language_code: %s",
+            params.alignment_params.align_model,
+            params.alignment_params.interpolate_method,
+            params.alignment_params.return_char_alignments,
+            segments_before_alignment["language"],
+        )
         segments_transcript = align_whisper_output(
             transcript=segments_before_alignment["segments"],
             audio=params.audio,
@@ -192,6 +294,12 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
         # removing words within each segment that have missing start, end, or score values
         transcript = filter_aligned_transcription(transcript).model_dump()
 
+        logger.debug(
+            "Diarization parameters - device: %s, min_speakers: %s, max_speakers: %s",
+            params.whisper_model_params.device,
+            params.diarization_params.min_speakers,
+            params.diarization_params.max_speakers,
+        )
         diarization_segments = diarize(
             params.audio,
             device=params.whisper_model_params.device,
@@ -199,6 +307,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
             max_speakers=params.diarization_params.max_speakers,
         )
 
+        logger.debug("Starting to combine transcript with diarization results")
         result = assign_word_speakers(diarization_segments, transcript)
 
         for segment in result["segments"]:
@@ -206,8 +315,15 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
 
         del result["word_segments"]
 
+        logger.debug("Completed combining transcript with diarization results")
+
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
+        logger.info(
+            "Completed speech-to-text processing for identifier: %s. Duration: %ss",
+            params.identifier,
+            duration,
+        )
 
         update_task_status_in_db(
             identifier=params.identifier,
@@ -215,15 +331,31 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
                 "status": "completed",
                 "result": result,
                 "duration": duration,
+                "start_time": start_time,
+                "end_time": end_time,
             },
             session=session,
         )
-    except Exception as e:
+    except (RuntimeError, ValueError, KeyError) as e:
+        logger.error(
+            "Speech-to-text processing failed for identifier: %s. Error: %s",
+            params.identifier,
+            str(e),
+        )
         update_task_status_in_db(
             identifier=params.identifier,
             update_data={
                 "status": "failed",
                 "error": str(e),
             },
+            session=session,
+        )
+    except MemoryError as e:
+        logger.error(
+            f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
+        )
+        update_task_status_in_db(
+            identifier=params.identifier,
+            update_data={"status": "failed", "error": str(e)},
             session=session,
         )

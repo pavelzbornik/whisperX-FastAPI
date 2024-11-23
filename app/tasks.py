@@ -1,9 +1,13 @@
-from typing import Dict, Any
-from .models import Task
-from .schemas import TaskSimple, ResultTasks
-from .db import handle_database_errors, get_db_session
-from sqlalchemy.orm import Session
+"""This module contains functions to interact with the task database."""
+
+from typing import Any, Dict
+
 from fastapi import Depends
+from sqlalchemy.orm import Session
+
+from .db import get_db_session, handle_database_errors
+from .models import Task
+from .schemas import ResultTasks, TaskSimple
 
 
 # Add tasks to the database
@@ -17,7 +21,27 @@ def add_task_to_db(
     file_name=None,
     url=None,
     audio_duration=None,
+    start_time=None,
+    end_time=None,
 ):
+    """
+    Add a new task to the database.
+
+    Args:
+        session (Session): Database session.
+        status (str): Status of the task.
+        task_type (str): Type of the task.
+        language (str, optional): Language of the task. Defaults to None.
+        task_params (dict, optional): Parameters of the task. Defaults to None.
+        file_name (str, optional): Name of the file associated with the task. Defaults to None.
+        url (str, optional): URL associated with the task. Defaults to None.
+        audio_duration (float, optional): Duration of the audio file. Defaults to None.
+        start_time (datetime, optional): Start time of the task. Defaults to None.
+        end_time (datetime, optional): End time of the task. Defaults to None.
+
+    Returns:
+        str: UUID of the newly created task.
+    """
     task = Task(
         status=status,
         language=language,
@@ -26,6 +50,8 @@ def add_task_to_db(
         task_type=task_type,
         task_params=task_params,
         audio_duration=audio_duration,
+        start_time=start_time,
+        end_time=end_time,
     )
     session.add(task)
     session.commit()
@@ -59,10 +85,17 @@ def update_task_status_in_db(
 
 # Retrieve task status from the database
 @handle_database_errors
-def get_task_status_from_db(
-    identifier, session: Session = Depends(get_db_session)
-):
-    # task = session.query(Task).filter_by(id=identifier).first()
+def get_task_status_from_db(identifier, session: Session = Depends(get_db_session)):
+    """
+    Retrieve the status of a task from the database.
+
+    Args:
+        identifier (str): Identifier of the task.
+        session (Session, optional): Database session. Defaults to Depends(get_db_session).
+
+    Returns:
+        dict: Dictionary containing the task status and metadata if the task exists, otherwise None.
+    """
     task = session.query(Task).filter(Task.uuid == identifier).first()
     if task:
         return {
@@ -75,6 +108,9 @@ def get_task_status_from_db(
                 "file_name": task.file_name,
                 "url": task.url,
                 "duration": task.duration,
+                "audio_duration": task.audio_duration,
+                "start_time": task.start_time,
+                "end_time": task.end_time,
             },
             "error": task.error,
         }
@@ -85,6 +121,15 @@ def get_task_status_from_db(
 # Retrieve task status from the database
 @handle_database_errors
 def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
+    """
+    Retrieve the status of all tasks from the database.
+
+    Args:
+        session (Session, optional): Database session. Defaults to Depends(get_db_session).
+
+    Returns:
+        ResultTasks: Object containing a list of all tasks with their status and type.
+    """
     tasks = []
     # Define the columns you want to select
     columns = [Task.uuid, Task.status, Task.task_type]
@@ -104,6 +149,16 @@ def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
 
 @handle_database_errors
 def delete_task_from_db(identifier: str, session: Session):
+    """
+    Delete a task from the database.
+
+    Args:
+        identifier (str): Identifier of the task to be deleted.
+        session (Session): Database session.
+
+    Returns:
+        bool: True if the task was deleted, False if the task does not exist.
+    """
     # Check if the identifier exists in the database
     task = session.query(Task).filter(Task.uuid == identifier).first()
 

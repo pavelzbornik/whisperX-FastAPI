@@ -1,51 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile
+"""
+This module provides API endpoints for speech-to-text services including transcription.
 
-from sqlalchemy.orm import Session
-from ..db import get_db_session
-
-from ..tasks import add_task_to_db
-
-from fastapi import BackgroundTasks
-
-from ..schemas import (
-    Response,
-    Transcript,
-    AlignedTranscription,
-    DiarizationSegment,
-    Device,
-    AlignmentParams,
-    WhsiperModelParams,
-    DiarizationParams,
-    ASROptions,
-    VADOptions
-)
-
-from pydantic import ValidationError
-
-import pandas as pd
+Alignment, diarization, and combining transcripts with diarization results.
+"""
 
 import json
+from datetime import datetime
 
+import pandas as pd
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+)
+from pydantic import ValidationError
+from sqlalchemy.orm import Session
+
+from ..audio import get_audio_duration, process_audio_file
+from ..db import get_db_session
+from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..logger import logger  # Import the logger from the new module
+from ..schemas import (
+    AlignedTranscription,
+    AlignmentParams,
+    ASROptions,
+    Device,
+    DiarizationParams,
+    DiarizationSegment,
+    Response,
+    Transcript,
+    VADOptions,
+    WhsiperModelParams,
+)
 from ..services import (
-    process_transcribe,
-    process_diarize,
     process_alignment,
+    process_diarize,
     process_speaker_assignment,
+    process_transcribe,
 )
-
-from ..audio import (
-    process_audio_file,
-    get_audio_duration,
-)
-
+from ..tasks import add_task_to_db
 from ..transcript import filter_aligned_transcription
-
-from ..files import (
-    save_temporary_file,
-    validate_extension,
-    ALLOWED_EXTENSIONS,
-)
-
 from ..whisperx_services import device
 
 service_router = APIRouter()
@@ -63,8 +61,22 @@ async def transcribe(
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
     session: Session = Depends(get_db_session),
-
 ) -> Response:
+    """
+    Transcribe an uploaded audio file.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        model_params (WhsiperModelParams): Whisper model parameters.
+        asr_options_params (ASROptions): ASR options parameters.
+        vad_options_params (VADOptions): VAD options parameters.
+        file (UploadFile): Uploaded audio file.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
+    logger.info("Received transcription request for file: %s", file.filename)
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -82,6 +94,7 @@ async def transcribe(
             "asr_options": asr_options_params.model_dump(),
             "vad_options": vad_options_params.model_dump(),
         },
+        start_time=datetime.utcnow(),
         session=session,
     )
 
@@ -95,6 +108,7 @@ async def transcribe(
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")
 
 
@@ -117,16 +131,35 @@ def align(
     ),
     align_params: AlignmentParams = Depends(),
     session: Session = Depends(get_db_session),
-):
+) -> Response:
+    """
+    Align a transcript with an audio file.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        transcript (UploadFile): Uploaded transcript file.
+        file (UploadFile): Uploaded audio file.
+        device (Device): Device for PyTorch inference.
+        align_params (AlignmentParams): Alignment parameters.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
+    logger.info(
+        "Received alignment request for file: %s and transcript: %s",
+        file.filename,
+        transcript.filename,
+    )
+
     validate_extension(transcript.filename, {".json"})
 
     try:
         # Read the content of the transcript file
         transcript = Transcript(**json.loads(transcript.file.read()))
     except ValidationError as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON content. {str(e)}"
-        )
+        logger.error("Invalid JSON content in transcript file: %s", str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -143,6 +176,7 @@ def align(
             **align_params.model_dump(),
             "device": device,
         },
+        start_time=datetime.utcnow(),
         session=session,
     )
 
@@ -153,9 +187,10 @@ def align(
         identifier,
         device,
         align_params,
-        session
+        session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")
 
 
@@ -172,6 +207,20 @@ async def diarize(
     ),
     diarize_params: DiarizationParams = Depends(),
 ) -> Response:
+    """
+    Perform diarization on an uploaded audio file.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        file (UploadFile): Uploaded audio file.
+        session (Session): Database session dependency.
+        device (Device): Device for PyTorch inference.
+        diarize_params (DiarizationParams): Diarization parameters.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
+    logger.info("Received diarization request for file: %s", file.filename)
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -188,6 +237,7 @@ async def diarize(
             **diarize_params.model_dump(),
             "device": device,
         },
+        start_time=datetime.utcnow(),
         session=session,
     )
     background_tasks.add_task(
@@ -199,6 +249,7 @@ async def diarize(
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")
 
 
@@ -212,46 +263,59 @@ async def combine(
     aligned_transcript: UploadFile = File(...),
     diarization_result: UploadFile = File(...),
     session: Session = Depends(get_db_session),
-):
+) -> Response:
+    """
+    Combine a transcript with diarization results.
+
+    Args:
+        background_tasks (BackgroundTasks): Background tasks dependency.
+        aligned_transcript (UploadFile): Uploaded aligned transcript file.
+        diarization_result (UploadFile): Uploaded diarization result file.
+        session (Session): Database session dependency.
+
+    Returns:
+        Response: Confirmation message of task queuing.
+    """
+    logger.info(
+        "Received combine request for aligned transcript: %s and diarization result: %s",
+        aligned_transcript.filename,
+        diarization_result.filename,
+    )
 
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})
 
     try:
         # Read the content of the transcript file
-        transcript = AlignedTranscription(
-            **json.loads(aligned_transcript.file.read())
-        )
+        transcript = AlignedTranscription(**json.loads(aligned_transcript.file.read()))
         # removing words within each segment that have missing start, end, or score values
         transcript = filter_aligned_transcription(transcript)
     except ValidationError as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON content. {str(e)}"
-        )
+        logger.error("Invalid JSON content in aligned transcript file: %s", str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
     try:
         # Map JSON to list of models
         diarization_segments = []
         for item in json.loads(diarization_result.file.read()):
             diarization_segments.append(DiarizationSegment(**item))
     except ValidationError as e:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid JSON content. {str(e)}"
-        )
+        logger.error("Invalid JSON content in diarization result file: %s", str(e))
+        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     identifier = add_task_to_db(
         status="processing",
         file_name=None,
         task_type="combine_transcript&diarization",
+        start_time=datetime.utcnow(),
         session=session,
     )
     background_tasks.add_task(
         process_speaker_assignment,
-        pd.json_normalize(
-            [segment.model_dump() for segment in diarization_segments]
-        ),
+        pd.json_normalize([segment.model_dump() for segment in diarization_segments]),
         transcript.model_dump(),
         identifier,
         session,
     )
 
+    logger.info("Background task scheduled for processing: ID %s", identifier)
     return Response(identifier=identifier, message="Task queued")

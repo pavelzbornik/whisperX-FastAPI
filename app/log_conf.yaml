@@ -1,0 +1,59 @@
+disable_existing_loggers: false
+formatters:
+  colored:
+    class: colorlog.ColoredFormatter
+    format: '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    log_colors:
+      CRITICAL: red,bg_white
+      DEBUG: cyan
+      ERROR: red
+      INFO: green
+      WARNING: yellow
+  default:
+    class: logging.Formatter
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+handlers:
+  access:
+    class: logging.StreamHandler
+    formatter: default
+    stream: ext://sys.stdout
+  colored:
+    class: logging.StreamHandler
+    formatter: colored
+    stream: ext://sys.stderr
+  default:
+    class: logging.StreamHandler
+    formatter: default
+    stream: ext://sys.stderr
+loggers:
+  pytorch_lightning.utilities.migration:
+    handlers:
+      - default
+    level: WARNING
+    propagate: false
+  speechbrain.utils.quirks:
+    handlers:
+      - default
+    level: WARNING
+    propagate: false
+  uvicorn.access:
+    handlers:
+      - default
+    level: INFO
+    propagate: false
+  uvicorn.error:
+    handlers:
+      - default
+    level: INFO
+    propagate: false
+  whisperX:
+    handlers:
+      - colored
+    level: INFO
+    propagate: false
+root:
+  handlers:
+    - default
+  level: INFO
+  propagate: false
+version: 1

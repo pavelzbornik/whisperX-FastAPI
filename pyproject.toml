@@ -1,0 +1,7 @@
+[tool.isort]
+profile = "black"
+skip_glob = ["migrations/*"]
+
+[tool.codespell]
+skip = ["*.json","*.yaml"]
+builtin = "clear,rare,informal,usage,code,names"

@@ -1,0 +1,37 @@
+
+{
+  "name": "WhisperX-FastAPI",
+  "context": "..",
+  "dockerFile": "../dockerfile",
+  "runArgs": ["--gpus", "all"],
+
+  "forwardPorts": [8000],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "github.copilot",
+        "ms-python.black-formatter",
+        "ms-python.flake8",
+        "github.vscode-github-actions",
+        "george-alisson.html-preview-vscode",
+        "ms-python.isort",
+        "prettier.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "editor.formatOnSave": true
+      }
+    }
+  },
+  "postCreateCommand": "pip install -r requirements/dev.txt && pre-commit install",
+  "remoteUser": "root"
+}

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n# whisperX REST Service\n\nWelcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n## Documentation:\n\nFor detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n## Services:\n\nSpeech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n1. Transcribe: Transcribe an audio/video  file into text.\n2. Align: Align the transcript to the audio/video file.\n3. Diarize: Diarize an audio/video file into speakers.\n4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n## Supported file extensions:\nAUDIO_EXTENSIONS = {'.ogg', '.wma', '.mp3', '.oga', '.aac', '.awb', '.wav', '.amr', '.m4a'}\n\nVIDEO_EXTENSIONS = {'.wmv', '.mkv', '.mov', '.avi', '.mp4'}\n\n",
+    "description": "\n    # whisperX REST Service\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.mp3', '.ogg', '.m4a', '.aac', '.amr', '.wav', '.oga', '.wma', '.awb'}\n\n    VIDEO_EXTENSIONS = {'.mkv', '.avi', '.wmv', '.mov', '.mp4'}\n\n    ",
     "version": "0.0.1"
   },
   "paths": {
@@ -12,7 +12,7 @@
           "Speech-2-Text"
         ],
         "summary": "Speech To Text",
-        "description": "Process an audio/video file in the background in full process.\n\nArgs:\n    audio_file (UploadFile): The audio file to process.\n\nReturns:\n    dict: A dictionary containing the identifier and a message. The message is \"Task queued\". The identifier is a unique identifier for the transcription request.",
+        "description": "Process an uploaded audio file for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "speech_to_text_speech_to_text_post",
         "parameters": [
           {
@@ -134,14 +134,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/TaskEnum"
-                }
-              ],
+              "$ref": "#/components/schemas/TaskEnum",
               "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-              "default": "transcribe",
-              "title": "Task"
+              "default": "transcribe"
             },
             "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')"
           },
@@ -150,14 +145,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/WhisperModel"
-                }
-              ],
+              "$ref": "#/components/schemas/WhisperModel",
               "description": "Name of the Whisper model to use",
-              "default": "tiny",
-              "title": "Model"
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -166,14 +156,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -195,11 +180,11 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
+              "description": "Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS",
               "default": 0,
               "title": "Threads"
             },
-            "description": "Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS"
+            "description": "Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS"
           },
           {
             "name": "batch_size",
@@ -218,14 +203,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ComputeType"
-                }
-              ],
+              "$ref": "#/components/schemas/ComputeType",
               "description": "Type of computation",
-              "default": "float16",
-              "title": "Compute Type"
+              "default": "float16"
             },
             "description": "Type of computation"
           },
@@ -252,14 +232,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/InterpolateMethod"
-                }
-              ],
+              "$ref": "#/components/schemas/InterpolateMethod",
               "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-              "default": "nearest",
-              "title": "Interpolate Method"
+              "default": "nearest"
             },
             "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring."
           },
@@ -514,6 +489,7 @@
           "Speech-2-Text"
         ],
         "summary": "Speech To Text Url",
+        "description": "Process an audio file from a URL for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    url (str): URL of the audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "speech_to_text_url_speech_to_text_url_post",
         "parameters": [
           {
@@ -635,14 +611,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/TaskEnum"
-                }
-              ],
+              "$ref": "#/components/schemas/TaskEnum",
               "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-              "default": "transcribe",
-              "title": "Task"
+              "default": "transcribe"
             },
             "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')"
           },
@@ -651,14 +622,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/WhisperModel"
-                }
-              ],
+              "$ref": "#/components/schemas/WhisperModel",
               "description": "Name of the Whisper model to use",
-              "default": "tiny",
-              "title": "Model"
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -667,14 +633,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -696,11 +657,11 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
+              "description": "Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS",
               "default": 0,
               "title": "Threads"
             },
-            "description": "Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS"
+            "description": "Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS"
           },
           {
             "name": "batch_size",
@@ -719,14 +680,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ComputeType"
-                }
-              ],
+              "$ref": "#/components/schemas/ComputeType",
               "description": "Type of computation",
-              "default": "float16",
-              "title": "Compute Type"
+              "default": "float16"
             },
             "description": "Type of computation"
           },
@@ -753,14 +709,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/InterpolateMethod"
-                }
-              ],
+              "$ref": "#/components/schemas/InterpolateMethod",
               "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-              "default": "nearest",
-              "title": "Interpolate Method"
+              "default": "nearest"
             },
             "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring."
           },
@@ -1015,6 +966,7 @@
           "Tasks Management"
         ],
         "summary": "Get All Tasks Status",
+        "description": "Retrieve the status of all tasks.\n\nArgs:\n    session (Session): Database session dependency.\n\nReturns:\n    ResultTasks: The status of all tasks.",
         "operationId": "get_all_tasks_status_task_all_get",
         "responses": {
           "200": {
@@ -1036,6 +988,7 @@
           "Tasks Management"
         ],
         "summary": "Get Transcription Status",
+        "description": "Retrieve the status of a specific task by its identifier.\n\nArgs:\n    identifier (str): The identifier of the task.\n    session (Session): Database session dependency.\n\nReturns:\n    Result: The status of the task.\n\nRaises:\n    HTTPException: If the identifier is not found.",
         "operationId": "get_transcription_status_task__identifier__get",
         "parameters": [
           {
@@ -1078,6 +1031,7 @@
           "Tasks Management"
         ],
         "summary": "Delete Task",
+        "description": "Delete a specific task by its identifier.\n\nArgs:\n    identifier (str): The identifier of the task.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task deletion.\n\nRaises:\n    HTTPException: If the task is not found.",
         "operationId": "delete_task_task__identifier__delete_delete",
         "parameters": [
           {
@@ -1120,6 +1074,7 @@
           "Speech-2-Text services"
         ],
         "summary": "1. Transcribe",
+        "description": "Transcribe an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams): Whisper model parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "1__Transcribe_service_transcribe_post",
         "parameters": [
           {
@@ -1241,14 +1196,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/TaskEnum"
-                }
-              ],
+              "$ref": "#/components/schemas/TaskEnum",
               "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')",
-              "default": "transcribe",
-              "title": "Task"
+              "default": "transcribe"
             },
             "description": "Whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')"
           },
@@ -1257,14 +1207,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/WhisperModel"
-                }
-              ],
+              "$ref": "#/components/schemas/WhisperModel",
               "description": "Name of the Whisper model to use",
-              "default": "tiny",
-              "title": "Model"
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -1273,14 +1218,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1302,11 +1242,11 @@
             "required": false,
             "schema": {
               "type": "integer",
-              "description": "Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
+              "description": "Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS",
               "default": 0,
               "title": "Threads"
             },
-            "description": "Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS"
+            "description": "Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS"
           },
           {
             "name": "batch_size",
@@ -1325,14 +1265,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ComputeType"
-                }
-              ],
+              "$ref": "#/components/schemas/ComputeType",
               "description": "Type of computation",
-              "default": "float16",
-              "title": "Compute Type"
+              "default": "float16"
             },
             "description": "Type of computation"
           },
@@ -1539,6 +1474,7 @@
           "Speech-2-Text services"
         ],
         "summary": "2. Align Transcript",
+        "description": "Align a transcript with an audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    transcript (UploadFile): Uploaded transcript file.\n    file (UploadFile): Uploaded audio file.\n    device (Device): Device for PyTorch inference.\n    align_params (AlignmentParams): Alignment parameters.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "2__Align_Transcript_service_align_post",
         "parameters": [
           {
@@ -1546,14 +1482,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1580,14 +1511,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/InterpolateMethod"
-                }
-              ],
+              "$ref": "#/components/schemas/InterpolateMethod",
               "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.",
-              "default": "nearest",
-              "title": "Interpolate Method"
+              "default": "nearest"
             },
             "description": "For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring."
           },
@@ -1619,7 +1545,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
               }
             }
           },
@@ -1642,6 +1570,7 @@
           "Speech-2-Text services"
         ],
         "summary": "3. Diarize",
+        "description": "Perform diarization on an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n    device (Device): Device for PyTorch inference.\n    diarize_params (DiarizationParams): Diarization parameters.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "3__Diarize_service_diarize_post",
         "parameters": [
           {
@@ -1649,14 +1578,9 @@
             "in": "query",
             "required": false,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Device"
-                }
-              ],
+              "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda",
-              "title": "Device"
+              "default": "cuda"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1737,6 +1661,7 @@
           "Speech-2-Text services"
         ],
         "summary": "4. Combine Transcript And Diarization Result",
+        "description": "Combine a transcript with diarization results.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    aligned_transcript (UploadFile): Uploaded aligned transcript file.\n    diarization_result (UploadFile): Uploaded diarization result file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "4__Combine_Transcript_and_Diarization_result_service_combine_post",
         "requestBody": {
           "content": {
@@ -1753,7 +1678,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/Response"
+                }
               }
             }
           },
@@ -1878,7 +1805,8 @@
           "float32",
           "int8"
         ],
-        "title": "ComputeType"
+        "title": "ComputeType",
+        "description": "Enum for compute types."
       },
       "Device": {
         "type": "string",
@@ -1886,7 +1814,8 @@
           "cuda",
           "cpu"
         ],
-        "title": "Device"
+        "title": "Device",
+        "description": "Enum for device types."
       },
       "HTTPValidationError": {
         "properties": {
@@ -1908,7 +1837,8 @@
           "linear",
           "ignore"
         ],
-        "title": "InterpolateMethod"
+        "title": "InterpolateMethod",
+        "description": "Enum for interpolation methods."
       },
       "Metadata": {
         "properties": {
@@ -1981,6 +1911,30 @@
               }
             ],
             "title": "Audio Duration"
+          },
+          "start_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Time"
+          },
+          "end_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Time"
           }
         },
         "type": "object",
@@ -1992,7 +1946,8 @@
           "url",
           "duration"
         ],
-        "title": "Metadata"
+        "title": "Metadata",
+        "description": "Metadata model for task information."
       },
       "Response": {
         "properties": {
@@ -2010,7 +1965,8 @@
           "identifier",
           "message"
         ],
-        "title": "Response"
+        "title": "Response",
+        "description": "Response model for API responses."
       },
       "Result": {
         "properties": {
@@ -2043,7 +1999,8 @@
           "metadata",
           "error"
         ],
-        "title": "Result"
+        "title": "Result",
+        "description": "Model for a result with status, result data, metadata, and optional error."
       },
       "ResultTasks": {
         "properties": {
@@ -2059,7 +2016,8 @@
         "required": [
           "tasks"
         ],
-        "title": "ResultTasks"
+        "title": "ResultTasks",
+        "description": "Model for a list of simple tasks."
       },
       "TaskEnum": {
         "type": "string",
@@ -2067,7 +2025,8 @@
           "transcribe",
           "translate"
         ],
-        "title": "TaskEnum"
+        "title": "TaskEnum",
+        "description": "Enum for task types."
       },
       "TaskSimple": {
         "properties": {
@@ -2090,7 +2049,8 @@
           "status",
           "task_type"
         ],
-        "title": "TaskSimple"
+        "title": "TaskSimple",
+        "description": "Simple task model with basic task information."
       },
       "ValidationError": {
         "properties": {
@@ -2141,7 +2101,8 @@
           "large-v2",
           "large-v3"
         ],
-        "title": "WhisperModel"
+        "title": "WhisperModel",
+        "description": "Enum for Whisper model types."
       }
     }
   },

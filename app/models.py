@@ -1,7 +1,9 @@
+"""This module defines the database models for the application."""
+
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Column, String, Float, JSON, Integer, DateTime
+from sqlalchemy import JSON, Column, DateTime, Float, Integer, String
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -37,23 +39,17 @@ class Task(Base):
         comment="Universally unique identifier for each task",
     )
     status = Column(String, comment="Current status of the task")
-    result = Column(
-        JSON, comment="JSON data representing the result of the task"
-    )
-    file_name = Column(
-        String, comment="Name of the file associated with the task"
-    )
+    result = Column(JSON, comment="JSON data representing the result of the task")
+    file_name = Column(String, comment="Name of the file associated with the task")
     url = Column(String, comment="URL of the file associated with the task")
     audio_duration = Column(Float, comment="Duration of the audio in seconds")
-    language = Column(
-        String, comment="Language of the file associated with the task"
-    )
+    language = Column(String, comment="Language of the file associated with the task")
     task_type = Column(String, comment="Type/category of the task")
     task_params = Column(JSON, comment="Parameters of the task")
     duration = Column(Float, comment="Duration of the task execution")
-    error = Column(
-        String, comment="Error message, if any, associated with the task"
-    )
+    start_time = Column(DateTime, comment="Start time of the task execution")
+    end_time = Column(DateTime, comment="End time of the task execution")
+    error = Column(String, comment="Error message, if any, associated with the task")
     created_at = Column(
         DateTime, default=datetime.utcnow, comment="Date and time of creation"
     )
