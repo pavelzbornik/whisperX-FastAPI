@@ -1,7 +1,6 @@
 """This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
 
 import gc
-import os
 from datetime import datetime
 
 import torch
@@ -13,19 +12,17 @@ from whisperx import (
     load_model,
 )
 
+from .config import Config
 from .logger import logger  # Import the logger from the new module
 from .schemas import AlignedTranscription, SpeechToTextProcessingParams
 from .tasks import update_task_status_in_db
 from .transcript import filter_aligned_transcription
 
-LANG = os.getenv("DEFAULT_LANG", "en")
-HF_TOKEN = os.getenv("HF_TOKEN")
-WHISPER_MODEL = os.getenv("WHISPER_MODEL")
-
-device = os.getenv("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
-compute_type = os.getenv(
-    "COMPUTE_TYPE", "float16" if torch.cuda.is_available() else "int8"
-)
+LANG = Config.LANG
+HF_TOKEN = Config.HF_TOKEN
+WHISPER_MODEL = Config.WHISPER_MODEL
+device = Config.DEVICE
+compute_type = Config.COMPUTE_TYPE
 
 
 def transcribe_with_whisper(
@@ -248,7 +245,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
     try:
         start_time = datetime.now()
         logger.info(
-            "Starting full audio processing for identifier: %s",
+            "Starting speech-to-text processing for identifier: %s",
             params.identifier,
         )
 
@@ -323,7 +320,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
         logger.info(
-            "Completed full audio processing for identifier: %s. Duration: %ss",
+            "Completed speech-to-text processing for identifier: %s. Duration: %ss",
             params.identifier,
             duration,
         )
@@ -341,7 +338,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
         )
     except (RuntimeError, ValueError, KeyError) as e:
         logger.error(
-            "Audio processing failed for identifier: %s. Error: %s",
+            "Speech-to-text processing failed for identifier: %s. Error: %s",
             params.identifier,
             str(e),
         )

@@ -151,7 +151,7 @@ class WhisperModel(str, Enum):
     large_v1 = "large-v1"
     large_v2 = "large-v2"
     large_v3 = "large-v3"
-    large_v3_turbo = "large-v3-turbo"
+    # large_v3_turbo = "large-v3-turbo" # needs FatserWhisper 1.1.1 https://github.com/SYSTRAN/faster-whisper/releases/tag/v1.1.0
 
 
 class Device(str, Enum):

@@ -7,12 +7,16 @@ import os
 import yaml
 
 # Determine environment and set log level accordingly
-env = os.getenv("ENVIRONMENT", "production").lower()
+from .config import Config
+
+env = Config.ENVIRONMENT
+log_level = Config.LOG_LEVEL
+
 debug = env == "development"
 log_level = os.getenv("LOG_LEVEL", "DEBUG" if debug else "INFO").upper()
 
 # Load logging configuration from YAML file
-config_path = os.path.join(os.path.dirname(__file__), "log_conf.yaml")
+config_path = os.path.join(os.path.dirname(__file__), "uvicorn_log_conf.yaml")
 with open(config_path, "r") as f:
     config = yaml.safe_load(f.read())
 

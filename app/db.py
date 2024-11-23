@@ -9,12 +9,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
+from .config import Config
+
 # Load environment variables from .env
 load_dotenv()
 
 # Create engine and session
-db_url = os.getenv("DB_URL", "sqlite:///records.db")
-engine = create_engine(db_url, connect_args={"check_same_thread": False})
+DB_URL = Config.DB_URL
+engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

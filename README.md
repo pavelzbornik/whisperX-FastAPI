@@ -48,6 +48,15 @@ pip install git+https://github.com/m-bain/whisperx.git
 pip install -r requirements.txt
 ```
 
+### Logging Configuration
+
+The application uses two logging configuration files:
+
+- `uvicorn_log_conf.yaml`: Used by Uvicorn for logging configuration.
+- `gunicorn_logging.conf`: Used by Gunicorn for logging configuration.
+
+Ensure these files are correctly configured and placed in the `app` directory.
+
 5. Create `.env` file
 
 define your Whisper Model and token for Huggingface
@@ -61,7 +70,7 @@ LOG_LEVEL=<<LOG LEVEL>>
 6. Run the FastAPI application:
 
 ```sh
-uvicorn app.main:app --reload --log-level $LOG_LEVEL
+uvicorn app.main:app --reload --log-config uvicorn_log_conf.yaml --log-level $LOG_LEVEL
 ```
 
 The API will be accessible at <http://127.0.0.1:8000>.

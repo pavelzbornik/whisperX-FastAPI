@@ -6,23 +6,15 @@ from tempfile import NamedTemporaryFile
 
 from fastapi import HTTPException
 
+from .config import Config
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-AUDIO_EXTENSIONS = {
-    ".mp3",
-    ".wav",
-    ".awb",
-    ".aac",
-    ".ogg",
-    ".oga",
-    ".m4a",
-    ".wma",
-    ".amr",
-}
-VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".wmv", ".mkv"}
-ALLOWED_EXTENSIONS = AUDIO_EXTENSIONS | VIDEO_EXTENSIONS
+AUDIO_EXTENSIONS = Config.AUDIO_EXTENSIONS
+VIDEO_EXTENSIONS = Config.VIDEO_EXTENSIONS
+ALLOWED_EXTENSIONS = Config.ALLOWED_EXTENSIONS
 
 
 def validate_extension(filename, allowed_extensions: dict):

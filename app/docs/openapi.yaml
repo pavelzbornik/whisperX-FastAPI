@@ -1,44 +1,7 @@
 openapi: 3.1.0
 info:
   title: whisperX REST service
-  description: '
-
-    # whisperX REST Service
-
-
-    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.
-
-
-    ## Documentation:
-
-
-    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).
-
-
-    ## Services:
-
-
-    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:
-
-
-    1. Transcribe: Transcribe an audio/video  file into text.
-
-    2. Align: Align the transcript to the audio/video file.
-
-    3. Diarize: Diarize an audio/video file into speakers.
-
-    4. Combine Transcript and Diarization: Combine the transcript and diarization results.
-
-
-    ## Supported file extensions:
-
-    AUDIO_EXTENSIONS = {''.m4a'', ''.ogg'', ''.awb'', ''.amr'', ''.wma'', ''.oga'', ''.aac'', ''.wav'', ''.mp3''}
-
-
-    VIDEO_EXTENSIONS = {''.wmv'', ''.mkv'', ''.mov'', ''.mp4'', ''.avi''}
-
-
-'
+  description: "\n    # whisperX REST Service\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.mp3', '.ogg', '.m4a', '.aac', '.amr', '.wav', '.oga', '.wma', '.awb'}\n\n    VIDEO_EXTENSIONS = {'.mkv', '.avi', '.wmv', '.mov', '.mp4'}\n\n    "
   version: 0.0.1
 paths:
   /speech-to-text:
@@ -1548,7 +1511,6 @@ components:
         - large-v1
         - large-v2
         - large-v3
-        - large-v3-turbo
       title: WhisperModel
       description: Enum for Whisper model types.
 tags:
