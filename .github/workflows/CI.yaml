@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches:
@@ -7,39 +6,33 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:  # Allows manual triggering of the workflow
-
+  workflow_dispatch: # Allows manual triggering of the workflow
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Free Disk Space (Ubuntu)
-      uses: jlumbroso/free-disk-space@main
-      with:
-        tool-cache: false
-        android: true
-        dotnet: true
-        haskell: true
-        large-packages: false
-        docker-images: false
-        swap-storage: true
-
-    - name: Build and export to Docker
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        load: true
-        push: false
-        tags: whisperx-fastapi:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Run tests
-      run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --env DEVICE=cpu --env COMPUTE_TYPE=int8 --entrypoint pytest whisperx-fastapi:latest
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          docker-images: false
+          swap-storage: true
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: whisperx-fastapi:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run tests
+        run: docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} --env WHISPER_MODEL=tiny --env DEFAULT_LANG=en --env DEVICE=cpu --env COMPUTE_TYPE=int8 --entrypoint pytest whisperx-fastapi:latest

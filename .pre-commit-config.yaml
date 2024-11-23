@@ -1,29 +1,61 @@
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0  # Use the latest tag from the repository
+    rev: v5.0.0 # Use the latest tag from the repository
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
       - id: detect-private-key
-
+      - id: requirements-txt-fixer
   # Add black for Python code formatting
   - repo: https://github.com/psf/black
-    rev: 23.9.1  # Use the latest stable version of Black
+    rev: 23.9.1 # Use the latest stable version of Black
     hooks:
       - id: black
-
   # Add isort for sorting imports in Python
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         name: isort (python)
-
   # Add pydocstyle for checking docstrings
   - repo: https://github.com/PyCQA/pydocstyle
-    rev: 6.3.0  # Use the latest stable version of pydocstyle
+    rev: 6.3.0 # Use the latest stable version of pydocstyle
     hooks:
       - id: pydocstyle
+  # Lint: YAML
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
+        files: \.(yaml|yml)$
+  - repo: https://github.com/google/yamlfmt
+    rev: v0.10.0
+    hooks:
+      - id: yamlfmt
+  # Lint: Shell scripts
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-x"]
+  # Lint: Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.42.0
+    hooks:
+      - id: markdownlint
+        args: ["--fix", "--config", ".markdownlint.json"]
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.19.0
+    hooks:
+      - id: gitleaks
+        args: ["--source", ".", "--config", ".gitleaks.toml"]

@@ -32,6 +32,6 @@
       }
     }
   },
-  "postCreateCommand": "pip install -r requirements/dev.txt",
+  "postCreateCommand": "pip install -r requirements/dev.txt && pre-commit install",
   "remoteUser": "root"
 }

@@ -290,7 +290,7 @@ class WhsiperModelParams(BaseModel):
     threads: int = Field(
         Query(
             0,
-            description="Number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS",
+            description="Number of threads used by torch for CPU inference; supersedes MKL_NUM_THREADS/OMP_NUM_THREADS",
         )
     )
     batch_size: int = Field(

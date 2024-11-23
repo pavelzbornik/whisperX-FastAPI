@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   whisperx-service:
     build:
@@ -10,9 +9,9 @@ services:
       resources:
         reservations:
           devices:
-          - driver: nvidia
-            count: 1
-            capabilities: [gpu]
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     container_name: whisperx-container
     env_file:
       - .env
@@ -21,7 +20,6 @@ services:
     volumes:
       - "/data/whisperx/cache:/root/.cache"
       - "/data/whisperx/tmp:/tmp"
-
 volumes:
   whisperx-models-cache:
   whisperx-app-volume:

@@ -1,8 +1,6 @@
 services:
   whisperx:
-
     container_name: "whisperx"
-
     entrypoint:
       - "gunicorn"
       - "--bind"
@@ -14,27 +12,18 @@ services:
       - "app.main:app"
       - "-k"
       - "uvicorn.workers.UvicornWorker"
-
     environment:
-      - "HF_TOKEN=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"
       - "WHISPER_MODEL=large-v2"
     image: "whisperx-service2:2024-11-16"
-
     logging:
       driver: "json-file"
       options: {}
-
     network_mode: "bridge"
-
     ports:
       - "8000:8000/tcp"
-
     restart: "unless-stopped"
-
     volumes:
       - "/data/whisperx/cache:/root/.cache"
       - "/data/whisperx/tmp:/tmp"
-
     working_dir: "/app"
-
 version: "3.6"

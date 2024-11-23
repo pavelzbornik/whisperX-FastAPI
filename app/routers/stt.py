@@ -71,7 +71,7 @@ async def speech_to_text(
 
     audio = process_audio_file(temp_file)
     audio_duration = get_audio_duration(audio)
-    logger.info("Audio file %s lenght: %s seconds", file.filename, audio_duration)
+    logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
 
     identifier = add_task_to_db(
         status="processing",

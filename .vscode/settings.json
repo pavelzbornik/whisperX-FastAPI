@@ -2,6 +2,7 @@
     "python.testing.pytestArgs": [
         "tests"
     ],
+    "python.analysis.extraPaths": ["app"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
 }
