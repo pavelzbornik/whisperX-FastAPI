@@ -1,5 +1,5 @@
 colorlog==6.9.0
-ctranslate2==4.4.0
+ctranslate2==4.5.0
 fastapi==0.115.5
 gunicorn==23.0.0
 httpx==0.28.0
