@@ -2,7 +2,7 @@ colorlog==6.9.0
 ctranslate2==4.4.0
 fastapi==0.115.5
 gunicorn==23.0.0
-httpx==0.27.2
+httpx==0.28.0
 numba==0.60.0
 pyannote.audio==3.3.2 #update to latest version
 pytest==8.3.4
