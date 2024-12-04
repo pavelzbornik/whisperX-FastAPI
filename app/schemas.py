@@ -296,6 +296,12 @@ class WhsiperModelParams(BaseModel):
     batch_size: int = Field(
         Query(8, description="The preferred batch size for inference")
     )
+    chunk_size: int = Field(
+        Query(
+            20,
+            description="Chunk size for merging VAD segments. Default is 20, reduce this if the chunk is too long.",
+        )
+    )
     compute_type: ComputeType = Field(
         Query("float16", description="Type of computation")
     )

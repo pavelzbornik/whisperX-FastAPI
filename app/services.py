@@ -128,6 +128,7 @@ def process_transcribe(
         vad_options_params.model_dump(),
         model_params.language,
         model_params.batch_size,
+        model_params.chunk_size,
         model_params.model,
         model_params.device,
         model_params.device_index,
