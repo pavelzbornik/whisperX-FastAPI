@@ -123,7 +123,7 @@ def process_transcribe(
         "transcription",
         session,
         audio,
-        model_params.task,
+        model_params.task.value,
         asr_options_params.model_dump(),
         vad_options_params.model_dump(),
         model_params.language,

@@ -263,7 +263,7 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
 
         segments_before_alignment = transcribe_with_whisper(
             audio=params.audio,
-            task=params.whisper_model_params.task,
+            task=params.whisper_model_params.task.value,
             asr_options=params.asr_options,
             vad_options=params.vad_options,
             language=params.whisper_model_params.language,
