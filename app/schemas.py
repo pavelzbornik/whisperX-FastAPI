@@ -151,7 +151,7 @@ class WhisperModel(str, Enum):
     large_v1 = "large-v1"
     large_v2 = "large-v2"
     large_v3 = "large-v3"
-    # large_v3_turbo = "large-v3-turbo" # needs FatserWhisper 1.1.1 https://github.com/SYSTRAN/faster-whisper/releases/tag/v1.1.0
+    large_v3_turbo = "large-v3-turbo"
 
 
 class Device(str, Enum):
@@ -183,6 +183,12 @@ class ASROptions(BaseModel):
         Query(
             5,
             description="Number of beams in beam search, only applicable when temperature is zero",
+        )
+    )
+    best_of: int = Field(
+        Query(
+            5,
+            description="Number of beams to keep in beam search, only applicable when temperature is zero",
         )
     )
     patience: float = Field(
@@ -228,6 +234,12 @@ class ASROptions(BaseModel):
         Query(
             False,
             description="Whether to suppress numeric symbols and currency symbols during sampling",
+        )
+    )
+    hotwords: Optional[str] = Field(
+        Query(
+            None,
+            description="Hotwords related prompt applied before each transcription window",
         )
     )
 
