@@ -32,6 +32,7 @@ def transcribe_with_whisper(
     vad_options,
     language,
     batch_size: int = 16,
+    chunk_size: int = 20,
     model: str = WHISPER_MODEL,
     device: str = device,
     device_index: int = 0,
@@ -44,6 +45,7 @@ def transcribe_with_whisper(
     Args:
        audio (Audio): The audio to transcribe.
        batch_size (int): Batch size for transcription (default 16).
+       chunk_size (int): Chunk size for transcription (default 20).
        model (str): Name of the Whisper model to use.
        device (str): Device to use for PyTorch inference.
        device_index (int): Device index to use for FasterWhisper inference.
@@ -88,7 +90,7 @@ def transcribe_with_whisper(
         threads=faster_whisper_threads,
     )
     logger.debug("Transcription model loaded successfully")
-    result = model.transcribe(audio=audio, batch_size=batch_size, language=language)
+    result = model.transcribe(audio=audio, batch_size=batch_size, chunk_size=chunk_size, language=language)
 
     # Log GPU memory before cleanup
     if torch.cuda.is_available():
@@ -250,10 +252,11 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
         )
 
         logger.debug(
-            "Transcription parameters - task: %s, language: %s, batch_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
+            "Transcription parameters - task: %s, language: %s, batch_size: %d, chunk_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
             params.whisper_model_params.task,
             params.whisper_model_params.language,
             params.whisper_model_params.batch_size,
+            params.whisper_model_params.chunk_size,
             params.whisper_model_params.model,
             params.whisper_model_params.device,
             params.whisper_model_params.device_index,
@@ -263,11 +266,12 @@ def process_audio_common(params: SpeechToTextProcessingParams, session):
 
         segments_before_alignment = transcribe_with_whisper(
             audio=params.audio,
-            task=params.whisper_model_params.task,
+            task=params.whisper_model_params.task.value,
             asr_options=params.asr_options,
             vad_options=params.vad_options,
             language=params.whisper_model_params.language,
             batch_size=params.whisper_model_params.batch_size,
+            chunk_size=params.whisper_model_params.chunk_size,
             model=params.whisper_model_params.model,
             device=params.whisper_model_params.device,
             device_index=params.whisper_model_params.device_index,

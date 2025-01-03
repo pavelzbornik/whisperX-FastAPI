@@ -2,7 +2,7 @@
 -r prod.txt
 
 black==24.10.0
-codespell==2.2.5
+codespell==2.3.0
 flake8==7.1.1
 flake8-blind-except==0.2.1
 flake8-debugger==4.1.2
