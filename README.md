@@ -75,9 +75,7 @@ WhisperX supports these model sizes:
 - `base`, `base.en`
 - `small`, `small.en`
 - `medium`, `medium.en`
-- `large`, `large-v1`, `large-v2`, `large-v3`
-
-Note: `large-v3-turbo` is not yet supported by WhisperX.
+- `large`, `large-v1`, `large-v2`, `large-v3`, `large-v3-turbo`
 
 Set default model in `.env` using `WHISPER_MODEL=` (default: tiny)
 
@@ -184,10 +182,6 @@ The models used by whisperX are stored in `root/.cache`, if you want to avoid do
 1. **ctranslate2 Compatibility**
 
 - Only `ctranslate2==4.4.0` is supported due to CUDA compatibility issues with CTranslate2, as newer versions have different CUDA requirements <https://github.com/SYSTRAN/faster-whisper/issues/1086>.
-
-2. **faster-whisper Compatibility**
-
-- Only `faster-whisper==1.0.0` is supported due to compatibility issues with WhisperX.
 
 ## Troubleshooting
 

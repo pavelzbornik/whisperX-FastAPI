@@ -5,7 +5,7 @@ gunicorn==23.0.0
 httpx==0.28.1
 numba==0.60.0
 
-pytest==8.3.3
+pytest==8.3.4
 python-dotenv==1.0.1
 python-multipart==0.0.20
 tqdm==4.67.1
