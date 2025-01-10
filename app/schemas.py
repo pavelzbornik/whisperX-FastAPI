@@ -152,6 +152,11 @@ class WhisperModel(str, Enum):
     large_v2 = "large-v2"
     large_v3 = "large-v3"
     large_v3_turbo = "large-v3-turbo"
+    distil_large_v2 = "distil-large-v2"
+    distil_medium_en = "distil-medium.en"
+    distil_small_en = "distil-small.en"
+    distil_large_v3 = "distil-large-v3"
+    faster_crisper_whisper = "nyrahealth/faster_CrisperWhisper"
 
 
 class Device(str, Enum):
