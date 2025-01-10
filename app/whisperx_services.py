@@ -71,7 +71,7 @@ def transcribe_with_whisper(
 
     logger.debug(
         "Loading model with config - model: %s, device: %s, compute_type: %s, threads: %d, task: %s, language: %s",
-        model,
+        model.value,
         device,
         compute_type,
         faster_whisper_threads,
@@ -79,7 +79,7 @@ def transcribe_with_whisper(
         language,
     )
     model = load_model(
-        model,
+        model.value,
         device,
         device_index=device_index,
         compute_type=compute_type,
@@ -90,7 +90,9 @@ def transcribe_with_whisper(
         threads=faster_whisper_threads,
     )
     logger.debug("Transcription model loaded successfully")
-    result = model.transcribe(audio=audio, batch_size=batch_size, chunk_size=chunk_size, language=language)
+    result = model.transcribe(
+        audio=audio, batch_size=batch_size, chunk_size=chunk_size, language=language
+    )
 
     # Log GPU memory before cleanup
     if torch.cuda.is_available():

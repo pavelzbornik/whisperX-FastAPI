@@ -76,6 +76,8 @@ WhisperX supports these model sizes:
 - `small`, `small.en`
 - `medium`, `medium.en`
 - `large`, `large-v1`, `large-v2`, `large-v3`, `large-v3-turbo`
+- Distilled models: `distil-large-v2`, `distil-medium.en`, `distil-small.en`, `distil-large-v3`
+- Custom models: [`nyrahealth/faster_CrisperWhisper`](https://github.com/nyrahealth/CrisperWhisper)
 
 Set default model in `.env` using `WHISPER_MODEL=` (default: tiny)
 
