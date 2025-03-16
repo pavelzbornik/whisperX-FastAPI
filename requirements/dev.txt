@@ -10,4 +10,4 @@ flake8-docstrings==1.7.0
 flake8-isort==6.1.1
 isort==5.13.2
 pep8-naming==0.14.1
-pre-commit==4.0.1
+pre-commit==4.1.0
