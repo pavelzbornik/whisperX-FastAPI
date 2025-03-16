@@ -1,0 +1,57 @@
+name: Build Status
+on:
+  workflow_call:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "requirements/**"
+  pull_request:
+    branches-ignore:
+      - main
+      - dev
+    paths:
+      - "app/**"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "requirements/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      WHISPER_MODEL: tiny
+      DEFAULT_LANG: en
+      DEVICE: cpu
+      COMPUTE_TYPE: int8
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "event name is:" ${{ github.event_name }}
+      - run: echo "event type is:" ${{ github.event.action }}
+      - run: echo "actor is:" ${{ github.actor }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "requirements/**/*.txt"
+          version: "0.6.6"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          python-version-file: "pyproject.toml"
+      - name: Install Python dependencies
+        run: uv pip install --system -r requirements/dev.txt
+      - name: Run Python lints
+        run: flask lint --check
+      - name: Run tests with coverage check
+        run: |
+          coverage run -m pytest
+          coverage report --fail-under=55
