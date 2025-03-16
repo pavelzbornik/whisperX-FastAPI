@@ -9,8 +9,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import main
+from app.db import engine
 
-client = TestClient(main.app)
+client = TestClient(main.app, follow_redirects=False)
 
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
@@ -36,9 +37,71 @@ def set_env_variable(monkeypatch):
 
 def test_index():
     """Test the index route to ensure it redirects to the documentation."""
-    response = client.get("/", allow_redirects=False)
+    response = client.get("/")
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"
+
+
+# Health check tests
+def test_health_check():
+    """Test the basic health check endpoint."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["message"] == "Service is running"
+
+
+def test_liveness_check():
+    """Test the liveness check endpoint."""
+    response = client.get("/health/live")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "timestamp" in data
+    assert data["message"] == "Application is live"
+    # Verify timestamp is a valid number
+    assert isinstance(data["timestamp"], (int, float))
+
+
+def test_readiness_check():
+    """Test the readiness check endpoint."""
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["database"] == "connected"
+    assert data["message"] == "Application is ready to accept requests"
+
+
+def test_readiness_check_with_db_failure(monkeypatch):
+    """Test the readiness check endpoint when database connection fails."""
+
+    # Create a mock engine connect method that raises an exception
+    def mock_connect(*args, **kwargs):
+        class MockConnection:
+            def __enter__(self):
+                raise Exception("Database connection failed")
+
+            def __exit__(self, *args):
+                pass
+
+        return MockConnection()
+
+    # Patch the engine.connect method
+    original_connect = engine.connect
+    monkeypatch.setattr(engine, "connect", mock_connect)
+
+    try:
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "error"
+        assert data["database"] == "disconnected"
+        assert "Database connection failed" in data["message"]
+    finally:
+        # Restore the original connect method
+        monkeypatch.setattr(engine, "connect", original_connect)
 
 
 def get_task_status(identifier):
@@ -106,9 +169,9 @@ def generic_transcription(client_url):
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
@@ -129,9 +192,10 @@ def align(transcript_file):
     Returns:
         dict: The result of the alignment task.
     """
-    with open(transcript_file, "rb") as transcript_file, open(
-        AUDIO_FILE, "rb"
-    ) as audio_file:
+    with (
+        open(transcript_file, "rb") as transcript_file,
+        open(AUDIO_FILE, "rb") as audio_file,
+    ):
         response = client.post(
             f"/service/align?device={os.getenv('DEVICE')}",
             files={
@@ -147,9 +211,9 @@ def align(transcript_file):
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
 
@@ -176,9 +240,9 @@ def diarize():
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
 
@@ -196,9 +260,10 @@ def combine(aligned_transcript_file, diarazition_file):
     Returns:
         dict: The combined result.
     """
-    with open(aligned_transcript_file, "rb") as transcript_file, open(
-        diarazition_file, "rb"
-    ) as diarization_result:
+    with (
+        open(aligned_transcript_file, "rb") as transcript_file,
+        open(diarazition_file, "rb") as diarization_result,
+    ):
         files = {
             "aligned_transcript": ("aligned_transcript.json", transcript_file),
             "diarization_result": ("diarazition.json", diarization_result),
@@ -215,9 +280,9 @@ def combine(aligned_transcript_file, diarazition_file):
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
 
@@ -250,13 +315,11 @@ def test_diarize():
 def test_flow():
     """Test the complete flow of transcription, alignment, diarization, and combination."""
     # Create temporary files for transcript, aligned transcript, and diarization
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False
-    ) as transcript_file, tempfile.NamedTemporaryFile(
-        mode="w", delete=False
-    ) as aligned_transcript_file, tempfile.NamedTemporaryFile(
-        mode="w", delete=False
-    ) as diarization_file:
+    with (
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as transcript_file,
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as aligned_transcript_file,
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as diarization_file,
+    ):
         # Write the transcription result to the temporary transcript file
         json.dump(generic_transcription("/service/transcribe"), transcript_file)
         transcript_file.flush()  # Ensure data is written to the file
@@ -310,9 +373,9 @@ def test_speech_to_text_url():
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]

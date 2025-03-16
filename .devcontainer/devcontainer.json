@@ -6,7 +6,10 @@
   "runArgs": ["--gpus", "all"],
 
   "forwardPorts": [8000],
-
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {
+  //   "ghcr.io/va-h/devcontainers-features/uv:1": {}
+  // },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -15,23 +18,40 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "github.copilot",
-        "ms-python.black-formatter",
-        "ms-python.flake8",
+        "charliermarsh.ruff",
         "github.vscode-github-actions",
         "george-alisson.html-preview-vscode",
-        "ms-python.isort",
         "prettier.prettier-vscode",
-        "ms-azuretools.vscode-docker"
+        "ms-azuretools.vscode-docker",
+        "SonarSource.sonarlint-vscode",
       ],
       "settings": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "[json]": {
-          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.formatOnSave": true,
+        "files.trimTrailingWhitespace": true,
+        "files.insertFinalNewline": true,
+        "editor.codeActionsOnSave": {
+          "source.fixAll": true,
+          "source.fixAll.eslint": true,
+          "source.organizeImports": true
         },
-        "editor.formatOnSave": true
+        "python.analysis.typeCheckingMode": "basic",
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff",
+          "editor.formatOnSave": true
+        },
+        "ruff.codeAction.disableRuleComment": {
+          "enable": true
+        },
+        "ruff.codeAction.fixViolation": {
+          "enable": true
+        },
+        "ruff.lint.enable": true,
+        "ruff.format.enable": true,
+        "python.linting.enabled": true
       }
     }
   },
-  "postCreateCommand": "pip install -r requirements/dev.txt && pre-commit install",
+  "postCreateCommand": "chmod +x .devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
+  "postAttachCommand": "chmod +x .devcontainer/post-attach.sh && ./.devcontainer/post-attach.sh",
   "remoteUser": "root"
 }

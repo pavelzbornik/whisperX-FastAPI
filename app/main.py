@@ -4,18 +4,19 @@ from .warnings_filter import filter_warnings
 
 filter_warnings()
 
-from contextlib import asynccontextmanager
+import time  # noqa: E402
+from contextlib import asynccontextmanager  # noqa: E402
 
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from dotenv import load_dotenv  # noqa: E402
+from fastapi import FastAPI, status  # noqa: E402
+from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
-from .config import Config
-from .db import engine
-from .docs import generate_db_schema, save_openapi_json
-from .files import AUDIO_EXTENSIONS, VIDEO_EXTENSIONS
-from .models import Base
-from .routers import stt, stt_services, task
+from .config import Config  # noqa: E402
+from .db import engine  # noqa: E402
+from .docs import generate_db_schema, save_openapi_json  # noqa: E402
+from .models import Base  # noqa: E402
+from .routers import stt, stt_services, task  # noqa: E402
 
 # Load environment variables from .env
 load_dotenv()
@@ -52,13 +53,17 @@ tags_metadata = [
         "name": "Tasks Management",
         "description": "Manage tasks.",
     },
+    {
+        "name": "Health",
+        "description": "Health check endpoints to monitor application status",
+    },
 ]
 
 
 app = FastAPI(
     title="whisperX REST service",
     description=f"""
-    # whisperX REST Service
+    # whisperX RESTful API
 
     Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.
 
@@ -92,7 +97,69 @@ app.include_router(task.task_router)
 app.include_router(stt_services.service_router)
 
 
-@app.get("/", response_class=RedirectResponse, include_in_schema=False)
+@app.get("/", include_in_schema=False)
 async def index():
     """Redirect to the documentation."""
-    return "/docs"
+    return RedirectResponse(url="/docs", status_code=307)
+
+
+# Health check endpoints
+@app.get("/health", tags=["Health"], summary="Simple health check")
+async def health_check():
+    """Verify the service is up and running.
+
+    Returns a simple status response to confirm the API service is operational.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"status": "ok", "message": "Service is running"},
+    )
+
+
+@app.get("/health/live", tags=["Health"], summary="Liveness check")
+async def liveness_check():
+    """Check if the application is running.
+
+    Used by orchestration systems like Kubernetes to detect if the app is alive.
+    Returns timestamp along with status information.
+    """
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "status": "ok",
+            "timestamp": time.time(),
+            "message": "Application is live",
+        },
+    )
+
+
+@app.get("/health/ready", tags=["Health"], summary="Readiness check")
+async def readiness_check():
+    """Check if the application is ready to accept requests.
+
+    Verifies dependencies like the database are connected and ready.
+    Returns HTTP 200 if all systems are operational, HTTP 503 if any dependency
+    has failed.
+    """
+    try:
+        # Check database connection
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "status": "ok",
+                "database": "connected",
+                "message": "Application is ready to accept requests",
+            },
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "error",
+                "database": "disconnected",
+                "message": f"Application is not ready: {str(e)}",
+            },
+        )

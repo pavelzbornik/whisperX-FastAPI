@@ -4,6 +4,8 @@ import gc
 from datetime import datetime
 
 import torch
+from fastapi import Depends
+from sqlalchemy.orm import Session
 from whisperx import (
     DiarizationPipeline,
     align,
@@ -13,6 +15,7 @@ from whisperx import (
 )
 
 from .config import Config
+from .db import get_db_session
 from .logger import logger  # Import the logger from the new module
 from .schemas import AlignedTranscription, SpeechToTextProcessingParams
 from .tasks import update_task_status_in_db
@@ -62,7 +65,7 @@ def transcribe_with_whisper(
     # Log GPU memory before loading model
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory before loading model - used: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
     faster_whisper_threads = 4
     if (threads := threads) > 0:
@@ -97,7 +100,7 @@ def transcribe_with_whisper(
     # Log GPU memory before cleanup
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory before cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory before cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     # delete model
@@ -108,7 +111,7 @@ def transcribe_with_whisper(
     # Log GPU memory after cleanup
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory after cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     logger.debug("Completed transcription")
@@ -130,7 +133,7 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     # Log GPU memory before loading model
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory before loading model - used: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
@@ -139,7 +142,7 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     # Log GPU memory before cleanup
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory before cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory before cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     # delete model
@@ -150,7 +153,7 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
     # Log GPU memory after cleanup
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory after cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     logger.debug("Completed diarization with device: %s", device)
@@ -189,7 +192,7 @@ def align_whisper_output(
     # Log GPU memory before loading model
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory before loading model - used: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     logger.debug(
@@ -216,7 +219,7 @@ def align_whisper_output(
     # Log GPU memory before cleanup
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory before cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory before cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     # delete model
@@ -228,20 +231,22 @@ def align_whisper_output(
     # Log GPU memory after cleanup
     if torch.cuda.is_available():
         logger.debug(
-            f"GPU memory after cleanup: {torch.cuda.memory_allocated()/1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory/1024**2:.2f} MB"
+            f"GPU memory after cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
     logger.debug("Completed alignment")
     return result
 
 
-def process_audio_common(params: SpeechToTextProcessingParams, session):
+def process_audio_common(
+    params: SpeechToTextProcessingParams, session: Session = Depends(get_db_session)
+):
     """
     Process an audio clip to generate a transcript with speaker labels.
 
     Args:
-        audio (Audio): The input audio
-        identifier (str): The identifier for the request
+        params (SpeechToTextProcessingParams): The speech-to-text processing parameters
+        session (Session): Database session
 
     Returns:
         None: The result is saved in the transcription requests dict.

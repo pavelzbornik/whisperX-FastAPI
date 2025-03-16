@@ -5,3 +5,24 @@ skip_glob = ["migrations/*"]
 [tool.codespell]
 skip = ["*.json","*.yaml"]
 builtin = "clear,rare,informal,usage,code,names"
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "tests/*",
+    "/tmp/*",
+    "venv/*",
+    "*/virtualenv/*",
+    "*/site-packages/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError"
+]
+ignore_errors = true

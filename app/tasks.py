@@ -13,7 +13,6 @@ from .schemas import ResultTasks, TaskSimple
 # Add tasks to the database
 @handle_database_errors
 def add_task_to_db(
-    session,
     status,
     task_type,
     language=None,
@@ -23,12 +22,12 @@ def add_task_to_db(
     audio_duration=None,
     start_time=None,
     end_time=None,
+    session: Session = Depends(get_db_session),
 ):
     """
     Add a new task to the database.
 
     Args:
-        session (Session): Database session.
         status (str): Status of the task.
         task_type (str): Type of the task.
         language (str, optional): Language of the task. Defaults to None.
@@ -38,6 +37,7 @@ def add_task_to_db(
         audio_duration (float, optional): Duration of the audio file. Defaults to None.
         start_time (datetime, optional): Start time of the task. Defaults to None.
         end_time (datetime, optional): End time of the task. Defaults to None.
+        session (Session, optional): Database session. Defaults to Depends(get_db_session).
 
     Returns:
         str: UUID of the newly created task.
@@ -148,13 +148,13 @@ def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
 
 
 @handle_database_errors
-def delete_task_from_db(identifier: str, session: Session):
+def delete_task_from_db(identifier: str, session: Session = Depends(get_db_session)):
     """
     Delete a task from the database.
 
     Args:
         identifier (str): Identifier of the task to be deleted.
-        session (Session): Database session.
+        session (Session, optional): Database session. Defaults to Depends(get_db_session).
 
     Returns:
         bool: True if the task was deleted, False if the task does not exist.
