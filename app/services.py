@@ -3,9 +3,10 @@
 from datetime import datetime
 
 import whisperx
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from .db import get_db_session
 from .logger import logger  # Import the logger from the new module
 from .schemas import (
     AlignmentParams,
@@ -38,7 +39,7 @@ def process_audio_task(
     audio_processor,
     identifier: str,
     task_type: str,
-    session: Session,
+    session: Session = Depends(get_db_session),
     *args,
 ):
     """
@@ -104,7 +105,7 @@ def process_transcribe(
     model_params: WhsiperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
-    session: Session,
+    session: Session = Depends(get_db_session),
 ):
     """
     Process a transcription task.
@@ -142,7 +143,7 @@ def process_diarize(
     identifier,
     device,
     diarize_params: DiarizationParams,
-    session: Session,
+    session: Session = Depends(get_db_session),
 ):
     """
     Process a diarization task.
@@ -172,7 +173,7 @@ def process_alignment(
     identifier,
     device,
     align_params: AlignmentParams,
-    session: Session,
+    session: Session = Depends(get_db_session),
 ):
     """
     Process a transcription alignment task.
@@ -204,7 +205,7 @@ def process_speaker_assignment(
     diarization_segments,
     transcript,
     identifier,
-    session: Session,
+    session: Session = Depends(get_db_session),
 ):
     """
     Process a speaker assignment task.

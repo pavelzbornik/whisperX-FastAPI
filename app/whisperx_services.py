@@ -4,6 +4,8 @@ import gc
 from datetime import datetime
 
 import torch
+from fastapi import Depends
+from sqlalchemy.orm import Session
 from whisperx import (
     DiarizationPipeline,
     align,
@@ -13,6 +15,7 @@ from whisperx import (
 )
 
 from .config import Config
+from .db import get_db_session
 from .logger import logger  # Import the logger from the new module
 from .schemas import AlignedTranscription, SpeechToTextProcessingParams
 from .tasks import update_task_status_in_db
@@ -235,13 +238,15 @@ def align_whisper_output(
     return result
 
 
-def process_audio_common(params: SpeechToTextProcessingParams, session):
+def process_audio_common(
+    params: SpeechToTextProcessingParams, session: Session = Depends(get_db_session)
+):
     """
     Process an audio clip to generate a transcript with speaker labels.
 
     Args:
-        audio (Audio): The input audio
-        identifier (str): The identifier for the request
+        params (SpeechToTextProcessingParams): The speech-to-text processing parameters
+        session (Session): Database session
 
     Returns:
         None: The result is saved in the transcription requests dict.
