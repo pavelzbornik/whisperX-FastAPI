@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 
 import numpy as np
 from fastapi import Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from whisperx import utils
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
@@ -358,6 +358,8 @@ class DiarizationParams(BaseModel):
 class SpeechToTextProcessingParams(BaseModel):
     """Model for speech-to-text processing parameters."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     audio: np.ndarray  # NumPy array containing the audio waveform, float32 dtype
     identifier: str
     vad_options: VADOptions
@@ -365,8 +367,3 @@ class SpeechToTextProcessingParams(BaseModel):
     whisper_model_params: WhsiperModelParams
     alignment_params: AlignmentParams
     diarization_params: DiarizationParams
-
-    class Config:
-        """Configuration for the SpeechToTextProcessingParams model."""
-
-        arbitrary_types_allowed = True
