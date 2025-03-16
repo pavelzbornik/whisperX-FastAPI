@@ -30,28 +30,37 @@ See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details
 ### Available Services
 
 1. Speech-to-Text (`/speech-to-text`)
+
    - Upload audio/video files for transcription
    - Supports multiple languages and Whisper models
 
 2. Speech-to-Text URL (`/speech-to-text-url`)
+
    - Transcribe audio/video from URLs
    - Same features as direct upload
 
 3. Individual Services:
+
    - Transcribe (`/service/transcribe`): Convert speech to text
    - Align (`/service/align`): Align transcript with audio
    - Diarize (`/service/diarize`): Speaker diarization
    - Combine (`/service/combine`): Merge transcript with diarization
 
 4. Task Management:
+
    - Get all tasks (`/task/all`)
    - Get task status (`/task/{identifier}`)
+
+5. Health Check Endpoints:
+   - Basic health check (`/health`): Simple service status check
+   - Liveness probe (`/health/live`): Verifies if application is running
+   - Readiness probe (`/health/ready`): Checks if application is ready to accept requests (includes database connectivity check)
 
 ### Task management and result storage
 
 ![Service chart](app/docs/service_chart.svg)
 
-Status and result of each tasks are stored in db using ORM Sqlalchemy, db connection is defined by environment variable `DB_URL` if value is not specified `db.py` sets default db as  `sqlite:///records.db`
+Status and result of each tasks are stored in db using ORM Sqlalchemy, db connection is defined by environment variable `DB_URL` if value is not specified `db.py` sets default db as `sqlite:///records.db`
 
 See documentation for driver definition at [Sqlalchemy Engine configuration](https://docs.sqlalchemy.org/en/20/core/engines.html) if you want to connect other type of db than Sqlite.
 
@@ -65,7 +74,7 @@ Configure compute options in `.env`:
 
 - `DEVICE`: Device for inference (`cuda` or `cpu`, default: `cuda`)
 - `COMPUTE_TYPE`: Computation type (`float16`, `float32`, `int8`, default: `float16`)
-    > Note: When using CPU, `COMPUTE_TYPE` must be set to `int8`
+  > Note: When using CPU, `COMPUTE_TYPE` must be set to `int8`
 
 ### Available Models
 
@@ -190,18 +199,22 @@ The models used by whisperX are stored in `root/.cache`, if you want to avoid do
 ### Common Issues
 
 1. **Environment Variables Not Loaded**
+
    - Ensure your `.env` file is correctly formatted and placed in the root directory.
    - Verify that all required environment variables are defined.
 
 2. **Database Connection Issues**
+
    - Check the `DB_URL` environment variable for correctness.
    - Ensure the database server is running and accessible.
 
 3. **Model Download Failures**
+
    - Verify your internet connection.
    - Ensure the `HF_TOKEN` is correctly set in the `.env` file.
 
 4. **GPU Not Detected**
+
    - Ensure NVIDIA drivers and CUDA are correctly installed.
    - Verify that Docker is configured to use the GPU (`nvidia-docker`).
 
@@ -212,6 +225,27 @@ The models used by whisperX are stored in `root/.cache`, if you want to avoid do
 
 - Check the logs for detailed error messages.
 - Use the `LOG_LEVEL` environment variable to set the appropriate logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`).
+
+### Monitoring and Health Checks
+
+The API provides built-in health check endpoints that can be used for monitoring and orchestration:
+
+1. **Basic Health Check** (`/health`)
+
+   - Returns a simple status check with HTTP 200 if the service is running
+   - Useful for basic availability monitoring
+
+2. **Liveness Probe** (`/health/live`)
+
+   - Includes a timestamp with status information
+   - Designed for Kubernetes liveness probes or similar orchestration systems
+   - Returns HTTP 200 if the application is running
+
+3. **Readiness Probe** (`/health/ready`)
+   - Tests if the application is fully ready to accept requests
+   - Checks connectivity to the database
+   - Returns HTTP 200 if all dependencies are available
+   - Returns HTTP 503 if there's an issue with dependencies (e.g., database connection)
 
 ### Support
 

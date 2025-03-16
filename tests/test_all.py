@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import main
+from app.db import engine
 
 client = TestClient(main.app, follow_redirects=False)
 
@@ -39,6 +40,68 @@ def test_index():
     response = client.get("/")
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"
+
+
+# Health check tests
+def test_health_check():
+    """Test the basic health check endpoint."""
+    response = client.get("/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["message"] == "Service is running"
+
+
+def test_liveness_check():
+    """Test the liveness check endpoint."""
+    response = client.get("/health/live")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "timestamp" in data
+    assert data["message"] == "Application is live"
+    # Verify timestamp is a valid number
+    assert isinstance(data["timestamp"], (int, float))
+
+
+def test_readiness_check():
+    """Test the readiness check endpoint."""
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["database"] == "connected"
+    assert data["message"] == "Application is ready to accept requests"
+
+
+def test_readiness_check_with_db_failure(monkeypatch):
+    """Test the readiness check endpoint when database connection fails."""
+
+    # Create a mock engine connect method that raises an exception
+    def mock_connect(*args, **kwargs):
+        class MockConnection:
+            def __enter__(self):
+                raise Exception("Database connection failed")
+
+            def __exit__(self, *args):
+                pass
+
+        return MockConnection()
+
+    # Patch the engine.connect method
+    original_connect = engine.connect
+    monkeypatch.setattr(engine, "connect", mock_connect)
+
+    try:
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        data = response.json()
+        assert data["status"] == "error"
+        assert data["database"] == "disconnected"
+        assert "Database connection failed" in data["message"]
+    finally:
+        # Restore the original connect method
+        monkeypatch.setattr(engine, "connect", original_connect)
 
 
 def get_task_status(identifier):
