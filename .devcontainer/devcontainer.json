@@ -7,9 +7,9 @@
 
   "forwardPorts": [8000],
   // Features to add to the dev container. More info: https://containers.dev/features.
-  "features": {
-    "ghcr.io/va-h/devcontainers-features/uv:1": {}
-  },
+  // "features": {
+  //   "ghcr.io/va-h/devcontainers-features/uv:1": {}
+  // },
   "customizations": {
     "vscode": {
       "extensions": [

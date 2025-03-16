@@ -4,5 +4,9 @@
     ],
     "python.analysis.extraPaths": ["app"],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "sonarlint.connectedMode.project": {
+        "connectionId": "pavelzbornik",
+        "projectKey": "pavelzbornik_whisperX-FastAPI"
+    }
 }

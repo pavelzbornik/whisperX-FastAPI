@@ -91,7 +91,7 @@ app.include_router(task.task_router)
 app.include_router(stt_services.service_router)
 
 
-@app.get("/", response_class=RedirectResponse, include_in_schema=False)
+@app.get("/", include_in_schema=False)
 async def index():
     """Redirect to the documentation."""
-    return "/docs"
+    return RedirectResponse(url="/docs", status_code=307)

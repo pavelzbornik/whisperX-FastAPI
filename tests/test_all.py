@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from app import main
 
-client = TestClient(main.app)
+client = TestClient(main.app, follow_redirects=False)
 
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
@@ -36,7 +36,7 @@ def set_env_variable(monkeypatch):
 
 def test_index():
     """Test the index route to ensure it redirects to the documentation."""
-    response = client.get("/", allow_redirects=False)
+    response = client.get("/")
     assert response.status_code == 307
     assert response.headers["location"] == "/docs"
 

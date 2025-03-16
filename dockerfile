@@ -2,38 +2,38 @@ FROM nvidia/cuda:12.6.3-base-ubuntu22.04
 
 ENV PYTHON_VERSION=3.11
 
+# Install dependencies and clean up in the same layer
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y update \
     && apt-get -y install --no-install-recommends \
     python${PYTHON_VERSION} \
     python3-pip \
-    ffmpeg \
     git \
-    wget
+    ffmpeg \
+    libcudnn8 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 \
+    && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python
 
-RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb \
-    && dpkg -i cuda-keyring_1.1-1_all.deb \
-    && apt-get update \
-    && apt-get -y install cudnn \
-    && apt-get -y install libcudnn8
-
-RUN ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 && \
-    ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python && \
-    ln -s -f /usr/bin/pip3 /usr/bin/pip
+# Install UV for package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-RUN pip install -U pip setuptools --no-cache-dir
+# Copy application code
+COPY app app/
+COPY tests tests/
+COPY app/gunicorn_logging.conf .
+COPY requirements requirements/
 
-
-RUN pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 -i https://download.pytorch.org/whl/cu124 --no-cache-dir
-
-COPY requirements requirements
-RUN pip install --no-cache -r requirements/prod.txt
-
-COPY app app
-COPY tests tests
+# Install Python dependencies using UV
+RUN uv pip install --system -U pip setuptools --no-cache-dir \
+    && uv pip install --system torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 -i https://download.pytorch.org/whl/cu124 --no-cache-dir \
+    && uv pip install --system --no-cache-dir -r requirements/prod.txt \
+    # Clean pip cache and temporary files
+    && rm -rf /root/.cache /tmp/*
 
 EXPOSE 8000
-COPY app/gunicorn_logging.conf .
+
 ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "--log-config", "gunicorn_logging.conf", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
