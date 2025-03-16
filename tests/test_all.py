@@ -106,9 +106,9 @@ def generic_transcription(client_url):
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
@@ -129,9 +129,10 @@ def align(transcript_file):
     Returns:
         dict: The result of the alignment task.
     """
-    with open(transcript_file, "rb") as transcript_file, open(
-        AUDIO_FILE, "rb"
-    ) as audio_file:
+    with (
+        open(transcript_file, "rb") as transcript_file,
+        open(AUDIO_FILE, "rb") as audio_file,
+    ):
         response = client.post(
             f"/service/align?device={os.getenv('DEVICE')}",
             files={
@@ -147,9 +148,9 @@ def align(transcript_file):
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
 
@@ -176,9 +177,9 @@ def diarize():
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
 
@@ -196,9 +197,10 @@ def combine(aligned_transcript_file, diarazition_file):
     Returns:
         dict: The combined result.
     """
-    with open(aligned_transcript_file, "rb") as transcript_file, open(
-        diarazition_file, "rb"
-    ) as diarization_result:
+    with (
+        open(aligned_transcript_file, "rb") as transcript_file,
+        open(diarazition_file, "rb") as diarization_result,
+    ):
         files = {
             "aligned_transcript": ("aligned_transcript.json", transcript_file),
             "diarization_result": ("diarazition.json", diarization_result),
@@ -215,9 +217,9 @@ def combine(aligned_transcript_file, diarazition_file):
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
 
@@ -250,13 +252,11 @@ def test_diarize():
 def test_flow():
     """Test the complete flow of transcription, alignment, diarization, and combination."""
     # Create temporary files for transcript, aligned transcript, and diarization
-    with tempfile.NamedTemporaryFile(
-        mode="w", delete=False
-    ) as transcript_file, tempfile.NamedTemporaryFile(
-        mode="w", delete=False
-    ) as aligned_transcript_file, tempfile.NamedTemporaryFile(
-        mode="w", delete=False
-    ) as diarization_file:
+    with (
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as transcript_file,
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as aligned_transcript_file,
+        tempfile.NamedTemporaryFile(mode="w", delete=False) as diarization_file,
+    ):
         # Write the transcription result to the temporary transcript file
         json.dump(generic_transcription("/service/transcribe"), transcript_file)
         transcript_file.flush()  # Ensure data is written to the file
@@ -310,9 +310,9 @@ def test_speech_to_text_url():
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(
-        identifier
-    ), f"Task with identifier {identifier} did not complete within the expected time."
+    assert wait_for_task_completion(identifier), (
+        f"Task with identifier {identifier} did not complete within the expected time."
+    )
 
     task_result = client.get(f"/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]

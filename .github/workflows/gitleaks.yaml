@@ -2,7 +2,6 @@
 # You may use this code under the terms of the GITLEAKS-ACTION END-USER LICENSE AGREEMENT.
 # You should have received a copy of the GITLEAKS-ACTION END-USER LICENSE AGREEMENT with this file.
 # If not, please visit https://gitleaks.io/COMMERCIAL-LICENSE.txt.
-
 name: gitleaks
 on: [pull_request, push, workflow_dispatch]
 jobs:

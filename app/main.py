@@ -4,18 +4,17 @@ from .warnings_filter import filter_warnings
 
 filter_warnings()
 
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager  # noqa: E402
 
-from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from dotenv import load_dotenv  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.responses import RedirectResponse  # noqa: E402
 
-from .config import Config
-from .db import engine
-from .docs import generate_db_schema, save_openapi_json
-from .files import AUDIO_EXTENSIONS, VIDEO_EXTENSIONS
-from .models import Base
-from .routers import stt, stt_services, task
+from .config import Config  # noqa: E402
+from .db import engine  # noqa: E402
+from .docs import generate_db_schema, save_openapi_json  # noqa: E402
+from .models import Base  # noqa: E402
+from .routers import stt, stt_services, task  # noqa: E402
 
 # Load environment variables from .env
 load_dotenv()

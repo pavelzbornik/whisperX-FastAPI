@@ -1,6 +1,5 @@
 """This module provides database connection and session management."""
 
-import os
 from functools import wraps
 
 from dotenv import load_dotenv
