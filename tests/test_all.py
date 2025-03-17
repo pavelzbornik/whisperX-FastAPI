@@ -289,7 +289,7 @@ def combine(aligned_transcript_file, diarazition_file):
     return task_result.json()["result"]
 
 
-@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
+# @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_speech_to_text():
     """Test the speech-to-text service."""
     assert generic_transcription("/speech-to-text") is not None
@@ -305,13 +305,13 @@ def test_align():
     assert align("tests/test_files/transcript.json") is not None
 
 
-@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
+# @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_diarize():
     """Test the diarization service."""
     assert diarize() is not None
 
 
-@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
+# @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_flow():
     """Test the complete flow of transcription, alignment, diarization, and combination."""
     # Create temporary files for transcript, aligned transcript, and diarization
@@ -356,7 +356,7 @@ def test_combine():
     ) or result["segments"][0]["text"].lower().startswith(TRANSCRIPT_RESULT_2.lower())
 
 
-@pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
+# @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
 def test_speech_to_text_url():
     """Test the speech-to-text service with a URL input."""
     # There is sometimes issue with CUDA memory better run this test individually
