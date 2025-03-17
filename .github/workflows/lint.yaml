@@ -7,7 +7,7 @@ on:
     paths:
       - "app/**"
       - "tests/**"
-      - "Dockerfile"
+      - "dockerfile"
       - "docker-compose.yml"
       - "requirements/**"
   pull_request:
@@ -16,7 +16,7 @@ on:
       - dev
     paths:
       - "app/**"
-      - "Dockerfile"
+      - "dockerfile"
       - "docker-compose.yml"
       - "requirements/**"
   workflow_dispatch:
