@@ -7,7 +7,7 @@ on:
     paths:
       - "app/**"
       - "tests/**"
-      - "Dockerfile"
+      - "dockerfile"
       - "docker-compose.yml"
       - "requirements/**"
   workflow_dispatch: # Allows manual triggering of the workflow
