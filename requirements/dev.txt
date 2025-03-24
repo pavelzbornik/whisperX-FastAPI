@@ -13,4 +13,4 @@ pytest-cov==6.0.0
 
 
 # Lint and code style
-ruff==0.11.0
+ruff==0.11.2
