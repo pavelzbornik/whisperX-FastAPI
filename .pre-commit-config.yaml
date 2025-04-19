@@ -60,3 +60,8 @@ repos:
     hooks:
       - id: gitleaks
         args: ["--config", ".gitleaks.toml"]
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.13.1-beta
+    hooks:
+      - id: hadolint
+        files: Dockerfile

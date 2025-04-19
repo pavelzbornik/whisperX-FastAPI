@@ -7,11 +7,11 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y update \
     && apt-get -y install --no-install-recommends \
-    python${PYTHON_VERSION} \
-    python3-pip \
-    git \
-    ffmpeg \
-    libcudnn9-cuda-12 \
+    python3.11=3.11.0~rc1-1~22.04 \
+    python3-pip=22.0.2+dfsg-1ubuntu0.5 \
+    git=1:2.34.1-1ubuntu1.12 \
+    ffmpeg=7:4.4.2-0ubuntu0.22.04.1 \
+    libcudnn9-cuda-12=9.8.0.87-1 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 \
@@ -29,8 +29,7 @@ COPY app/gunicorn_logging.conf .
 COPY requirements requirements/
 
 # Install Python dependencies using UV
-RUN uv pip install --system -U pip setuptools --no-cache-dir \
-    && uv pip install --system torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 -i https://download.pytorch.org/whl/cu126 --no-cache-dir \
+RUN uv pip install --system --no-cache-dir -r requirements/system.txt -i https://download.pytorch.org/whl/cu126 \
     && uv pip install --system --no-cache-dir -r requirements/prod.txt \
     # Clean pip cache and temporary files
     && rm -rf /root/.cache /tmp/*

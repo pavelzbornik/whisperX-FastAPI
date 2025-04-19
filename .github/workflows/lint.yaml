@@ -53,7 +53,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          python-version-file: "pyproject.toml"
       - name: Install Python dependencies
         run: uv pip install --system -r requirements/dev.txt
       - name: Run Ruff linter
@@ -62,5 +61,10 @@ jobs:
         run: ruff format --check .
       - name: Run tests with coverage check
         run: |
-          python -m coverage run --source=app -m pytest
-          python -m coverage report --fail-under=55 --show-missing
+          coverage run -m pytest
+          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+          coverage html
+          coverage report --fail-under=55
+          echo "<details><summary>Coverage HTML Report</summary>" >> $GITHUB_STEP_SUMMARY
+          cat htmlcov/index.html >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
