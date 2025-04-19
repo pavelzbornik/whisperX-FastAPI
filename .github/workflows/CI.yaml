@@ -16,6 +16,8 @@ permissions:
 jobs:
   lint:
     uses: ./.github/workflows/lint.yaml
+    secrets:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
   build-and-test:
     runs-on: ubuntu-latest
     needs: [lint]
