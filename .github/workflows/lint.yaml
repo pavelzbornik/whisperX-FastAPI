@@ -53,6 +53,14 @@ jobs:
           python-version-file: "pyproject.toml"
       - name: Install Python dependencies
         run: uv pip install --system -r requirements/dev.txt
+      - name: Check if HF_TOKEN secret is set
+        run: |
+          if [ -z "${{ secrets.HF_TOKEN }}" ]; then
+            echo "::error::HF_TOKEN secret is not set or is empty."
+            exit 1
+          else
+            echo "HF_TOKEN secret is set."
+          fi
       - name: Login to Hugging Face
         run: huggingface-cli login --token ${{ secrets.HF_TOKEN }}
       - name: Check Hugging Face Token Validity
