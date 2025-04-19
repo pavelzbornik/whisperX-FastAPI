@@ -1,6 +1,9 @@
 name: Build Status
 on:
   workflow_call:
+    secrets: # Declare secrets expected from the caller
+      HF_TOKEN:
+        required: true
   push:
     branches-ignore:
       - main

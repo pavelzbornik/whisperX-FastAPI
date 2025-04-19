@@ -16,6 +16,8 @@ permissions:
 jobs:
   lint:
     uses: ./.github/workflows/lint.yaml
+    secrets:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
   build-and-test:
     runs-on: ubuntu-latest
     needs: [lint]
@@ -45,10 +47,10 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Run tests
         run: |
-          docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} \
+          docker run --env HF_TOKEN=${{ secrets.HF_TOKEN }} \
             --env WHISPER_MODEL=tiny \
             --env DEFAULT_LANG=en \
             --env DEVICE=cpu \
             --env COMPUTE_TYPE=int8 \
             --entrypoint /bin/bash whisperx-fastapi:latest \
-            -c "pip install pytest==8.3.4 pytest-cov==6.0.0 && pytest"
+            -c "pip install pytest==8.3.5 pytest-cov==6.1.1 && pytest"

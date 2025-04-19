@@ -1,6 +1,7 @@
-FROM nvidia/cuda:12.6.3-base-ubuntu22.04
+FROM nvidia/cuda:12.8.1-base-ubuntu22.04
 
 ENV PYTHON_VERSION=3.11
+ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
 # Install dependencies and clean up in the same layer
 RUN export DEBIAN_FRONTEND=noninteractive \
@@ -10,7 +11,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     python3-pip \
     git \
     ffmpeg \
-    libcudnn8 \
+    libcudnn9-cuda-12 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 \
@@ -29,7 +30,7 @@ COPY requirements requirements/
 
 # Install Python dependencies using UV
 RUN uv pip install --system -U pip setuptools --no-cache-dir \
-    && uv pip install --system torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 -i https://download.pytorch.org/whl/cu124 --no-cache-dir \
+    && uv pip install --system torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 -i https://download.pytorch.org/whl/cu126 --no-cache-dir \
     && uv pip install --system --no-cache-dir -r requirements/prod.txt \
     # Clean pip cache and temporary files
     && rm -rf /root/.cache /tmp/*

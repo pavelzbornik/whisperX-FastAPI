@@ -5,12 +5,12 @@
 codespell==2.4.1
 
 # Pre-commit
-pre-commit==4.1.0
+pre-commit==4.2.0
 
 # Testing
 pytest==8.3.5
-pytest-cov==6.0.0
+pytest-cov==6.1.1
 
 
 # Lint and code style
-ruff==0.11.0
+ruff==0.11.6

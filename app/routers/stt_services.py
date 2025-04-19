@@ -34,7 +34,7 @@ from ..schemas import (
     Response,
     Transcript,
     VADOptions,
-    WhsiperModelParams,
+    WhisperModelParams,
 )
 from ..services import (
     process_alignment,
@@ -56,7 +56,7 @@ service_router = APIRouter()
 )
 async def transcribe(
     background_tasks: BackgroundTasks,
-    model_params: WhsiperModelParams = Depends(),
+    model_params: WhisperModelParams = Depends(),
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
@@ -67,7 +67,7 @@ async def transcribe(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
-        model_params (WhsiperModelParams): Whisper model parameters.
+        model_params (WhisperModelParams): Whisper model parameters.
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
@@ -171,7 +171,7 @@ def align(
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=transcript.language,
-        task_type="transcription_aligment",
+        task_type="transcription_alignment",
         task_params={
             **align_params.model_dump(),
             "device": device,

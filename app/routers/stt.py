@@ -24,7 +24,7 @@ from ..schemas import (
     Response,
     SpeechToTextProcessingParams,
     VADOptions,
-    WhsiperModelParams,
+    WhisperModelParams,
 )
 from ..tasks import add_task_to_db
 from ..whisperx_services import process_audio_common
@@ -38,7 +38,7 @@ stt_router = APIRouter()
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
 async def speech_to_text(
     background_tasks: BackgroundTasks,
-    model_params: WhsiperModelParams = Depends(),
+    model_params: WhisperModelParams = Depends(),
     align_params: AlignmentParams = Depends(),
     diarize_params: DiarizationParams = Depends(),
     asr_options_params: ASROptions = Depends(),
@@ -51,7 +51,7 @@ async def speech_to_text(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
-        model_params (WhsiperModelParams): Whisper model parameters.
+        model_params (WhisperModelParams): Whisper model parameters.
         align_params (AlignmentParams): Alignment parameters.
         diarize_params (DiarizationParams): Diarization parameters.
         asr_options_params (ASROptions): ASR options parameters.
@@ -110,7 +110,7 @@ async def speech_to_text(
 @stt_router.post("/speech-to-text-url", tags=["Speech-2-Text"])
 async def speech_to_text_url(
     background_tasks: BackgroundTasks,
-    model_params: WhsiperModelParams = Depends(),
+    model_params: WhisperModelParams = Depends(),
     align_params: AlignmentParams = Depends(),
     diarize_params: DiarizationParams = Depends(),
     asr_options_params: ASROptions = Depends(),
@@ -123,7 +123,7 @@ async def speech_to_text_url(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
-        model_params (WhsiperModelParams): Whisper model parameters.
+        model_params (WhisperModelParams): Whisper model parameters.
         align_params (AlignmentParams): Alignment parameters.
         diarize_params (DiarizationParams): Diarization parameters.
         asr_options_params (ASROptions): ASR options parameters.
