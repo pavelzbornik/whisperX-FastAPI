@@ -53,6 +53,8 @@ jobs:
           python-version-file: "pyproject.toml"
       - name: Install Python dependencies
         run: uv pip install --system -r requirements/dev.txt
+      - name: Login to Hugging Face
+        run: huggingface-cli login --token ${{ secrets.HF_TOKEN }}
       - name: Check Hugging Face Token Validity
         run: huggingface-cli whoami
       - name: Run Ruff linter
