@@ -171,7 +171,7 @@ def align(
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=transcript.language,
-        task_type="transcription_aligment",
+        task_type="transcription_alignment",
         task_params={
             **align_params.model_dump(),
             "device": device,

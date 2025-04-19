@@ -100,7 +100,7 @@ class DiarizationSegment(BaseModel):
     end: float
 
 
-class DiaredTrancript(BaseModel):
+class DiarizedTranscript(BaseModel):
     """Model for a diarized transcript with segments."""
 
     segments: List[Segment]

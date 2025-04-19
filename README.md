@@ -4,7 +4,7 @@ The whisperX API is a tool for enhancing and analyzing audio content. This API p
 
 ## Documentation
 
-Swagger UI is available at `/docs` for all the services, dump of OpenAPI definition is awailable in folder `app/docs` as well. You can explore it directly in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
+Swagger UI is available at `/docs` for all the services, dump of OpenAPI definition is available in folder `app/docs` as well. You can explore it directly in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
 
 See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details on whisperX functions.
 
