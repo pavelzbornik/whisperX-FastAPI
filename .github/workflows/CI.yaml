@@ -1,6 +1,6 @@
 name: CI
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
       - dev
@@ -45,7 +45,7 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Run tests
         run: |
-          docker run --env MY_ENV_VAR=${{ secrets.HF_TOKEN }} \
+          docker run --env HF_TOKEN=${{ secrets.HF_TOKEN }} \
             --env WHISPER_MODEL=tiny \
             --env DEFAULT_LANG=en \
             --env DEVICE=cpu \
