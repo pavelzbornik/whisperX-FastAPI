@@ -273,7 +273,7 @@ class VADOptions(BaseModel):
     )
 
 
-class WhsiperModelParams(BaseModel):
+class WhisperModelParams(BaseModel):
     """Model for Whisper model parameters."""
 
     language: str = Field(
@@ -364,6 +364,6 @@ class SpeechToTextProcessingParams(BaseModel):
     identifier: str
     vad_options: VADOptions
     asr_options: ASROptions
-    whisper_model_params: WhsiperModelParams
+    whisper_model_params: WhisperModelParams
     alignment_params: AlignmentParams
     diarization_params: DiarizationParams

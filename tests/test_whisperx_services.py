@@ -17,7 +17,7 @@ from app.schemas import (
     TaskEnum,
     VADOptions,
     WhisperModel,
-    WhsiperModelParams,
+    WhisperModelParams,
 )
 from app.whisperx_services import (
     align_whisper_output,
@@ -160,7 +160,7 @@ def test_process_audio_common_gpu(
     params = SpeechToTextProcessingParams(
         audio=audio_data,  # Already numpy array from fixture
         identifier="test-123",
-        whisper_model_params=WhsiperModelParams(
+        whisper_model_params=WhisperModelParams(
             language="en",
             model=WhisperModel.tiny,  # Use string value directly
             device=Device.cuda,

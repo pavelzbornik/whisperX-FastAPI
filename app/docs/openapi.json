@@ -12,7 +12,7 @@
           "Speech-2-Text"
         ],
         "summary": "Speech To Text",
-        "description": "Process an uploaded audio file for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "description": "Process an uploaded audio file for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "speech_to_text_speech_to_text_post",
         "parameters": [
           {
@@ -489,7 +489,7 @@
           "Speech-2-Text"
         ],
         "summary": "Speech To Text Url",
-        "description": "Process an audio file from a URL for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    url (str): URL of the audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "description": "Process an audio file from a URL for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    url (str): URL of the audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "speech_to_text_url_speech_to_text_url_post",
         "parameters": [
           {
@@ -1074,7 +1074,7 @@
           "Speech-2-Text services"
         ],
         "summary": "1. Transcribe",
-        "description": "Transcribe an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhsiperModelParams): Whisper model parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "description": "Transcribe an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
         "operationId": "1__Transcribe_service_transcribe_post",
         "parameters": [
           {

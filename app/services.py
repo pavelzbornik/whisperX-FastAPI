@@ -13,7 +13,7 @@ from .schemas import (
     ASROptions,
     DiarizationParams,
     VADOptions,
-    WhsiperModelParams,
+    WhisperModelParams,
 )
 from .tasks import update_task_status_in_db
 from .whisperx_services import align_whisper_output, diarize, transcribe_with_whisper
@@ -102,7 +102,7 @@ def process_audio_task(
 def process_transcribe(
     audio,
     identifier,
-    model_params: WhsiperModelParams,
+    model_params: WhisperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
     session: Session = Depends(get_db_session),
@@ -113,7 +113,7 @@ def process_transcribe(
     Args:
         audio: The audio data.
         identifier (str): The task identifier.
-        model_params (WhsiperModelParams): The model parameters.
+        model_params (WhisperModelParams): The model parameters.
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
         session (Session): The database session.
