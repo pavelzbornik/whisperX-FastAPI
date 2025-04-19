@@ -1,0 +1,4 @@
+# setuptools==78.1.0
+torch==2.6.0
+torchaudio==2.6.0
+torchvision==0.21.0
