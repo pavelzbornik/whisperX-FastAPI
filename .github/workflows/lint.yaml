@@ -61,7 +61,7 @@ jobs:
         run: ruff format --check .
       - name: Run tests with coverage check
         run: |
-          coverage run -m pytest
+          coverage run --source=app -m pytest
           echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
           coverage html
           coverage report --fail-under=55
