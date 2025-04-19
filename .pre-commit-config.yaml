@@ -10,13 +10,13 @@ repos:
       - id: detect-private-key
       - id: requirements-txt-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.0
+    rev: v0.11.6
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.36.1
+    rev: v1.37.0
     hooks:
       - id: yamllint
         args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
@@ -28,7 +28,7 @@ repos:
       - id: pydocstyle
   # Lint: YAML
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.36.1
+    rev: v1.37.0
     hooks:
       - id: yamllint
         args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
@@ -56,7 +56,7 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.24.0
+    rev: v8.24.3
     hooks:
       - id: gitleaks
         args: ["--config", ".gitleaks.toml"]
