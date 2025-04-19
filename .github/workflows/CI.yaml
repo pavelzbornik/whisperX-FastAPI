@@ -51,6 +51,7 @@ jobs:
         with:
           image-ref: "whisperx-fastapi:latest"
           format: "table"
+          output: "trivy-results.txt"
           exit-code: "0"
           ignore-unfixed: true
           vuln-type: "os,library"
