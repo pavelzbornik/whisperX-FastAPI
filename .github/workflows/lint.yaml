@@ -26,21 +26,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HF_TOKEN: ${{ secrets.HF_TOKEN_2 }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
       WHISPER_MODEL: tiny
       DEFAULT_LANG: en
       DEVICE: cpu
       COMPUTE_TYPE: int8
     steps:
       - uses: actions/checkout@v4
-      - name: Check if HF_TOKEN secret is set
-        run: |
-          if [ -z "${{ secrets.HF_TOKEN_2 }}" ]; then
-            echo "::error::HF_TOKEN secret is not set or is empty."
-            exit 1
-          else
-            echo "HF_TOKEN secret is set."
-          fi
       - run: echo "event name is:" ${{ github.event_name }}
       - run: echo "event type is:" ${{ github.event.action }}
       - run: echo "actor is:" ${{ github.actor }}
@@ -61,10 +53,6 @@ jobs:
           python-version-file: "pyproject.toml"
       - name: Install Python dependencies
         run: uv pip install --system -r requirements/dev.txt
-      - name: Login to Hugging Face
-        run: huggingface-cli login --token ${{ secrets.HF_TOKEN_2 }}
-      - name: Check Hugging Face Token Validity
-        run: huggingface-cli whoami
       - name: Run Ruff linter
         run: ruff check .
       - name: Run Ruff formatter check
