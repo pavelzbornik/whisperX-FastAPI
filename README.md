@@ -92,8 +92,7 @@ Set default model in `.env` using `WHISPER_MODEL=` (default: tiny)
 
 ## System Requirements
 
-- Docker with GPU support (nvidia-docker)
-- NVIDIA GPU with CUDA support
+- NVIDIA GPU with CUDA 12.8+ support
 - At least 8GB RAM (16GB+ recommended for large models)
 - Storage space for models (varies by model size):
   - tiny/base: ~1GB
@@ -109,24 +108,24 @@ To get started with the API, follow these steps:
 
 1. Create virtual environment
 2. Install pytorch [See for more details](https://pytorch.org/)
-3. Install whisperX
+3. Install the required dependencies (choose one):
 
-```sh
-pip install git+https://github.com/m-bain/whisperx.git
-```
+   ```sh
+   # For production dependencies only
+   pip install -r requirements/prod.txt
 
-4. Install the required dependencies:
+   # For development dependencies (includes production + testing, linting, etc.)
+   pip install -r requirements/dev.txt
+   ```
 
-```sh
-pip install -r requirements.txt
-```
+> **Note:** The above steps use `pip` for local development. For Docker builds, package management is handled by [`uv`](https://github.com/astral-sh/uv) as specified in the [dockerfile](dockerfile) for improved performance and reliability.
 
 ### Logging Configuration
 
 The application uses two logging configuration files:
 
 - `uvicorn_log_conf.yaml`: Used by Uvicorn for logging configuration.
-- `gunicorn_logging.conf`: Used by Gunicorn for logging configuration.
+- `gunicorn_logging.conf`: Used by Gunicorn for logging configuration (located in the root of the `app` directory).
 
 Ensure these files are correctly configured and placed in the `app` directory.
 
@@ -181,18 +180,17 @@ docker run -d --gpus all -p 8000:8000 --env-file .env whisperx-service
 
 The API will be accessible at <http://127.0.0.1:8000>.
 
+> **Note:** The Docker build uses `uv` for installing dependencies, as specified in the Dockerfile.
+> The main entrypoint for the Docker container is via **Gunicorn** (not Uvicorn directly), using the configuration in `app/gunicorn_logging.conf`.
+>
+> **Important:** For GPU support in Docker, you must have **CUDA drivers 12.8+ installed on your host system**.
+
 #### Model cache
 
 The models used by whisperX are stored in `root/.cache`, if you want to avoid downloanding the models each time the container is starting you can store the cache in persistent storage. `docker-compose.yaml` defines a volume `whisperx-models-cache` to store this cache.
 
 - faster-whisper cache: `root/.cache/huggingface/hub`
 - pyannotate and other models cache: `root/.cache/torch`
-
-## Known Issues
-
-1. **ctranslate2 Compatibility**
-
-- Only `ctranslate2==4.4.0` is supported due to CUDA compatibility issues with CTranslate2, as newer versions have different CUDA requirements <https://github.com/SYSTRAN/faster-whisper/issues/1086>.
 
 ## Troubleshooting
 

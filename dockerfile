@@ -30,7 +30,7 @@ COPY requirements requirements/
 
 # Install Python dependencies using UV
 RUN uv pip install --system -U pip setuptools --no-cache-dir \
-    && uv pip install --system torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 -i https://download.pytorch.org/whl/cu124 --no-cache-dir \
+    && uv pip install --system torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 -i https://download.pytorch.org/whl/cu126 --no-cache-dir \
     && uv pip install --system --no-cache-dir -r requirements/prod.txt \
     # Clean pip cache and temporary files
     && rm -rf /root/.cache /tmp/*
