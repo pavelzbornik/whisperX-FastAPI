@@ -6,5 +6,5 @@ numba==0.61.0
 python-dotenv==1.1.0
 python-multipart==0.0.20
 tqdm==4.67.1
-uvicorn==0.34.0
-whisperx==3.3.2
+uvicorn==0.34.2
+whisperx==3.3.3
