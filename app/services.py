@@ -12,6 +12,7 @@ from .schemas import (
     AlignmentParams,
     ASROptions,
     DiarizationParams,
+    TaskStatus,
     VADOptions,
     WhisperModelParams,
 )
@@ -70,7 +71,7 @@ def process_audio_task(
         update_task_status_in_db(
             identifier=identifier,
             update_data={
-                "status": "completed",
+                "status": TaskStatus.completed,
                 "result": result,
                 "duration": duration,
                 "start_time": start_time,
@@ -85,7 +86,7 @@ def process_audio_task(
         )
         update_task_status_in_db(
             identifier=identifier,
-            update_data={"status": "failed", "error": str(e)},
+            update_data={"status": TaskStatus.failed, "error": str(e)},
             session=session,
         )
     except MemoryError as e:
@@ -94,7 +95,7 @@ def process_audio_task(
         )
         update_task_status_in_db(
             identifier=identifier,
-            update_data={"status": "failed", "error": str(e)},
+            update_data={"status": TaskStatus.failed, "error": str(e)},
             session=session,
         )
 

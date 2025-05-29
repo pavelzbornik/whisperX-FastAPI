@@ -32,6 +32,8 @@ from ..schemas import (
     DiarizationParams,
     DiarizationSegment,
     Response,
+    TaskStatus,
+    TaskType,
     Transcript,
     VADOptions,
     WhisperModelParams,
@@ -84,11 +86,11 @@ async def transcribe(
     audio = process_audio_file(temp_file)
 
     identifier = add_task_to_db(
-        status="processing",
+        status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
-        task_type="transcription",
+        task_type=TaskType.transcription,
         task_params={
             **model_params.model_dump(),
             "asr_options": asr_options_params.model_dump(),
@@ -167,11 +169,11 @@ def align(
     audio = process_audio_file(temp_file)
 
     identifier = add_task_to_db(
-        status="processing",
+        status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=transcript.language,
-        task_type="transcription_alignment",
+        task_type=TaskType.transcription_alignment,
         task_params={
             **align_params.model_dump(),
             "device": device,
@@ -229,10 +231,10 @@ async def diarize(
 
     identifier = add_task_to_db(
         # identifier=identifier,
-        status="processing",
+        status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
-        task_type="diarization",
+        task_type=TaskType.diarization,
         task_params={
             **diarize_params.model_dump(),
             "device": device,
@@ -303,9 +305,9 @@ async def combine(
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
     identifier = add_task_to_db(
-        status="processing",
+        status=TaskStatus.processing,
         file_name=None,
-        task_type="combine_transcript&diarization",
+        task_type=TaskType.combine_transcript_diarization,
         start_time=datetime.utcnow(),
         session=session,
     )

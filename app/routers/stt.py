@@ -23,6 +23,8 @@ from ..schemas import (
     DiarizationParams,
     Response,
     SpeechToTextProcessingParams,
+    TaskStatus,
+    TaskType,
     VADOptions,
     WhisperModelParams,
 )
@@ -74,11 +76,11 @@ async def speech_to_text(
     logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
 
     identifier = add_task_to_db(
-        status="processing",
+        status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
-        task_type="full_process",
+        task_type=TaskType.full_process,
         task_params={
             **model_params.model_dump(),
             **align_params.model_dump(),
@@ -163,11 +165,11 @@ async def speech_to_text_url(
     logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
 
     identifier = add_task_to_db(
-        status="processing",
+        status=TaskStatus.processing,
         file_name=temp_audio_file.name,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
-        task_type="full_process",
+        task_type=TaskType.full_process,
         task_params={
             **model_params.model_dump(),
             **align_params.model_dump(),

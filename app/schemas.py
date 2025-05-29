@@ -41,6 +41,14 @@ class TaskSimple(BaseModel):
     identifier: str
     status: str
     task_type: str
+    language: Optional[str]
+    file_name: Optional[str]
+    error: Optional[str]
+    url: Optional[str]
+    duration: Optional[float]
+    audio_duration: Optional[float] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
 
 
 class ResultTasks(BaseModel):
@@ -367,3 +375,21 @@ class SpeechToTextProcessingParams(BaseModel):
     whisper_model_params: WhisperModelParams
     alignment_params: AlignmentParams
     diarization_params: DiarizationParams
+
+
+class TaskType(str, Enum):
+    """Enum for task types."""
+
+    transcription = "transcription"
+    transcription_alignment = "transcription_alignment"
+    diarization = "diarization"
+    combine_transcript_diarization = "combine_transcript&diarization"
+    full_process = "full_process"
+
+
+class TaskStatus(str, Enum):
+    """Enum for task status."""
+
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
