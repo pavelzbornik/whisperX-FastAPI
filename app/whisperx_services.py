@@ -6,8 +6,8 @@ from datetime import datetime
 import torch
 from fastapi import Depends
 from sqlalchemy.orm import Session
+from whisperx.diarize import DiarizationPipeline
 from whisperx import (
-    DiarizationPipeline,
     align,
     assign_word_speakers,
     load_align_model,
