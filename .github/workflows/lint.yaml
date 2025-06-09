@@ -60,8 +60,6 @@ jobs:
       - name: Run Ruff formatter check
         run: ruff format --check .
       - name: Run tests with coverage check
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           coverage run --source=app -m pytest
           echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
