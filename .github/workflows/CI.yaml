@@ -12,7 +12,7 @@ on:
       - "requirements/**"
   workflow_dispatch: # Allows manual triggering of the workflow
 permissions:
-  contents: read
+  contents: write
   pull-requests: write # Added permission for PR merging
 jobs:
   lint:
