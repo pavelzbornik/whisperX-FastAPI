@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from app import main
 from app.db import engine
+from app.schemas import TaskStatus
 
 client = TestClient(main.app, follow_redirects=False)
 
@@ -135,9 +136,9 @@ def wait_for_task_completion(identifier, max_attempts=2, delay=10):
     attempts = 0
     while attempts < max_attempts:
         status = get_task_status(identifier)
-        if status == "completed":
+        if status == TaskStatus.completed:
             return True
-        if status == "failed":
+        if status == TaskStatus.failed:
             response = client.get(f"/task/{identifier}")
             error_message = response.json().get("error", "Unknown error")
             raise ValueError(f"Task failed with error: {error_message}")

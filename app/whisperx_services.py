@@ -17,7 +17,7 @@ from whisperx import (
 from .config import Config
 from .db import get_db_session
 from .logger import logger  # Import the logger from the new module
-from .schemas import AlignedTranscription, SpeechToTextProcessingParams
+from .schemas import AlignedTranscription, SpeechToTextProcessingParams, TaskStatus
 from .tasks import update_task_status_in_db
 from .transcript import filter_aligned_transcription
 
@@ -339,7 +339,7 @@ def process_audio_common(
         update_task_status_in_db(
             identifier=params.identifier,
             update_data={
-                "status": "completed",
+                "status": TaskStatus.completed,
                 "result": result,
                 "duration": duration,
                 "start_time": start_time,
@@ -356,7 +356,7 @@ def process_audio_common(
         update_task_status_in_db(
             identifier=params.identifier,
             update_data={
-                "status": "failed",
+                "status": TaskStatus.failed,
                 "error": str(e),
             },
             session=session,
@@ -367,6 +367,6 @@ def process_audio_common(
         )
         update_task_status_in_db(
             identifier=params.identifier,
-            update_data={"status": "failed", "error": str(e)},
+            update_data={"status": TaskStatus.failed, "error": str(e)},
             session=session,
         )
