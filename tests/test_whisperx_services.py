@@ -117,7 +117,9 @@ def test_transcribe_with_whisper_cpu(audio_data, mock_whisper_model):
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_diarize_gpu(audio_data, mock_diarization_pipeline):
     """Test diarize function with GPU."""
-    with patch("whisperx.DiarizationPipeline", return_value=mock_diarization_pipeline):
+    with patch(
+        "whisperx.diarize.DiarizationPipeline", return_value=mock_diarization_pipeline
+    ):
         result = diarize(
             audio=audio_data, device=Device.cuda, min_speakers=1, max_speakers=2
         )
@@ -201,7 +203,8 @@ def test_process_audio_common_gpu(
             return_value=(mock_align_model, {}),
         ):
             with patch(
-                "whisperx.DiarizationPipeline", return_value=mock_diarization_pipeline
+                "whisperx.diarize.DiarizationPipeline",
+                return_value=mock_diarization_pipeline,
             ):
                 with patch(
                     "app.whisperx_services.align",

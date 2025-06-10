@@ -29,8 +29,10 @@ COPY app/gunicorn_logging.conf .
 COPY requirements requirements/
 
 # Install Python dependencies using UV
-RUN uv pip install --system --no-cache-dir -r requirements/system.txt -i https://download.pytorch.org/whl/cu126 \
+RUN pip install --upgrade pip setuptools && uv pip install --system --no-cache-dir -r requirements/system.txt -i https://download.pytorch.org/whl/cu126 \
     && uv pip install --system --no-cache-dir -r requirements/prod.txt \
+    # Force install ctranslate2 version 4.6.0 or higher to maintain compatibility with libcudnn9-cuda-12
+    && uv pip install ctranslate2==4.6.0 --system \
     # Clean pip cache and temporary files
     && rm -rf /root/.cache /tmp/*
 
