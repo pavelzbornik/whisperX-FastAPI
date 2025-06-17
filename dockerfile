@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.9.0-base-ubuntu22.04
+FROM nvidia/cuda:12.9.1-base-ubuntu22.04
 
 ENV PYTHON_VERSION=3.11
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
