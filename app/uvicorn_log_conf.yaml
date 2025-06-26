@@ -2,7 +2,14 @@ disable_existing_loggers: false
 formatters:
   colored:
     class: colorlog.ColoredFormatter
-    format: '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format: '%(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s]
+      - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] -
+      %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s
+      - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s -
+      [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s]
+      - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] -
+      %(asctime)s - [%(correlation_id)s] - %(log_color)s%(asctime)s - %(name)s - %(levelname)s
+      - %(message)s'
     log_colors:
       CRITICAL: red,bg_white
       DEBUG: cyan
@@ -11,7 +18,14 @@ formatters:
       WARNING: yellow
   default:
     class: logging.Formatter
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format: '%(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s]
+      - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] -
+      %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s
+      - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s -
+      [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s]
+      - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] -
+      %(asctime)s - [%(correlation_id)s] - %(asctime)s - %(name)s - %(levelname)s
+      - %(message)s'
 handlers:
   access:
     class: logging.StreamHandler
@@ -28,32 +42,32 @@ handlers:
 loggers:
   pytorch_lightning.utilities.migration:
     handlers:
-      - default
+    - default
     level: WARNING
     propagate: false
   speechbrain.utils.quirks:
     handlers:
-      - default
+    - default
     level: WARNING
     propagate: false
   uvicorn.access:
     handlers:
-      - default
+    - default
     level: INFO
     propagate: false
   uvicorn.error:
     handlers:
-      - default
+    - default
     level: INFO
     propagate: false
   whisperX:
     handlers:
-      - colored
+    - colored
     level: INFO
     propagate: false
 root:
   handlers:
-    - default
+  - default
   level: INFO
   propagate: false
 version: 1
