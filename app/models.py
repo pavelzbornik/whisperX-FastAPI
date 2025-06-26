@@ -1,6 +1,6 @@
 """This module defines the database models for the application."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from sqlalchemy import JSON, Column, DateTime, Float, Integer, String
@@ -51,11 +51,11 @@ class Task(Base):
     end_time = Column(DateTime, comment="End time of the task execution")
     error = Column(String, comment="Error message, if any, associated with the task")
     created_at = Column(
-        DateTime, default=datetime.utcnow, comment="Date and time of creation"
+        DateTime, default=lambda: datetime.now(timezone.utc), comment="Date and time of creation"
     )
     updated_at = Column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         comment="Date and time of last update",
     )

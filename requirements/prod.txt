@@ -3,6 +3,7 @@ fastapi==0.115.12
 gunicorn==23.0.0
 httpx==0.28.1
 numba==0.61.0
+psutil==7.0.0
 python-dotenv==1.1.0
 python-multipart==0.0.20
 tqdm==4.67.1

@@ -3,11 +3,24 @@
 import logging
 import logging.config
 import os
+from typing import Optional
 
 import yaml
 
+from .request_context import get_correlation_id
+
 # Determine environment and set log level accordingly
 from .config import Config
+
+
+class CorrelationIdFilter(logging.Filter):
+    """Filter to add correlation ID to log records."""
+    
+    def filter(self, record):
+        correlation_id = get_correlation_id()
+        record.correlation_id = correlation_id if correlation_id else "no-correlation-id"
+        return True
+
 
 env = Config.ENVIRONMENT
 log_level = Config.LOG_LEVEL
@@ -26,8 +39,18 @@ config["loggers"]["uvicorn.error"]["level"] = log_level
 config["loggers"]["uvicorn.access"]["level"] = log_level
 config["root"]["level"] = log_level
 
+# Update formatters to include correlation ID
+for formatter_name, formatter_config in config.get("formatters", {}).items():
+    if "format" in formatter_config:
+        formatter_config["format"] = f"%(asctime)s - [%(correlation_id)s] - {formatter_config['format']}"
+
 # Apply the updated logging configuration
 logging.config.dictConfig(config)
+
+# Add correlation ID filter to all handlers
+correlation_filter = CorrelationIdFilter()
+for handler in logging.root.handlers:
+    handler.addFilter(correlation_filter)
 
 # Save the updated config back to the YAML file
 with open(config_path, "w") as f:
@@ -36,6 +59,7 @@ with open(config_path, "w") as f:
 # Configure whisperX logger
 logger = logging.getLogger("whisperX")
 logger.setLevel(log_level)
+logger.addFilter(correlation_filter)
 
 # Log environment variables
 logger.info(f"Environment: {env}")
