@@ -1,4 +1,4 @@
-# Database schema
+# Database schema 
 
 ## Table: tasks
 

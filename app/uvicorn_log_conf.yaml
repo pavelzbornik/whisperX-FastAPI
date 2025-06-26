@@ -6,8 +6,9 @@ formatters:
       - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] -
       %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s
       - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s -
-      [%(correlation_id)s] - %(log_color)s%(asctime)s - %(name)s - %(levelname)s -
-      %(message)s'
+      [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s]
+      - %(asctime)s - [%(correlation_id)s] - %(log_color)s%(asctime)s - %(name)s -
+      %(levelname)s - %(message)s'
     log_colors:
       CRITICAL: red,bg_white
       DEBUG: cyan
@@ -20,7 +21,9 @@ formatters:
       - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] -
       %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s
       - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s -
-      [%(correlation_id)s] - %(asctime)s - %(name)s - %(levelname)s - %(message)s'
+      [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s] - %(asctime)s - [%(correlation_id)s]
+      - %(asctime)s - [%(correlation_id)s] - %(asctime)s - %(name)s - %(levelname)s
+      - %(message)s'
 handlers:
   access:
     class: logging.StreamHandler
