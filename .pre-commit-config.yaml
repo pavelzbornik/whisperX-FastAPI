@@ -10,7 +10,7 @@ repos:
       - id: detect-private-key
       - id: requirements-txt-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.12.1
     hooks:
       - id: ruff
         args: [--fix]
@@ -34,7 +34,7 @@ repos:
         args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
         files: \.(yaml|yml)$
   - repo: https://github.com/google/yamlfmt
-    rev: v0.17.0
+    rev: v0.17.2
     hooks:
       - id: yamlfmt
   # Lint: Shell scripts
