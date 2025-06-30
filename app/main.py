@@ -144,7 +144,9 @@ def get_gpu_info():
     except ImportError:
         return {"available": False, "reason": "PyTorch not available"}
     except Exception as e:
-        return {"available": False, "reason": f"Error: {str(e)}"}
+        # Log the exception for debugging purposes
+        print(f"Error in get_gpu_info: {e}")
+        return {"available": False, "reason": "An internal error occurred while fetching GPU information"}
 
 
 def get_system_metrics():
@@ -170,7 +172,9 @@ def get_system_metrics():
             }
         }
     except Exception as e:
-        return {"error": f"Failed to get system metrics: {str(e)}"}
+        # Log the exception for debugging purposes
+        print(f"Error in get_system_metrics: {e}")
+        return {"error": "An internal error occurred while fetching system metrics"}
 
 
 # Health check endpoints
@@ -249,7 +253,7 @@ async def readiness_check():
         health_status["status"] = "degraded"
         health_status["components"]["database"] = {
             "status": "unhealthy",
-            "message": f"Database connection failed: {str(e)}"
+            "message": "Database connection failed due to an internal error"
         }
     
     # Check if running in acceptable resource limits
