@@ -1741,45 +1741,45 @@ components:
           title: Task Type
         language:
           anyOf:
-          - type: string
-          - type: 'null'
+            - type: string
+            - type: 'null'
           title: Language
         file_name:
           anyOf:
-          - type: string
-          - type: 'null'
+            - type: string
+            - type: 'null'
           title: File Name
         error:
           anyOf:
-          - type: string
-          - type: 'null'
+            - type: string
+            - type: 'null'
           title: Error
         url:
           anyOf:
-          - type: string
-          - type: 'null'
+            - type: string
+            - type: 'null'
           title: Url
         duration:
           anyOf:
-          - type: number
-          - type: 'null'
+            - type: number
+            - type: 'null'
           title: Duration
         audio_duration:
           anyOf:
-          - type: number
-          - type: 'null'
+            - type: number
+            - type: 'null'
           title: Audio Duration
         start_time:
           anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
+            - type: string
+              format: date-time
+            - type: 'null'
           title: Start Time
         end_time:
           anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
+            - type: string
+              format: date-time
+            - type: 'null'
           title: End Time
       type: object
       required:

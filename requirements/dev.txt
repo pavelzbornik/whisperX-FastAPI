@@ -8,9 +8,9 @@ codespell==2.4.1
 pre-commit==4.2.0
 
 # Testing
-pytest==8.4.0
-pytest-cov==6.1.1
+pytest==8.4.1
+pytest-cov==6.2.1
 
 
 # Lint and code style
-ruff==0.11.13
+ruff==0.12.1
