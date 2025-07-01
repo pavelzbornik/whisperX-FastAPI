@@ -83,7 +83,7 @@ jobs:
             --entrypoint /bin/bash whisperx-fastapi:latest \
             -c "pip install pytest==8.3.5 pytest-cov==6.1.1 && pytest"
       - name: Bump version and push tag
-        uses: anothrNick/github-tag-action@1.71.0
+        uses: anothrNick/github-tag-action@1.73.0
         if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
