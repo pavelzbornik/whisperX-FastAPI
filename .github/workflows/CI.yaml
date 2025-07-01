@@ -10,6 +10,15 @@ on:
       - "dockerfile"
       - "docker-compose.yml"
       - "requirements/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "dockerfile"
+      - "docker-compose.yml"
+      - "requirements/**"
   workflow_dispatch: # Allows manual triggering of the workflow
 permissions:
   contents: write
