@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from ..audio import get_audio_duration, process_audio_file
 from ..db import get_db_session
-from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_upload_file
 from ..logger import logger  # Import the logger from the new module
 from ..schemas import (
     AlignedTranscription,
@@ -45,6 +45,7 @@ from ..services import (
     process_transcribe,
 )
 from ..tasks import add_task_to_db
+from ..utils import utc_now
 from ..transcript import filter_aligned_transcription
 from ..whisperx_services import device
 
@@ -80,9 +81,10 @@ async def transcribe(
     """
     logger.info("Received transcription request for file: %s", file.filename)
 
-    validate_extension(file.filename, ALLOWED_EXTENSIONS)
+    # Comprehensive file validation
+    validate_upload_file(file)
 
-    temp_file = save_temporary_file(file.file, file.filename)
+    temp_file = save_temporary_file(file, file.filename)
     audio = process_audio_file(temp_file)
 
     identifier = add_task_to_db(
@@ -96,7 +98,7 @@ async def transcribe(
             "asr_options": asr_options_params.model_dump(),
             "vad_options": vad_options_params.model_dump(),
         },
-        start_time=datetime.utcnow(),
+        start_time=utc_now(),
         session=session,
     )
 
@@ -163,9 +165,10 @@ def align(
         logger.error("Invalid JSON content in transcript file: %s", str(e))
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
-    validate_extension(file.filename, ALLOWED_EXTENSIONS)
+    # Validate audio file
+    validate_upload_file(file)
 
-    temp_file = save_temporary_file(file.file, file.filename)
+    temp_file = save_temporary_file(file, file.filename)
     audio = process_audio_file(temp_file)
 
     identifier = add_task_to_db(
@@ -178,7 +181,7 @@ def align(
             **align_params.model_dump(),
             "device": device,
         },
-        start_time=datetime.utcnow(),
+        start_time=utc_now(),
         session=session,
     )
 
@@ -224,9 +227,10 @@ async def diarize(
     """
     logger.info("Received diarization request for file: %s", file.filename)
 
-    validate_extension(file.filename, ALLOWED_EXTENSIONS)
+    # Validate audio file
+    validate_upload_file(file)
 
-    temp_file = save_temporary_file(file.file, file.filename)
+    temp_file = save_temporary_file(file, file.filename)
     audio = process_audio_file(temp_file)
 
     identifier = add_task_to_db(
@@ -239,7 +243,7 @@ async def diarize(
             **diarize_params.model_dump(),
             "device": device,
         },
-        start_time=datetime.utcnow(),
+        start_time=utc_now(),
         session=session,
     )
     background_tasks.add_task(
@@ -308,7 +312,7 @@ async def combine(
         status=TaskStatus.processing,
         file_name=None,
         task_type=TaskType.combine_transcript_diarization,
-        start_time=datetime.utcnow(),
+        start_time=utc_now(),
         session=session,
     )
     background_tasks.add_task(

@@ -71,8 +71,13 @@ def test_readiness_check():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "ok"
-    assert data["database"] == "connected"
-    assert data["message"] == "Application is ready to accept requests"
+    assert "components" in data
+    assert "database" in data["components"]
+    assert data["components"]["database"]["status"] == "healthy"
+    assert "system_metrics" in data
+    assert "gpu_info" in data
+    assert "timestamp" in data
+    assert "correlation_id" in data
 
 
 def test_readiness_check_with_db_failure(monkeypatch):
@@ -97,9 +102,11 @@ def test_readiness_check_with_db_failure(monkeypatch):
         response = client.get("/health/ready")
         assert response.status_code == 503
         data = response.json()
-        assert data["status"] == "error"
-        assert data["database"] == "disconnected"
-        assert "Database connection failed" in data["message"]
+        assert data["status"] == "degraded"
+        assert "components" in data
+        assert "database" in data["components"]
+        assert data["components"]["database"]["status"] == "unhealthy"
+        assert "Database connection failed" in data["components"]["database"]["message"]
     finally:
         # Restore the original connect method
         monkeypatch.setattr(engine, "connect", original_connect)

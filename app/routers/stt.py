@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..audio import get_audio_duration, process_audio_file
 from ..db import get_db_session
-from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_upload_file
 from ..logger import logger  # Import the logger from the new module
 from ..schemas import (
     AlignmentParams,
@@ -29,6 +29,7 @@ from ..schemas import (
     WhisperModelParams,
 )
 from ..tasks import add_task_to_db
+from ..utils import utc_now
 from ..whisperx_services import process_audio_common
 
 # Configure logging
@@ -66,9 +67,10 @@ async def speech_to_text(
     """
     logger.info("Received file upload request: %s", file.filename)
 
-    validate_extension(file.filename, ALLOWED_EXTENSIONS)
+    # Comprehensive file validation
+    validate_upload_file(file)
 
-    temp_file = save_temporary_file(file.file, file.filename)
+    temp_file = save_temporary_file(file, file.filename)
     logger.info("%s saved as temporary file: %s", file.filename, temp_file)
 
     audio = process_audio_file(temp_file)
@@ -88,7 +90,7 @@ async def speech_to_text(
             "vad_options": vad_options_params.model_dump(),
             **diarize_params.model_dump(),
         },
-        start_time=datetime.utcnow(),
+        start_time=utc_now(),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
@@ -159,7 +161,14 @@ async def speech_to_text_url(
             temp_audio_file.write(chunk)
 
     logger.info("File downloaded and saved temporarily: %s", temp_audio_file.name)
-    validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
+    
+    # Validate the downloaded file
+    validate_extension(os.path.basename(filename), ALLOWED_EXTENSIONS)
+    
+    # Check file size
+    file_size = os.path.getsize(temp_audio_file.name)
+    from ..files import validate_file_size
+    validate_file_size(file_size)
 
     audio = process_audio_file(temp_audio_file.name)
     logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
@@ -178,7 +187,7 @@ async def speech_to_text_url(
             **diarize_params.model_dump(),
         },
         url=url,
-        start_time=datetime.utcnow(),
+        start_time=utc_now(),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)

@@ -1,6 +1,8 @@
 """This module provides services for processing audio tasks including transcription, diarization, alignment, and speaker assignment using WhisperX and FastAPI."""
 
+import traceback
 from datetime import datetime
+from typing import Any, Callable
 
 import whisperx
 from fastapi import Depends, HTTPException
@@ -17,6 +19,7 @@ from .schemas import (
     WhisperModelParams,
 )
 from .tasks import update_task_status_in_db
+from .utils import utc_now
 from .whisperx_services import align_whisper_output, diarize, transcribe_with_whisper
 
 
@@ -37,14 +40,14 @@ def validate_language_code(language_code):
 
 
 def process_audio_task(
-    audio_processor,
+    audio_processor: Callable,
     identifier: str,
     task_type: str,
     session: Session = Depends(get_db_session),
-    *args,
+    *args: Any,
 ):
     """
-    Process an audio task.
+    Process an audio task with comprehensive error handling and monitoring.
 
     Args:
         audio_processor (callable): The function to process the audio.
@@ -53,21 +56,36 @@ def process_audio_task(
         session (Session): The database session.
         *args: Additional arguments for the audio processor.
     """
+    start_time = utc_now()
+    
     try:
-        start_time = datetime.now()
         logger.info(f"Starting {task_type} task for identifier {identifier}")
+        
+        # Validate inputs
+        if not identifier:
+            raise ValueError("Task identifier cannot be empty")
+        
+        if not audio_processor:
+            raise ValueError("Audio processor function is required")
 
+        # Execute the audio processing task
         result = audio_processor(*args)
 
+        # Handle different result types
         if task_type == "diarization":
-            result = result.drop(columns=["segment"]).to_dict(orient="records")
+            if hasattr(result, 'drop') and hasattr(result, 'to_dict'):
+                result = result.drop(columns=["segment"]).to_dict(orient="records")
+            else:
+                logger.warning(f"Unexpected diarization result type: {type(result)}")
 
-        end_time = datetime.now()
+        end_time = utc_now()
         duration = (end_time - start_time).total_seconds()
+        
         logger.info(
-            f"Completed {task_type} task for identifier {identifier}. Duration: {duration}s"
+            f"Completed {task_type} task for identifier {identifier}. Duration: {duration:.2f}s"
         )
 
+        # Update task status in database
         update_task_status_in_db(
             identifier=identifier,
             update_data={
@@ -80,22 +98,87 @@ def process_audio_task(
             session=session,
         )
 
-    except (ValueError, TypeError, RuntimeError) as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
-        )
+    except (ValueError, TypeError) as e:
+        duration = (utc_now() - start_time).total_seconds()
+        error_msg = f"Validation error in {task_type} task for identifier {identifier}: {str(e)}"
+        logger.error(error_msg)
+        logger.debug(f"Validation error traceback: {traceback.format_exc()}")
+        
         update_task_status_in_db(
             identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
+            update_data={
+                "status": TaskStatus.failed, 
+                "error": error_msg,
+                "duration": duration,
+                "end_time": utc_now(),
+            },
             session=session,
         )
-    except MemoryError as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
-        )
+        
+    except RuntimeError as e:
+        duration = (utc_now() - start_time).total_seconds()
+        error_msg = f"Runtime error in {task_type} task for identifier {identifier}: {str(e)}"
+        logger.error(error_msg)
+        logger.debug(f"Runtime error traceback: {traceback.format_exc()}")
+        
         update_task_status_in_db(
             identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
+            update_data={
+                "status": TaskStatus.failed, 
+                "error": error_msg,
+                "duration": duration,
+                "end_time": utc_now(),
+            },
+            session=session,
+        )
+        
+    except MemoryError as e:
+        duration = (utc_now() - start_time).total_seconds()
+        error_msg = f"Out of memory error in {task_type} task for identifier {identifier}: {str(e)}"
+        logger.error(error_msg)
+        
+        update_task_status_in_db(
+            identifier=identifier,
+            update_data={
+                "status": TaskStatus.failed, 
+                "error": error_msg,
+                "duration": duration,
+                "end_time": utc_now(),
+            },
+            session=session,
+        )
+        
+    except ImportError as e:
+        duration = (utc_now() - start_time).total_seconds()
+        error_msg = f"Model loading error in {task_type} task for identifier {identifier}: {str(e)}"
+        logger.error(error_msg)
+        logger.debug(f"Model loading error traceback: {traceback.format_exc()}")
+        
+        update_task_status_in_db(
+            identifier=identifier,
+            update_data={
+                "status": TaskStatus.failed, 
+                "error": error_msg,
+                "duration": duration,
+                "end_time": utc_now(),
+            },
+            session=session,
+        )
+        
+    except Exception as e:
+        duration = (utc_now() - start_time).total_seconds()
+        error_msg = f"Unexpected error in {task_type} task for identifier {identifier}: {str(e)}"
+        logger.error(error_msg)
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        
+        update_task_status_in_db(
+            identifier=identifier,
+            update_data={
+                "status": TaskStatus.failed, 
+                "error": error_msg,
+                "duration": duration,
+                "end_time": utc_now(),
+            },
             session=session,
         )
 
