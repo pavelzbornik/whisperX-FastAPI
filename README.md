@@ -1,6 +1,19 @@
 # whisperX REST API
 
-The whisperX API is a tool for enhancing and analyzing audio content. This API provides a suite of services for processing audio and video files, including transcription, alignment, diarization, and combining transcript with diarization results.
+The whisperX API is a production-ready tool for enhancing and analyzing audio content. This API provides a suite of services for processing audio and video files, including transcription, alignment, diarization, and combining transcript with diarization results.
+
+## ✨ New Production Features
+
+This API now includes enterprise-grade features for production deployments:
+
+- **🔍 Enhanced Health Monitoring**: Comprehensive health checks with system metrics, GPU monitoring, and resource alerting
+- **🛡️ Advanced Validation**: File size limits, content validation, and format verification with detailed error reporting
+- **📊 Request Tracing**: Correlation IDs for distributed tracing and request lifecycle monitoring
+- **⚡ Performance Monitoring**: Response time tracking, resource usage monitoring, and proactive alerting
+- **🔐 Security Improvements**: Secure environment variable handling, input sanitization, and error masking
+- **🚀 Production Ready**: Configurable timeouts, file upload limits, and comprehensive error handling
+
+For detailed configuration options, see [Configuration Guide](docs/CONFIGURATION.md).
 
 ## Documentation
 
@@ -226,24 +239,55 @@ The models used by whisperX are stored in `root/.cache`, if you want to avoid do
 
 ### Monitoring and Health Checks
 
-The API provides built-in health check endpoints that can be used for monitoring and orchestration:
+The API provides comprehensive health check endpoints with advanced monitoring capabilities:
 
 1. **Basic Health Check** (`/health`)
-
    - Returns a simple status check with HTTP 200 if the service is running
+   - Includes correlation ID for request tracing
    - Useful for basic availability monitoring
 
 2. **Liveness Probe** (`/health/live`)
-
-   - Includes a timestamp with status information
+   - Includes timestamp and uptime information
    - Designed for Kubernetes liveness probes or similar orchestration systems
    - Returns HTTP 200 if the application is running
+   - Tracks application uptime since startup
 
-3. **Readiness Probe** (`/health/ready`)
+3. **Comprehensive Readiness Check** (`/health/ready`)
    - Tests if the application is fully ready to accept requests
-   - Checks connectivity to the database
-   - Returns HTTP 200 if all dependencies are available
-   - Returns HTTP 503 if there's an issue with dependencies (e.g., database connection)
+   - Provides detailed system metrics (CPU, memory, disk usage)
+   - Monitors GPU status and memory usage (if available)
+   - Checks database connectivity and health
+   - Returns HTTP 200 if all systems are healthy
+   - Returns HTTP 503 with detailed diagnostics if any component is degraded
+   - Includes resource usage warnings when thresholds are exceeded
+
+#### Enhanced Features:
+- **System Metrics**: Real-time CPU, memory, and disk usage monitoring
+- **GPU Monitoring**: CUDA device status and memory utilization tracking
+- **Resource Alerting**: Automatic warnings when resource usage exceeds safe thresholds
+- **Request Tracing**: All requests include correlation IDs for distributed tracing
+- **Response Timing**: Automatic response time tracking in headers
+
+For detailed monitoring configuration, see [Configuration Guide](docs/CONFIGURATION.md).
+
+### File Upload Enhancements
+
+The API now includes robust file validation and handling:
+
+- **Size Limits**: Configurable file size limits (default 500MB)
+- **Format Validation**: Comprehensive audio/video format verification
+- **Content Verification**: Magic number validation for file integrity
+- **Early Rejection**: Middleware-level rejection of oversized files
+- **Detailed Error Messages**: Specific error codes and descriptions
+
+### Request Management
+
+Enhanced request handling features:
+
+- **Correlation IDs**: Automatic request tracking with unique identifiers
+- **Timeout Configuration**: Configurable request processing timeouts
+- **Error Tracking**: Comprehensive error logging with correlation context
+- **Performance Monitoring**: Request duration tracking and reporting
 
 ### Support
 
