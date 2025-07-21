@@ -9,7 +9,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     python3.11=3.11.0~rc1-1~22.04 \
     python3-pip=22.0.2+dfsg-1ubuntu0.6 \
-    git=1:2.34.1-1ubuntu1.12 \
+    git \
     ffmpeg=7:4.4.2-0ubuntu0.22.04.1 \
     libcudnn9-cuda-12=9.8.0.87-1 \
     && apt-get clean \
