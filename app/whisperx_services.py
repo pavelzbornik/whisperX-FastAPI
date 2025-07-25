@@ -321,11 +321,6 @@ def process_audio_common(
         logger.debug("Starting to combine transcript with diarization results")
         result = assign_word_speakers(diarization_segments, transcript)
 
-        for segment in result["segments"]:
-            del segment["words"]
-
-        del result["word_segments"]
-
         logger.debug("Completed combining transcript with diarization results")
 
         end_time = datetime.now()

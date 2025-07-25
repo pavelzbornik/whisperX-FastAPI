@@ -1,5 +1,5 @@
 colorlog==6.9.0
-fastapi==0.115.14
+fastapi==0.116.1
 gunicorn==23.0.0
 httpx==0.28.1
 numba==0.61.0
@@ -8,4 +8,3 @@ python-multipart==0.0.20
 tqdm==4.67.1
 uvicorn==0.35.0
 whisperx==3.4.2
-

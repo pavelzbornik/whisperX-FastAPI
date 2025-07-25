@@ -12,7 +12,7 @@ We will investigate all reports and do our best to fix valid issues promptly. On
 
 ## Supported Versions
 
-We aim to support the latest major and minor releases. Please ensure you are using the latest version before reporting a vulnerability.
+We support only the latest stable release from the `main` branch (latest `v*` tag). Please ensure you are using the most recent tagged version before reporting a vulnerability.
 
 ## Best Practices
 

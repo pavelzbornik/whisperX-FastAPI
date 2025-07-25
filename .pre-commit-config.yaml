@@ -10,7 +10,7 @@ repos:
       - id: detect-private-key
       - id: requirements-txt-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.1
+    rev: v0.12.4
     hooks:
       - id: ruff
         args: [--fix]
@@ -56,7 +56,7 @@ repos:
         additional_dependencies:
           - tomli
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.27.2
+    rev: v8.28.0
     hooks:
       - id: gitleaks
         args: ["--config", ".gitleaks.toml"]
