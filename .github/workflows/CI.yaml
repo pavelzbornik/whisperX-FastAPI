@@ -3,8 +3,9 @@ name: CI
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-# Default permissions: read-only, escalate only where needed
-permissions: read-all
+# Default permissions: least privilege (contents: read)
+permissions:
+  contents: read
 on:
   pull_request:
     branches:
@@ -76,7 +77,7 @@ jobs:
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
       - name: Upload Trivy scan results
-        uses: actions/upload-artifact@v4 # Pin to SHA for max security
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-results
           path: trivy-results.txt
