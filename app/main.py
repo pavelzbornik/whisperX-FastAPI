@@ -7,11 +7,10 @@ filter_warnings()
 import time  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
-logging.basicConfig(level=logging.INFO)  # Basic logging configuration
-
 from dotenv import load_dotenv  # noqa: E402
 from fastapi import FastAPI, status  # noqa: E402
-import logging  # Added for logging exceptions
+import logging  # noqa: E402
+
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
@@ -25,6 +24,8 @@ from .routers import stt, stt_services, task  # noqa: E402
 load_dotenv()
 
 Base.metadata.create_all(bind=engine)
+
+logging.basicConfig(level=logging.INFO)  # Basic logging configuration
 
 
 @asynccontextmanager
@@ -157,13 +158,14 @@ async def readiness_check():
                 "message": "Application is ready to accept requests",
             },
         )
-    except Exception as e:
-        logging.exception("Readiness check failed:")
+    except Exception:
+        logging.exception("Readiness check failed:")
+
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
                 "status": "error",
                 "database": "disconnected",
-                "message": "Application is not ready due to an internal error.",
+                "message": "Application is not ready due to an internal error.",
             },
         )

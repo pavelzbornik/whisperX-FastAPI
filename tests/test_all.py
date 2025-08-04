@@ -99,7 +99,7 @@ def test_readiness_check_with_db_failure(monkeypatch):
         data = response.json()
         assert data["status"] == "error"
         assert data["database"] == "disconnected"
-        assert "Database connection failed" in data["message"]
+        assert data["message"] == "Application is not ready due to an internal error."
     finally:
         # Restore the original connect method
         monkeypatch.setattr(engine, "connect", original_connect)
