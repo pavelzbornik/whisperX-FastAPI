@@ -102,7 +102,7 @@ jobs:
         uses: anothrNick/github-tag-action@1.73.0
         if: github.ref == 'refs/heads/main'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
           WITH_V: true
   dependabot:
     runs-on: ubuntu-latest
