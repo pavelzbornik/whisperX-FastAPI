@@ -48,10 +48,11 @@ jobs:
           echo "event name is:" ${{ github.event_name }}
           echo "event type is:" ${{ github.event.action }}
           echo "actor is:" ${{ github.actor }}
-      - name: Cache and install ffmpeg
+
+      - name: Cache and install ffmpeg and libblas3
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: ffmpeg
+          packages: ffmpeg libblas3
           version: 1.0
       - name: Install uv
         uses: astral-sh/setup-uv@v6
