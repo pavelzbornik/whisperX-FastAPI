@@ -25,8 +25,6 @@ load_dotenv()
 
 Base.metadata.create_all(bind=engine)
 
-logging.basicConfig(level=logging.INFO)  # Basic logging configuration
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
