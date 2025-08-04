@@ -7,7 +7,7 @@ It includes endpoints for processing uploaded audio files and audio files from U
 import logging
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from tempfile import NamedTemporaryFile
 
 import requests
@@ -53,6 +53,9 @@ def secure_filename(filename):
 logging.basicConfig(level=logging.INFO)
 
 stt_router = APIRouter()
+
+# Module-level constant for lowercased allowed extensions
+ALLOWED_EXTENSIONS_LOWER = {ext.lower() for ext in ALLOWED_EXTENSIONS}
 
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
@@ -106,7 +109,7 @@ async def speech_to_text(
             "vad_options": vad_options_params.model_dump(),
             **diarize_params.model_dump(),
         },
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
@@ -172,7 +175,7 @@ async def speech_to_text_url(
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
         original_extension = original_extension.lower()  # Normalize the extension
-        if original_extension not in {ext.lower() for ext in ALLOWED_EXTENSIONS}:
+        if original_extension not in ALLOWED_EXTENSIONS_LOWER:
             raise ValueError(f"Invalid file extension: {original_extension}")
 
         # Save the file to a temporary location
@@ -200,7 +203,7 @@ async def speech_to_text_url(
             **diarize_params.model_dump(),
         },
         url=url,
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
