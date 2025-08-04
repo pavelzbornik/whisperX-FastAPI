@@ -156,6 +156,8 @@ async def speech_to_text_url(
         _, original_extension = os.path.splitext(filename)
         original_extension = original_extension.lower()  # Normalize the extension
         if original_extension not in ALLOWED_EXTENSIONS:
+        original_extension = original_extension.lower()  # Normalize the extension
+        if original_extension not in {ext.lower() for ext in ALLOWED_EXTENSIONS}:
             raise ValueError(f"Invalid file extension: {original_extension}")
 
         # Save the file to a temporary location
