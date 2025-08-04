@@ -45,7 +45,7 @@ def secure_filename(filename):
     filename = re.sub(r"^[._]+", "", filename)
     # Ensure filename is not empty or problematic
     if not filename or filename in {".", ".."}:
-        raise ValueError("Invalid or unsafe filename after sanitization.")
+        raise ValueError("Filename is empty or contains only special characters after sanitization.")
     return filename
 
 
