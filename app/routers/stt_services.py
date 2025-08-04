@@ -5,7 +5,7 @@ Alignment, diarization, and combining transcripts with diarization results.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 from fastapi import (
@@ -96,7 +96,7 @@ async def transcribe(
             "asr_options": asr_options_params.model_dump(),
             "vad_options": vad_options_params.model_dump(),
         },
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
 
@@ -178,7 +178,7 @@ def align(
             **align_params.model_dump(),
             "device": device,
         },
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
 
@@ -239,7 +239,7 @@ async def diarize(
             **diarize_params.model_dump(),
             "device": device,
         },
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
     background_tasks.add_task(
@@ -308,7 +308,7 @@ async def combine(
         status=TaskStatus.processing,
         file_name=None,
         task_type=TaskType.combine_transcript_diarization,
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
     background_tasks.add_task(

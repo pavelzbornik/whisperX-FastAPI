@@ -6,7 +6,8 @@ It includes endpoints for processing uploaded audio files and audio files from U
 
 import logging
 import os
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 from tempfile import NamedTemporaryFile
 
 import requests
@@ -31,10 +32,32 @@ from ..schemas import (
 from ..tasks import add_task_to_db
 from ..whisperx_services import process_audio_common
 
+
+# Custom secure_filename implementation (no Werkzeug dependency)
+def secure_filename(filename):
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    # Replace multiple consecutive dots or underscores with a single underscore
+    filename = re.sub(r"[._]{2,}", "_", filename)
+    # Remove leading dots or underscores
+    filename = re.sub(r"^[._]+", "", filename)
+    # Ensure filename is not empty or problematic
+    if not filename or filename in {".", ".."}:
+        raise ValueError(
+            "Filename is empty or contains only special characters after sanitization."
+        )
+    return filename
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 stt_router = APIRouter()
+
+# Module-level constant for lowercased allowed extensions
+ALLOWED_EXTENSIONS_LOWER = {ext.lower() for ext in ALLOWED_EXTENSIONS}
 
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
@@ -88,7 +111,7 @@ async def speech_to_text(
             "vad_options": vad_options_params.model_dump(),
             **diarize_params.model_dump(),
         },
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
@@ -149,9 +172,13 @@ async def speech_to_text_url(
         else:
             # Fall back to extracting from the URL path
             filename = os.path.basename(url)
+            filename = secure_filename(filename)  # Sanitize the filename
 
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
+        original_extension = original_extension.lower()  # Normalize the extension
+        if original_extension not in ALLOWED_EXTENSIONS_LOWER:
+            raise ValueError(f"Invalid file extension: {original_extension}")
 
         # Save the file to a temporary location
         temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
@@ -178,7 +205,7 @@ async def speech_to_text_url(
             **diarize_params.model_dump(),
         },
         url=url,
-        start_time=datetime.utcnow(),
+        start_time=datetime.now(tz=timezone.utc),
         session=session,
     )
     logger.info("Task added to database: ID %s", identifier)
