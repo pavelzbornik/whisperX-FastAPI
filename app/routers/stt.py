@@ -5,6 +5,7 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
+from werkzeug.utils import secure_filename
 import os
 from datetime import datetime
 from tempfile import NamedTemporaryFile
@@ -149,9 +150,13 @@ async def speech_to_text_url(
         else:
             # Fall back to extracting from the URL path
             filename = os.path.basename(url)
+            filename = werkzeug.utils.secure_filename(filename)  # Sanitize the filename
 
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
+        original_extension = original_extension.lower()  # Normalize the extension
+        if original_extension not in ALLOWED_EXTENSIONS:
+            raise ValueError(f"Invalid file extension: {original_extension}")
 
         # Save the file to a temporary location
         temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
