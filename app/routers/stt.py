@@ -32,6 +32,23 @@ from ..schemas import (
 from ..tasks import add_task_to_db
 from ..whisperx_services import process_audio_common
 
+
+# Custom secure_filename implementation (no Werkzeug dependency)
+def secure_filename(filename):
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    # Replace multiple consecutive dots or underscores with a single underscore
+    filename = re.sub(r"[._]{2,}", "_", filename)
+    # Remove leading dots or underscores
+    filename = re.sub(r"^[._]+", "", filename)
+    # Ensure filename is not empty or problematic
+    if not filename or filename in {".", ".."}:
+        raise ValueError("Invalid or unsafe filename after sanitization.")
+    return filename
+
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
@@ -202,19 +219,3 @@ async def speech_to_text_url(
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
-
-
-# Custom secure_filename implementation (no Werkzeug dependency)
-def secure_filename(filename):
-    """Sanitize the filename to ensure it is safe for use in file systems."""
-    filename = os.path.basename(filename)
-    # Only allow alphanumerics, dash, underscore, and dot
-    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
-    # Replace multiple consecutive dots or underscores with a single underscore
-    filename = re.sub(r"[._]{2,}", "_", filename)
-    # Remove leading dots or underscores
-    filename = re.sub(r"^[._]+", "", filename)
-    # Ensure filename is not empty or problematic
-    if not filename or filename in {".", ".."}:
-        raise ValueError("Invalid or unsafe filename after sanitization.")
-    return filename
