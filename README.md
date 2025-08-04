@@ -1,5 +1,15 @@
 # whisperX REST API
 
+[![GitHub stars](https://img.shields.io/github/stars/pavelzbornik/whisperX-FastAPI?style=social)](https://github.com/pavelzbornik/whisperX-FastAPI/stargazers)
+[![License: MIT](https://img.shields.io/github/license/pavelzbornik/whisperX-FastAPI.svg)](https://github.com/pavelzbornik/whisperX-FastAPI/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pavelzbornik/whisperX-FastAPI)
+[![CI Status](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/CI.yaml/badge.svg?branch=dev)](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/CI.yaml)
+![Python 3.9 | 3.11](https://img.shields.io/badge/python-3.9%20|%203.11-blue.svg)
+![CUDA 12.9+](https://img.shields.io/badge/CUDA-12.9%2B-blue.svg)
+![Dependency Status](https://img.shields.io/librariesio/github/pavelzbornik/whisperX-FastAPI)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)
+![whisperx](https://img.shields.io/badge/whisperx-3.4.2-green.svg)
+
 The whisperX API is a tool for enhancing and analyzing audio content. This API provides a suite of services for processing audio and video files, including transcription, alignment, diarization, and combining transcript with diarization results.
 
 ## Documentation
