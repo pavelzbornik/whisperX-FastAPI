@@ -224,4 +224,12 @@ def secure_filename(filename):
     # Ensure filename is not empty
     if not filename:
         filename = "file"
+def secure_filename(filename):
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    # Ensure filename is not empty or problematic
+    if not filename or filename in {".", ".."}:
+        raise ValueError("Invalid or unsafe filename after sanitization.")
     return filename
