@@ -6,6 +6,7 @@ It includes endpoints for processing uploaded audio files and audio files from U
 
 import logging
 import os
+import re
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
@@ -149,9 +150,13 @@ async def speech_to_text_url(
         else:
             # Fall back to extracting from the URL path
             filename = os.path.basename(url)
+            filename = secure_filename(filename)  # Sanitize the filename
 
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
+        original_extension = original_extension.lower()  # Normalize the extension
+        if original_extension not in {ext.lower() for ext in ALLOWED_EXTENSIONS}:
+            raise ValueError(f"Invalid file extension: {original_extension}")
 
         # Save the file to a temporary location
         temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
@@ -197,3 +202,19 @@ async def speech_to_text_url(
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
+
+
+# Custom secure_filename implementation (no Werkzeug dependency)
+def secure_filename(filename):
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    # Replace multiple consecutive dots or underscores with a single underscore
+    filename = re.sub(r"[._]{2,}", "_", filename)
+    # Remove leading dots or underscores
+    filename = re.sub(r"^[._]+", "", filename)
+    # Ensure filename is not empty or problematic
+    if not filename or filename in {".", ".."}:
+        raise ValueError("Invalid or unsafe filename after sanitization.")
+    return filename
