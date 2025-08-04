@@ -5,8 +5,8 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
-from werkzeug.utils import secure_filename
 import os
+import re
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
@@ -150,7 +150,7 @@ async def speech_to_text_url(
         else:
             # Fall back to extracting from the URL path
             filename = os.path.basename(url)
-            filename = werkzeug.utils.secure_filename(filename)  # Sanitize the filename
+            filename = secure_filename(filename)  # Sanitize the filename
 
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
@@ -202,3 +202,12 @@ async def speech_to_text_url(
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
+
+
+# Custom secure_filename implementation (no Werkzeug dependency)
+def secure_filename(filename):
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    return filename
