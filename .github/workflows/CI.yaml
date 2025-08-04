@@ -40,7 +40,7 @@ jobs:
     needs: [lint]
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write
       # Only escalate to write for version bump step
     steps:
       - name: Checkout code
