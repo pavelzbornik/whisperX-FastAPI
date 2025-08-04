@@ -155,8 +155,6 @@ async def speech_to_text_url(
         # Get the file extension
         _, original_extension = os.path.splitext(filename)
         original_extension = original_extension.lower()  # Normalize the extension
-        if original_extension not in ALLOWED_EXTENSIONS:
-        original_extension = original_extension.lower()  # Normalize the extension
         if original_extension not in {ext.lower() for ext in ALLOWED_EXTENSIONS}:
             raise ValueError(f"Invalid file extension: {original_extension}")
 
@@ -212,23 +210,10 @@ def secure_filename(filename):
     filename = os.path.basename(filename)
     # Only allow alphanumerics, dash, underscore, and dot
     filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
-def secure_filename(filename):
-    """Sanitize the filename to ensure it is safe for use in file systems."""
-    filename = os.path.basename(filename)
-    # Only allow alphanumerics, dash, underscore, and dot
-    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
     # Replace multiple consecutive dots or underscores with a single underscore
     filename = re.sub(r"[._]{2,}", "_", filename)
     # Remove leading dots or underscores
     filename = re.sub(r"^[._]+", "", filename)
-    # Ensure filename is not empty
-    if not filename:
-        filename = "file"
-def secure_filename(filename):
-    """Sanitize the filename to ensure it is safe for use in file systems."""
-    filename = os.path.basename(filename)
-    # Only allow alphanumerics, dash, underscore, and dot
-    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
     # Ensure filename is not empty or problematic
     if not filename or filename in {".", ".."}:
         raise ValueError("Invalid or unsafe filename after sanitization.")
