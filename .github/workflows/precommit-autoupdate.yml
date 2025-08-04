@@ -1,4 +1,7 @@
 name: Weekly Pre-commit Autoupdate
+concurrency:
+  group: precommit-autoupdate-${{ github.ref }}
+  cancel-in-progress: true
 on:
   schedule:
     - cron: "0 0 * * 0" # Runs at 00:00 UTC every Sunday

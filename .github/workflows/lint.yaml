@@ -1,4 +1,8 @@
 name: Build Status
+# Prevent duplicate runs on the same branch
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
 on:
   workflow_call:
     secrets: # Declare secrets expected from the caller
@@ -27,7 +31,9 @@ permissions:
   contents: read
 jobs:
   build:
+    name: Lint, Format, and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       WHISPER_MODEL: tiny
@@ -35,14 +41,18 @@ jobs:
       DEVICE: cpu
       COMPUTE_TYPE: int8
     steps:
-      - uses: actions/checkout@v4
-      - run: echo "event name is:" ${{ github.event_name }}
-      - run: echo "event type is:" ${{ github.event.action }}
-      - run: echo "actor is:" ${{ github.actor }}
-      - name: Install system dependencies
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Print event info
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          echo "event name is:" ${{ github.event_name }}
+          echo "event type is:" ${{ github.event.action }}
+          echo "actor is:" ${{ github.actor }}
+      - name: Cache and install ffmpeg
+        uses: awalsh128/cache-apt-pkgs-action@v1.3.4
+        with:
+          packages: ffmpeg
+          version: 1.0
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
@@ -68,3 +78,8 @@ jobs:
           echo "<details><summary>Coverage HTML Report</summary>" >> $GITHUB_STEP_SUMMARY
           cat htmlcov/index.html >> $GITHUB_STEP_SUMMARY
           echo "</details>" >> $GITHUB_STEP_SUMMARY
+      - name: Upload coverage report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/index.html
