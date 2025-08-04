@@ -210,4 +210,16 @@ def secure_filename(filename):
     filename = os.path.basename(filename)
     # Only allow alphanumerics, dash, underscore, and dot
     filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+def secure_filename(filename):
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    # Replace multiple consecutive dots or underscores with a single underscore
+    filename = re.sub(r"[._]{2,}", "_", filename)
+    # Remove leading dots or underscores
+    filename = re.sub(r"^[._]+", "", filename)
+    # Ensure filename is not empty
+    if not filename:
+        filename = "file"
     return filename
