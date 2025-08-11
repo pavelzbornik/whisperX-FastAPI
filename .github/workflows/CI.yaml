@@ -89,15 +89,34 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat trivy-results.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
           docker run --env HF_TOKEN=${{ secrets.HF_TOKEN }} \
             --env WHISPER_MODEL=tiny \
             --env DEFAULT_LANG=en \
             --env DEVICE=cpu \
             --env COMPUTE_TYPE=int8 \
+            --workdir /app \
             --entrypoint /bin/bash whisperx-fastapi:latest \
-            -c "pip install pytest==8.3.5 pytest-cov==6.1.1 && pytest"
+            -c "pip install pytest==8.4.1 pytest-cov==6.2.1 && pytest tests/ --cov=app --cov-report=xml --cov-report=term-missing && cp coverage.xml /tmp/coverage.xml" \
+            && docker cp $(docker ps -lq):/tmp/coverage.xml ./coverage.xml
+      - name: Upload coverage reports to Codecov
+        if: github.event_name != 'workflow_dispatch'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+      - name: Output coverage summary
+        if: always()
+        run: |
+          if [ -f coverage.xml ]; then
+            echo "## Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage report has been generated and uploaded to Codecov." >> $GITHUB_STEP_SUMMARY
+            echo "View the full report at: https://codecov.io/gh/${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          fi
       - name: Bump version and push tag
         uses: anothrNick/github-tag-action@1.73.0
         if: github.ref == 'refs/heads/main'

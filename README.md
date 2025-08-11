@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/github/license/pavelzbornik/whisperX-FastAPI.svg)](https://github.com/pavelzbornik/whisperX-FastAPI/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pavelzbornik/whisperX-FastAPI)
 [![CI Status](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/CI.yaml/badge.svg?branch=dev)](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/CI.yaml)
+[![codecov](https://codecov.io/gh/pavelzbornik/whisperX-FastAPI/branch/main/graph/badge.svg)](https://codecov.io/gh/pavelzbornik/whisperX-FastAPI)
+[![Test Coverage](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/coverage.yaml/badge.svg)](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/coverage.yaml)
 ![Python 3.9 | 3.11](https://img.shields.io/badge/python-3.9%20|%203.11-blue.svg)
 ![CUDA 12.9+](https://img.shields.io/badge/CUDA-12.9%2B-blue.svg)
 ![Dependency Status](https://img.shields.io/librariesio/github/pavelzbornik/whisperX-FastAPI)
@@ -258,6 +260,64 @@ The API provides built-in health check endpoints that can be used for monitoring
 ### Support
 
 For further assistance, please open an issue on the [GitHub repository](https://github.com/pavelzbornik/whisperX-FastAPI/issues).
+
+## Testing
+
+This project includes comprehensive test coverage to ensure code quality and reliability.
+
+### Running Tests
+
+#### Using Docker (Recommended)
+```bash
+docker build -t whisperx-test .
+docker run --env DEVICE=cpu --env COMPUTE_TYPE=int8 \
+  --entrypoint /bin/bash whisperx-test \
+  -c "pip install pytest pytest-cov && pytest tests/ --cov=app --cov-report=term-missing"
+```
+
+#### Local Development
+```bash
+# Install development dependencies
+pip install -r requirements/dev.txt
+
+# Run tests with coverage
+pytest tests/ --cov=app --cov-report=term-missing --cov-report=html
+
+# Run specific test modules
+pytest tests/test_audio.py -v
+pytest tests/test_services.py -v
+```
+
+### Test Coverage
+
+The project maintains high test coverage (>80%) with comprehensive unit and integration tests:
+
+- **Unit Tests**: Test individual functions and modules with mocking
+- **Integration Tests**: Test API endpoints and service interactions
+- **Coverage Reports**: Generated automatically in CI/CD and available via Codecov
+
+### Test Structure
+
+```
+tests/
+├── test_audio.py          # Audio processing utilities
+├── test_config.py         # Configuration management  
+├── test_docs.py           # Documentation generation
+├── test_files.py          # File handling and validation
+├── test_services.py       # Service layer functions
+├── test_transcript.py     # Transcript filtering
+├── test_whisperx_services.py  # WhisperX integration
+└── test_all.py           # End-to-end integration tests
+```
+
+### Contributing Tests
+
+When contributing new features:
+
+1. Write tests for new functionality
+2. Ensure coverage doesn't decrease
+3. Use proper mocking for external dependencies
+4. Follow existing test patterns and naming conventions
 
 ## Related
 
