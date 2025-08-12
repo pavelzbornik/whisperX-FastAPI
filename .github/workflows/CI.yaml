@@ -44,7 +44,7 @@ jobs:
       # Only escalate to write for version bump step
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Free Disk Space (Ubuntu)
