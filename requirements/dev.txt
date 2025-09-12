@@ -9,7 +9,7 @@ pre-commit==4.3.0
 
 # Testing
 pytest==8.4.2
-pytest-cov==6.2.1
+pytest-cov==7.0.0
 
 
 # Lint and code style
