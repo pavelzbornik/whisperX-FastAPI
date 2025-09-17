@@ -1,5 +1,5 @@
 colorlog==6.9.0
-fastapi==0.116.1
+fastapi==0.116.2
 gunicorn==23.0.0
 httpx==0.28.1
 numba==0.61.0
