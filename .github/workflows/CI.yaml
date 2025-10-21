@@ -18,6 +18,7 @@ on:
   push:
     branches:
       - main
+      - dev
     paths:
       - "app/**"
       - "tests/**"
