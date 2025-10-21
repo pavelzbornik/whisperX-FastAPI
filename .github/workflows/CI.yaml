@@ -37,7 +37,7 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Common setup
@@ -50,10 +50,10 @@ jobs:
           chmod +x hadolint
           sudo mv hadolint /usr/local/bin/
       - name: Run full pre-commit validation
-        uses: pre-commit/action@v3.0.1
+        uses: pre-commit/action@1b06ec171f2f6faa71ed760c4042bd969e4f8b43
       - name: Comment on PR if lint job fails
         if: failure()
-        uses: thollander/actions-comment-pull-request@v3
+        uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
             ## :x: CI Job Failed
@@ -90,7 +90,7 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Common setup
         uses: ./.github/actions/setup
         with:
@@ -98,18 +98,18 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80
       - name: Upload test report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
           name: test-report-${{ matrix.python-version }}
           path: pytest-report.xml
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
       - name: Comment on PR if test job fails
         if: failure()
-        uses: thollander/actions-comment-pull-request@v3
+        uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
             ## :x: CI Job Failed
@@ -137,14 +137,14 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@07b91577a360213440b7d4bc514338cb37ce61a0
         with:
           fail-on-severity: moderate
       - name: Comment on PR if dependency review fails
         if: failure()
-        uses: thollander/actions-comment-pull-request@v3
+        uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
             ## :x: CI Job Failed
@@ -174,11 +174,11 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@1583c0f09d26c58c59d25b0eef29792b7ce99d9a
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
           tool-cache: false
           android: true
@@ -188,7 +188,7 @@ jobs:
           docker-images: false
           swap-storage: true
       - name: Build and export to Docker
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d
         with:
           context: .
           load: true
@@ -197,7 +197,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           image-ref: whisperx-fastapi:latest
           format: "table"
@@ -207,7 +207,7 @@ jobs:
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
       - name: Upload Trivy scan results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
           name: trivy-results
           path: trivy-results.txt
@@ -221,7 +221,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Comment on PR if build job fails
         if: failure()
-        uses: thollander/actions-comment-pull-request@v3
+        uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
             ## :x: CI Job Failed
@@ -250,7 +250,7 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@v2
+        uses: dependabot/fetch-metadata@5a70a1d133aebc31503dc07fb19f294cf18ff31c
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge the PR
@@ -268,7 +268,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@e5c2aa4f6acd6194e00632c8f262cff67ae17873
         id: release-please
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -277,18 +277,18 @@ jobs:
         # release-please is unable to update uv.lock, so we do it ourselves
 
         if: ${{ steps.release-please.outputs.pr }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
         with:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
         if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
       - name: Update uv.lock
         if: ${{ steps.release-please.outputs.pr }}
         run: uv lock
       - name: Commit updated uv.lock
         if: ${{ steps.release-please.outputs.pr }}
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@8fa7f5a3c51038deaa521c22ae89fac24baad8e7
         with:
           commit_message: "ci: update uv.lock"
           file_pattern: uv.lock
@@ -304,7 +304,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Set up GitHub CLI
         run: |
           sudo apt-get update && sudo apt-get install -y gh

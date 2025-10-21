@@ -15,14 +15,15 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Common setup
         uses: ./.github/actions/setup
         with:
-          python-version: '3.11'
+          python-version: "3.11"
           dependency-group: dev
-      # Install required CLI tools for validation (not handled by uv dev group)
       - name: Install hadolint
+        # Install required CLI tools for validation (not handled by uv dev group)
+
         run: |
           wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
           chmod +x /usr/local/bin/hadolint
