@@ -129,7 +129,7 @@ To get started with the API, follow these steps:
 
 3. Configure your environment (see `.env` file setup below)
 
-> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) for dependency management with platform-specific PyTorch configuration (CUDA 12.6 on Linux, CPU-only on macOS/Windows). All dependencies are defined in `pyproject.toml`.
+> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) for dependency management with platform-specific PyTorch configuration (CUDA 12.8 on Linux, CPU-only on macOS/Windows). All dependencies are defined in `pyproject.toml`.
 
 ### Logging Configuration
 
