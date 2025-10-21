@@ -43,7 +43,7 @@ jobs:
       - name: Common setup
         uses: ./.github/actions/setup
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install hadolint
         run: |
           wget -O hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
@@ -96,18 +96,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run tests with coverage
-        run: |
-          uv run coverage run --source=app -m pytest
-          uv run coverage report --fail-under=80
-          uv run coverage xml
+        run: uv run pytest --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80
       - name: Upload test report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-report-${{ matrix.python-version }}
-          path: .coverage
+          path: pytest-report.xml
       - name: Upload coverage report
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ matrix.python-version }}
@@ -205,12 +200,12 @@ jobs:
         uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: whisperx-fastapi:latest
-          format: 'table'
-          output: 'trivy-results.txt'
-          exit-code: '0'
+          format: "table"
+          output: "trivy-results.txt"
+          exit-code: "0"
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
       - name: Upload Trivy scan results
         uses: actions/upload-artifact@v4
         with:
