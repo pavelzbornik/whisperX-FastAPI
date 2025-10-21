@@ -5,10 +5,6 @@ inputs:
     description: Python version to use
     required: true
     default: '3.11'
-  dependency-group:
-    description: Dependency group to install (dev, deploy, or all)
-    required: false
-    default: all
 runs:
   using: composite
   steps:
@@ -24,5 +20,5 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
     - name: Install dependencies
-      run: uv sync --group ${{ inputs.dependency-group }}
+      run: uv sync --all-extras
       shell: bash
