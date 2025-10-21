@@ -277,7 +277,7 @@ jobs:
         # release-please is unable to update uv.lock, so we do it ourselves
 
         if: ${{ steps.release-please.outputs.pr }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
