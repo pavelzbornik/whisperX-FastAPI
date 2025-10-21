@@ -1,4 +1,4 @@
 setuptools>=78.1.1 # fix for CVE-2025-47273
 torch==2.9.0
 torchaudio==2.9.0
-torchvision==0.22.1
+torchvision==0.24.0
