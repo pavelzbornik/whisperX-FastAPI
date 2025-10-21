@@ -4,3 +4,9 @@ __pycache__
 *.db
 *.env
 .coverage
+.venv
+*.egg-info
+.cache
+.uv_cache
+.ruff_cache
+.pytest_cache

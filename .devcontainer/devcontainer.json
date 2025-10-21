@@ -52,5 +52,12 @@
   },
   "postCreateCommand": "chmod +x .devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
   "postAttachCommand": "chmod +x .devcontainer/post-attach.sh && ./.devcontainer/post-attach.sh",
-  "remoteUser": "root"
+  "remoteUser": "root",
+  "remoteEnv": {
+        "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
+        "UV_CACHE_DIR": "/workspaces/whisperX-FastAPI/.uv_cache",
+        "UV_LINK_MODE": "copy",
+        "PRE_COMMIT_HOME": "/workspaces/whisperX-FastAPI/.cache/pre-commit",
+        "PRE_COMMIT_USE_UV": "0"
+      }
 }

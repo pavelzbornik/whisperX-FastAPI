@@ -1,4 +1,6 @@
 # .pre-commit-config.yaml
+default_language_version:
+  python: python3.11
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0 # Use the latest tag from the repository
@@ -7,8 +9,9 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-added-large-files
+        args: ['--maxkb=500', '--enforce-all']
+        exclude: '^(uv\.lock|tests/test_files/.*\.(mp4|flv))$'
       - id: detect-private-key
-      - id: requirements-txt-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.1
     hooks:
@@ -21,13 +24,15 @@ repos:
       - id: yamllint
         args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
         files: \.(yaml|yml)$
-  # Add pydocstyle for checking docstrings
   - repo: https://github.com/PyCQA/pydocstyle
+    # Add pydocstyle for checking docstrings
+
     rev: 6.3.0 # Use the latest stable version of pydocstyle
     hooks:
       - id: pydocstyle
-  # Lint: YAML
   - repo: https://github.com/adrienverge/yamllint
+    # Lint: YAML
+
     rev: v1.37.1
     hooks:
       - id: yamllint
@@ -37,14 +42,16 @@ repos:
     rev: v0.19.0
     hooks:
       - id: yamlfmt
-  # Lint: Shell scripts
   - repo: https://github.com/shellcheck-py/shellcheck-py
+    # Lint: Shell scripts
+
     rev: v0.11.0.1
     hooks:
       - id: shellcheck
         args: ["-x"]
-  # Lint: Markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli
+    # Lint: Markdown
+
     rev: v0.45.0
     hooks:
       - id: markdownlint
@@ -64,4 +71,5 @@ repos:
     rev: v2.14.0
     hooks:
       - id: hadolint
-        files: Dockerfile
+        files: '(^|/)[Dd]ockerfile$'
+        types: [file] # Override the default 'dockerfile' type
