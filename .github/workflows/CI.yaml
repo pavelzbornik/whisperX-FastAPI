@@ -97,9 +97,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run tests with coverage
         run: |
-          coverage run --source=app -m pytest
-          coverage report --fail-under=80
-          coverage xml
+          uv run coverage run --source=app -m pytest
+          uv run coverage report --fail-under=80
+          uv run coverage xml
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4

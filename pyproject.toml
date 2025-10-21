@@ -48,7 +48,6 @@ dependencies = [
 dev = [
     "codespell==2.4.1",
     "pre-commit==4.3.0",
-    "coverage==7.10.6",
     "pytest==8.4.2",
     "pytest-cov==7.0.0",
     "ruff==0.14.1",
