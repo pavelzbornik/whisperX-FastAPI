@@ -1,7 +1,7 @@
 # .pre-commit-config.yaml
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0 # Use the latest tag from the repository
+    rev: v6.0.0 # Use the latest tag from the repository
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -10,7 +10,7 @@ repos:
       - id: detect-private-key
       - id: requirements-txt-fixer
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.12.4
+    rev: v0.14.1
     hooks:
       - id: ruff
         args: [--fix]
@@ -34,12 +34,12 @@ repos:
         args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
         files: \.(yaml|yml)$
   - repo: https://github.com/google/yamlfmt
-    rev: v0.17.2
+    rev: v0.19.0
     hooks:
       - id: yamlfmt
   # Lint: Shell scripts
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
         args: ["-x"]
@@ -61,7 +61,7 @@ repos:
       - id: gitleaks
         args: ["--config", ".gitleaks.toml"]
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.13.1-beta
+    rev: v2.14.0
     hooks:
       - id: hadolint
         files: Dockerfile
