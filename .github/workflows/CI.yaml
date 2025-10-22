@@ -182,8 +182,8 @@ jobs:
           android: true
           dotnet: true
           haskell: true
-          large-packages: false
-          docker-images: false
+          large-packages: true # Free up ~12GB by removing large packages
+          docker-images: true # Remove unused Docker images
           swap-storage: true
       - name: Build and export to Docker
         uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d
@@ -194,6 +194,10 @@ jobs:
           tags: whisperx-fastapi:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Clean up Docker build cache
+        run: |
+          docker builder prune -f --filter "until=1h"
+          df -h
       - name: Run Trivy vulnerability scanner (SARIF format)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
@@ -204,6 +208,9 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+        env:
+          TRIVY_TEMP_DIR: /tmp/trivy
+          TMPDIR: /tmp/trivy
       - name: Convert SARIF to Markdown table
         if: always()
         run: |
