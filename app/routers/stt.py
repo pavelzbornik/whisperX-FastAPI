@@ -11,7 +11,15 @@ from datetime import datetime, timezone
 from tempfile import NamedTemporaryFile
 
 import requests
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
 from sqlalchemy.orm import Session
 
 from ..audio import get_audio_duration, process_audio_file
@@ -34,7 +42,7 @@ from ..whisperx_services import process_audio_common
 
 
 # Custom secure_filename implementation (no Werkzeug dependency)
-def secure_filename(filename):
+def secure_filename(filename: str) -> str:
     """Sanitize the filename to ensure it is safe for use in file systems."""
     filename = os.path.basename(filename)
     # Only allow alphanumerics, dash, underscore, and dot
@@ -88,6 +96,9 @@ async def speech_to_text(
         Response: Confirmation message of task queuing.
     """
     logger.info("Received file upload request: %s", file.filename)
+
+    if file.filename is None:
+        raise HTTPException(status_code=400, detail="Filename is missing")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 

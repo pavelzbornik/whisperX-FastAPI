@@ -1,6 +1,8 @@
 """This module provides services for processing audio tasks including transcription, diarization, alignment, and speaker assignment using WhisperX and FastAPI."""
 
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 import whisperx
 from fastapi import Depends, HTTPException
@@ -11,6 +13,7 @@ from .logger import logger  # Import the logger from the new module
 from .schemas import (
     AlignmentParams,
     ASROptions,
+    Device,
     DiarizationParams,
     TaskStatus,
     VADOptions,
@@ -20,7 +23,7 @@ from .tasks import update_task_status_in_db
 from .whisperx_services import align_whisper_output, diarize, transcribe_with_whisper
 
 
-def validate_language_code(language_code):
+def validate_language_code(language_code: str) -> None:
     """
     Validate the language code.
 
@@ -37,12 +40,12 @@ def validate_language_code(language_code):
 
 
 def process_audio_task(
-    audio_processor,
+    audio_processor: Callable[..., Any],
     identifier: str,
     task_type: str,
     session: Session = Depends(get_db_session),
-    *args,
-):
+    *args: Any,
+) -> None:
     """
     Process an audio task.
 
@@ -101,13 +104,13 @@ def process_audio_task(
 
 
 def process_transcribe(
-    audio,
-    identifier,
+    audio: Any,
+    identifier: str,
     model_params: WhisperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
     session: Session = Depends(get_db_session),
-):
+) -> None:
     """
     Process a transcription task.
 
@@ -140,19 +143,19 @@ def process_transcribe(
 
 
 def process_diarize(
-    audio,
-    identifier,
-    device,
+    audio: Any,
+    identifier: str,
+    device: Device,
     diarize_params: DiarizationParams,
     session: Session = Depends(get_db_session),
-):
+) -> None:
     """
     Process a diarization task.
 
     Args:
         audio: The audio data.
         identifier (str): The task identifier.
-        device: The device to use.
+        device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
         session (Session): The database session.
     """
@@ -169,13 +172,13 @@ def process_diarize(
 
 
 def process_alignment(
-    audio,
-    transcript,
-    identifier,
-    device,
+    audio: Any,
+    transcript: dict[str, Any],
+    identifier: str,
+    device: Device,
     align_params: AlignmentParams,
     session: Session = Depends(get_db_session),
-):
+) -> None:
     """
     Process a transcription alignment task.
 
@@ -183,7 +186,7 @@ def process_alignment(
         audio: The audio data.
         transcript: The transcript data.
         identifier (str): The task identifier.
-        device: The device to use.
+        device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
         session (Session): The database session.
     """
@@ -203,11 +206,11 @@ def process_alignment(
 
 
 def process_speaker_assignment(
-    diarization_segments,
-    transcript,
-    identifier,
+    diarization_segments: Any,
+    transcript: dict[str, Any],
+    identifier: str,
     session: Session = Depends(get_db_session),
-):
+) -> None:
     """
     Process a speaker assignment task.
 

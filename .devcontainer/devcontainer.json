@@ -33,7 +33,7 @@
           "source.fixAll.eslint": true,
           "source.organizeImports": true
         },
-        "python.analysis.typeCheckingMode": "basic",
+        "python.analysis.typeCheckingMode": "strict",
         "[python]": {
           "editor.defaultFormatter": "charliermarsh.ruff",
           "editor.formatOnSave": true

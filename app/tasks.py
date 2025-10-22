@@ -1,6 +1,7 @@
 """This module contains functions to interact with the task database."""
 
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any
 
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -13,17 +14,17 @@ from .schemas import ResultTasks, TaskSimple
 # Add tasks to the database
 @handle_database_errors
 def add_task_to_db(
-    status,
-    task_type,
-    language=None,
-    task_params=None,
-    file_name=None,
-    url=None,
-    audio_duration=None,
-    start_time=None,
-    end_time=None,
+    status: str,
+    task_type: str,
+    language: str | None = None,
+    task_params: dict[str, Any] | None = None,
+    file_name: str | None = None,
+    url: str | None = None,
+    audio_duration: float | None = None,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
     session: Session = Depends(get_db_session),
-):
+) -> str:
     """
     Add a new task to the database.
 
@@ -55,16 +56,16 @@ def add_task_to_db(
     )
     session.add(task)
     session.commit()
-    return task.uuid
+    return str(task.uuid)
 
 
 # Update task status in the database
 @handle_database_errors
 def update_task_status_in_db(
     identifier: str,
-    update_data: Dict[str, Any],
+    update_data: dict[str, Any],
     session: Session = Depends(get_db_session),
-):
+) -> None:
     """
     Update task status and attributes in the database.
 
@@ -85,7 +86,9 @@ def update_task_status_in_db(
 
 # Retrieve task status from the database
 @handle_database_errors
-def get_task_status_from_db(identifier, session: Session = Depends(get_db_session)):
+def get_task_status_from_db(
+    identifier: str, session: Session = Depends(get_db_session)
+) -> dict[str, Any] | None:
     """
     Retrieve the status of a task from the database.
 
@@ -120,7 +123,9 @@ def get_task_status_from_db(identifier, session: Session = Depends(get_db_sessio
 
 # Retrieve task status from the database
 @handle_database_errors
-def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
+def get_all_tasks_status_from_db(
+    session: Session = Depends(get_db_session),
+) -> ResultTasks:
     """
     Retrieve the status of all tasks from the database.
 
@@ -131,8 +136,8 @@ def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
         ResultTasks: Object containing a list of all tasks with their status and type.
     """
     tasks = []
-    # Define the columns you want to select
-    columns = [
+    # Create a query to select only the specified columns
+    query = session.query(
         Task.uuid,
         Task.status,
         Task.task_type,
@@ -144,10 +149,7 @@ def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
         Task.audio_duration,
         Task.start_time,
         Task.end_time,
-    ]
-
-    # Create a query to select only the specified columns
-    query = session.query(*columns)
+    )
     for task in query:
         tasks.append(
             TaskSimple(
@@ -168,7 +170,9 @@ def get_all_tasks_status_from_db(session: Session = Depends(get_db_session)):
 
 
 @handle_database_errors
-def delete_task_from_db(identifier: str, session: Session = Depends(get_db_session)):
+def delete_task_from_db(
+    identifier: str, session: Session = Depends(get_db_session)
+) -> bool:
     """
     Delete a task from the database.
 
