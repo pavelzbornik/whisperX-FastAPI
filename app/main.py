@@ -1,16 +1,17 @@
 """Main entry point for the FastAPI application."""
 
+from collections.abc import AsyncGenerator
+
 from .warnings_filter import filter_warnings
 
 filter_warnings()
 
+import logging  # noqa: E402
 import time  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
 from dotenv import load_dotenv  # noqa: E402
 from fastapi import FastAPI, status  # noqa: E402
-import logging  # noqa: E402
-
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
@@ -27,7 +28,7 @@ Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     Lifespan context manager for the FastAPI application.
 
@@ -100,14 +101,14 @@ app.include_router(stt_services.service_router)
 
 
 @app.get("/", include_in_schema=False)
-async def index():
+async def index() -> RedirectResponse:
     """Redirect to the documentation."""
     return RedirectResponse(url="/docs", status_code=307)
 
 
 # Health check endpoints
 @app.get("/health", tags=["Health"], summary="Simple health check")
-async def health_check():
+async def health_check() -> JSONResponse:
     """Verify the service is up and running.
 
     Returns a simple status response to confirm the API service is operational.
@@ -119,7 +120,7 @@ async def health_check():
 
 
 @app.get("/health/live", tags=["Health"], summary="Liveness check")
-async def liveness_check():
+async def liveness_check() -> JSONResponse:
     """Check if the application is running.
 
     Used by orchestration systems like Kubernetes to detect if the app is alive.
@@ -136,7 +137,7 @@ async def liveness_check():
 
 
 @app.get("/health/ready", tags=["Health"], summary="Readiness check")
-async def readiness_check():
+async def readiness_check() -> JSONResponse:
     """Check if the application is ready to accept requests.
 
     Verifies dependencies like the database are connected and ready.

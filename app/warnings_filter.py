@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def filter_warnings():
+def filter_warnings() -> None:
     """Filter specific warnings from various libraries used in the project."""
     if os.getenv("FILTER_WARNING", "true").lower() == "true":
         warnings.filterwarnings("ignore", category=UserWarning, module="torchaudio")

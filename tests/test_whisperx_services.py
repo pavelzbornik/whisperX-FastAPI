@@ -1,11 +1,14 @@
 """Tests for the whisperx_services module."""
 
+from typing import Any
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pandas as pd
 import pytest
 import torch
 
+from app.config import Config
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -21,7 +24,6 @@ from app.schemas import (
 )
 from app.whisperx_services import (
     align_whisper_output,
-    device,
     diarize,
     process_audio_common,
     transcribe_with_whisper,
@@ -29,7 +31,7 @@ from app.whisperx_services import (
 
 
 @pytest.fixture
-def audio_data():
+def audio_data() -> np.ndarray[Any, np.dtype[np.float32]]:
     """Mock audio data for testing."""
     return torch.randn(
         16000
@@ -37,7 +39,7 @@ def audio_data():
 
 
 @pytest.fixture
-def mock_whisper_model():
+def mock_whisper_model() -> Mock:
     """Mock Whisper model for testing."""
     mock = Mock()
     mock.transcribe.return_value = {
@@ -49,13 +51,13 @@ def mock_whisper_model():
 
 
 @pytest.fixture
-def mock_align_model():
+def mock_align_model() -> Mock:
     """Mock align model for testing."""
     return Mock()
 
 
 @pytest.fixture
-def mock_diarization_pipeline():
+def mock_diarization_pipeline() -> Mock:
     """Mock diarization pipeline for testing."""
     mock = Mock()
     # Create DataFrame with test data
@@ -74,7 +76,9 @@ def mock_diarization_pipeline():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
-def test_transcribe_with_whisper_gpu(audio_data, mock_whisper_model):
+def test_transcribe_with_whisper_gpu(
+    audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_whisper_model: Mock
+) -> None:
     """Test transcribe_with_whisper function with GPU or fallback to CPU."""
     with patch("app.whisperx_services.load_model", return_value=mock_whisper_model):
         result = transcribe_with_whisper(
@@ -83,9 +87,9 @@ def test_transcribe_with_whisper_gpu(audio_data, mock_whisper_model):
             asr_options={},
             vad_options={},
             language="en",
-            model=WhisperModel.tiny,  # Use string value directly
-            device="cuda",
-            compute_type="float16",
+            model=WhisperModel.tiny,
+            device=Device.cuda,
+            compute_type=ComputeType.float16,
         )
 
         assert result is not None
@@ -94,7 +98,9 @@ def test_transcribe_with_whisper_gpu(audio_data, mock_whisper_model):
         assert "language" in result
 
 
-def test_transcribe_with_whisper_cpu(audio_data, mock_whisper_model):
+def test_transcribe_with_whisper_cpu(
+    audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_whisper_model: Mock
+) -> None:
     """Test transcribe_with_whisper function with CPU."""
     with patch("app.whisperx_services.load_model", return_value=mock_whisper_model):
         result = transcribe_with_whisper(
@@ -103,9 +109,9 @@ def test_transcribe_with_whisper_cpu(audio_data, mock_whisper_model):
             asr_options={},
             vad_options={},
             language="en",
-            model=WhisperModel.tiny,  # Use string value directly
-            device="cpu",
-            compute_type="float32",
+            model=WhisperModel.tiny,
+            device=Device.cpu,
+            compute_type=ComputeType.float32,
         )
 
         assert result is not None
@@ -115,7 +121,9 @@ def test_transcribe_with_whisper_cpu(audio_data, mock_whisper_model):
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
-def test_diarize_gpu(audio_data, mock_diarization_pipeline):
+def test_diarize_gpu(
+    audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_diarization_pipeline: Mock
+) -> None:
     """Test diarize function with GPU."""
     with patch(
         "whisperx.diarize.DiarizationPipeline", return_value=mock_diarization_pipeline
@@ -131,7 +139,9 @@ def test_diarize_gpu(audio_data, mock_diarization_pipeline):
         assert result["segment"].isna().all()  # Verify segment column is all None
 
 
-def test_align_whisper_output(audio_data, mock_align_model):
+def test_align_whisper_output(
+    audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_align_model: Mock
+) -> None:
     """Test align_whisper_output function."""
     transcript = [{"text": "Test", "start": 0.0, "end": 1.0}]
 
@@ -145,7 +155,7 @@ def test_align_whisper_output(audio_data, mock_align_model):
                 transcript=transcript,
                 audio=audio_data,
                 language_code="en",
-                device=device,
+                device=Config.DEVICE,
                 interpolate_method="nearest",
             )
 
@@ -156,8 +166,11 @@ def test_align_whisper_output(audio_data, mock_align_model):
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_process_audio_common_gpu(
-    audio_data, mock_whisper_model, mock_align_model, mock_diarization_pipeline
-):
+    audio_data: np.ndarray[Any, np.dtype[np.float32]],
+    mock_whisper_model: Mock,
+    mock_align_model: Mock,
+    mock_diarization_pipeline: Mock,
+) -> None:
     """Test process_audio_common function with GPU."""
     params = SpeechToTextProcessingParams(
         audio=audio_data,  # Already numpy array from fixture
@@ -166,8 +179,9 @@ def test_process_audio_common_gpu(
             language="en",
             model=WhisperModel.tiny,  # Use string value directly
             device=Device.cuda,
+            device_index=0,
             compute_type=ComputeType.float16,
-            task=TaskEnum.transcribe,
+            task=TaskEnum.TRANSCRIBE,
             threads=0,
             batch_size=8,
             chunk_size=20,
@@ -220,7 +234,7 @@ def test_process_audio_common_gpu(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
-def test_gpu_memory_logging():
+def test_gpu_memory_logging() -> None:
     """Test GPU memory logging when available."""
     if torch.cuda.is_available():
         mock_model = Mock()
@@ -256,7 +270,7 @@ def test_gpu_memory_logging():
                 )
 
 
-def test_error_handling():
+def test_error_handling() -> None:
     """Test error handling in whisperx services."""
     with pytest.raises(ValueError):
         # Test with invalid compute type for CPU

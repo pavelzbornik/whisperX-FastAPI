@@ -29,7 +29,7 @@ async def get_all_tasks_status(
         ResultTasks: The status of all tasks.
     """
     logger.info("Retrieving status of all tasks")
-    return get_all_tasks_status_from_db(session)
+    return get_all_tasks_status_from_db(session)  # type: ignore[no-any-return]
 
 
 @task_router.get("/task/{identifier}", tags=["Tasks Management"])
@@ -55,7 +55,7 @@ async def get_transcription_status(
 
     if status is not None:
         logger.info("Status retrieved for task ID: %s", identifier)
-        return status
+        return status  # type: ignore[no-any-return]
     else:
         logger.error("Task ID not found: %s", identifier)
         raise HTTPException(status_code=404, detail="Identifier not found")

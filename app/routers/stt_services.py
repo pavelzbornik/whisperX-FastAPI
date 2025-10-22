@@ -21,6 +21,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from ..audio import get_audio_duration, process_audio_file
+from ..config import Config
 from ..db import get_db_session
 from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
 from ..logger import logger  # Import the logger from the new module
@@ -46,7 +47,6 @@ from ..services import (
 )
 from ..tasks import add_task_to_db
 from ..transcript import filter_aligned_transcription
-from ..whisperx_services import device
 
 service_router = APIRouter()
 
@@ -79,6 +79,9 @@ async def transcribe(
         Response: Confirmation message of task queuing.
     """
     logger.info("Received transcription request for file: %s", file.filename)
+
+    if file.filename is None:
+        raise HTTPException(status_code=400, detail="Filename is missing")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -128,7 +131,7 @@ def align(
         ..., description="Audio/video file which has been transcribed"
     ),
     device: Device = Query(
-        default=device,
+        default=Config.DEVICE,
         description="Device to use for PyTorch inference",
     ),
     align_params: AlignmentParams = Depends(),
@@ -154,14 +157,20 @@ def align(
         transcript.filename,
     )
 
+    if transcript.filename is None:
+        raise HTTPException(status_code=400, detail="Transcript filename is missing")
+
     validate_extension(transcript.filename, {".json"})
 
     try:
         # Read the content of the transcript file
-        transcript = Transcript(**json.loads(transcript.file.read()))
+        transcript_data = Transcript(**json.loads(transcript.file.read()))
     except ValidationError as e:
         logger.error("Invalid JSON content in transcript file: %s", str(e))
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
+
+    if file.filename is None:
+        raise HTTPException(status_code=400, detail="Audio filename is missing")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -172,7 +181,7 @@ def align(
         status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
-        language=transcript.language,
+        language=transcript_data.language,
         task_type=TaskType.transcription_alignment,
         task_params={
             **align_params.model_dump(),
@@ -185,7 +194,7 @@ def align(
     background_tasks.add_task(
         process_alignment,
         audio,
-        transcript.model_dump(),
+        transcript_data.model_dump(),
         identifier,
         device,
         align_params,
@@ -204,7 +213,7 @@ async def diarize(
     file: UploadFile = File(...),
     session: Session = Depends(get_db_session),
     device: Device = Query(
-        default=device,
+        default=Config.DEVICE,
         description="Device to use for PyTorch inference",
     ),
     diarize_params: DiarizationParams = Depends(),
@@ -223,6 +232,9 @@ async def diarize(
         Response: Confirmation message of task queuing.
     """
     logger.info("Received diarization request for file: %s", file.filename)
+
+    if file.filename is None:
+        raise HTTPException(status_code=400, detail="Filename is missing")
 
     validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -283,6 +295,15 @@ async def combine(
         aligned_transcript.filename,
         diarization_result.filename,
     )
+
+    if aligned_transcript.filename is None:
+        raise HTTPException(
+            status_code=400, detail="Aligned transcript filename is missing"
+        )
+    if diarization_result.filename is None:
+        raise HTTPException(
+            status_code=400, detail="Diarization result filename is missing"
+        )
 
     validate_extension(aligned_transcript.filename, {".json"})
     validate_extension(diarization_result.filename, {".json"})

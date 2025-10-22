@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 
 import numpy as np
 from fastapi import Query
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from whisperx import utils
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
@@ -177,8 +177,8 @@ class Device(str, Enum):
 class TaskEnum(str, Enum):
     """Enum for task types."""
 
-    transcribe = "transcribe"
-    translate = "translate"
+    TRANSCRIBE = "transcribe"
+    TRANSLATE = "translate"
 
 
 class InterpolateMethod(str, Enum):
@@ -257,7 +257,8 @@ class ASROptions(BaseModel):
     )
 
     @field_validator("suppress_tokens", mode="before")
-    def parse_suppress_tokens(cls, value):
+    @classmethod
+    def parse_suppress_tokens(cls, value: str | list[int]) -> list[int]:
         """Parse suppress tokens from a comma-separated string of token IDs into a list of integers."""
         if isinstance(value, str):
             return [int(x) for x in value.split(",")]

@@ -7,11 +7,8 @@ import os
 import yaml
 
 # Determine environment and set log level accordingly
-from .config import Config
-
-env = Config.ENVIRONMENT
-log_level = Config.LOG_LEVEL
-
+# Read directly from environment to avoid circular import with config module
+env = os.getenv("ENVIRONMENT", "production").lower()
 debug = env == "development"
 log_level = os.getenv("LOG_LEVEL", "DEBUG" if debug else "INFO").upper()
 
