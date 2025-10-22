@@ -11,7 +11,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from fastapi.testclient import TestClient
 
 from app import main
-from app.db import engine
+from app.infrastructure.database import engine
 from app.schemas import TaskStatus
 
 client = TestClient(main.app, follow_redirects=False)

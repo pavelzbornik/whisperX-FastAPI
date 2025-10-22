@@ -8,7 +8,7 @@ import numpy as np
 from whisperx import load_audio
 from whisperx.audio import SAMPLE_RATE
 
-from .files import VIDEO_EXTENSIONS, check_file_extension
+from app.files import VIDEO_EXTENSIONS, check_file_extension
 
 
 def convert_video_to_audio(file: str) -> str:

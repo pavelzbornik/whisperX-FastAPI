@@ -17,10 +17,10 @@ from whisperx import (
     load_model,
 )
 
-from .config import Config
-from .db import get_db_session
-from .logger import logger  # Import the logger from the new module
-from .schemas import (
+from app.core.config import Config
+from app.core.logging import logger
+from app.infrastructure.database import get_db_session, update_task_status_in_db
+from app.schemas import (
     AlignedTranscription,
     ComputeType,
     Device,
@@ -28,8 +28,7 @@ from .schemas import (
     TaskStatus,
     WhisperModel,
 )
-from .tasks import update_task_status_in_db
-from .transcript import filter_aligned_transcription
+from app.transcript import filter_aligned_transcription
 
 
 def transcribe_with_whisper(

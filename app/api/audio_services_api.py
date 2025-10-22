@@ -20,12 +20,12 @@ from fastapi import (
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-from ..audio import get_audio_duration, process_audio_file
-from ..config import Config
-from ..db import get_db_session
-from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
-from ..logger import logger  # Import the logger from the new module
-from ..schemas import (
+from app.audio import get_audio_duration, process_audio_file
+from app.core.config import Config
+from app.core.logging import logger
+from app.files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from app.infrastructure.database import add_task_to_db, get_db_session
+from app.schemas import (
     AlignedTranscription,
     AlignmentParams,
     ASROptions,
@@ -39,14 +39,13 @@ from ..schemas import (
     VADOptions,
     WhisperModelParams,
 )
-from ..services import (
+from app.services import (
     process_alignment,
     process_diarize,
     process_speaker_assignment,
     process_transcribe,
 )
-from ..tasks import add_task_to_db
-from ..transcript import filter_aligned_transcription
+from app.transcript import filter_aligned_transcription
 
 service_router = APIRouter()
 

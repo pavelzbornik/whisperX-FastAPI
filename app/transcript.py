@@ -1,6 +1,6 @@
 """This module provides functions to filter aligned transcriptions."""
 
-from .schemas import AlignedTranscription, AlignmentSegment
+from app.schemas import AlignedTranscription, AlignmentSegment
 
 
 def filter_aligned_transcription(

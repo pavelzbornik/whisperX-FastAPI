@@ -8,9 +8,9 @@ import whisperx
 from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from .db import get_db_session
-from .logger import logger  # Import the logger from the new module
-from .schemas import (
+from app.core.logging import logger
+from app.infrastructure.database import get_db_session, update_task_status_in_db
+from app.schemas import (
     AlignmentParams,
     ASROptions,
     Device,
@@ -19,8 +19,11 @@ from .schemas import (
     VADOptions,
     WhisperModelParams,
 )
-from .tasks import update_task_status_in_db
-from .whisperx_services import align_whisper_output, diarize, transcribe_with_whisper
+from app.services.whisperx_wrapper_service import (
+    align_whisper_output,
+    diarize,
+    transcribe_with_whisper,
+)
 
 
 def validate_language_code(language_code: str) -> None:
