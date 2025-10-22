@@ -208,9 +208,6 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-        env:
-          TRIVY_TEMP_DIR: /tmp/trivy
-          TMPDIR: /tmp/trivy
       - name: Convert SARIF to Markdown table
         if: always()
         run: |
