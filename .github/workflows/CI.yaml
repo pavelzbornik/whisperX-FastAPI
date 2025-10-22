@@ -211,9 +211,10 @@ jobs:
       - name: Convert SARIF to Markdown table
         if: always()
         run: |
-          wget -q https://github.com/Antvirf/go-sarif-to-markdown-table/raw/main/bin/sarif-to-markdown-table-linux
+          wget -q https://github.com/Antvirf/go-sarif-to-markdown-table/raw/refs/heads/main/bin/sarif-to-markdown-table-linux-amd64 -O sarif-to-markdown-table-linux || \
+          { echo "Failed to download SARIF conversion tool - using raw SARIF output"; cat trivy-results.sarif > trivy-results.txt; exit 0; }
           chmod +x sarif-to-markdown-table-linux
-          cat trivy-results.sarif | ./sarif-to-markdown-table-linux > trivy-results.txt
+          cat trivy-results.sarif | ./sarif-to-markdown-table-linux > trivy-results.txt 2>/dev/null || cat trivy-results.sarif > trivy-results.txt
       - name: Upload Trivy scan results as artifact
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         if: always()
