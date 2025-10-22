@@ -46,10 +46,14 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "codespell==2.4.1",
+    "mypy==1.14.1",
+    "pandas-stubs>=2.1.0",
     "pre-commit==4.3.0",
     "pytest==8.4.2",
     "pytest-cov==7.0.0",
     "ruff==0.14.1",
+    "types-requests>=2.31.0",
+    "types-PyYAML>=6.0.12",
 ]
 
 [tool.uv]
@@ -88,6 +92,7 @@ skip_glob = ["migrations/*"]
 [tool.codespell]
 skip = ["*.json","*.yaml","*.lock"]
 builtin = "clear,rare,informal,usage,code,names"
+ignore-words-list = "dne,iam,IAM,ro,jupyter,rouge,ba,thead,master,implementors,UIs,aNULL"
 
 [tool.coverage.run]
 source = ["app"]
@@ -109,3 +114,35 @@ exclude_lines = [
     "raise ImportError"
 ]
 ignore_errors = true
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_unimported = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+check_untyped_defs = true
+strict_equality = true
+disallow_untyped_calls = false
+disallow_incomplete_defs = true
+disallow_untyped_decorators = false
+ignore_missing_imports = true
+follow_imports = "normal"
+show_error_codes = true
+show_column_numbers = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "whisperx.*",
+    "pyannote.*",
+    "torch.*",
+    "torchaudio.*",
+    "pandas.*",
+    "numpy.*",
+]
+ignore_missing_imports = true

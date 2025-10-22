@@ -2,14 +2,17 @@
 
 import json
 import os
+from collections.abc import Iterable
 
 import yaml
+from fastapi import FastAPI
 from sqlalchemy import inspect
+from sqlalchemy.schema import Table
 
 DOCS_PATH = "app/docs"
 
 
-def save_openapi_json(app, path=DOCS_PATH):
+def save_openapi_json(app: FastAPI, path: str = DOCS_PATH) -> None:
     """
     Save the OpenAPI documentation of the FastAPI app in JSON and YAML formats.
 
@@ -26,7 +29,7 @@ def save_openapi_json(app, path=DOCS_PATH):
         yaml.dump(openapi_data, f, sort_keys=False)
 
 
-def generate_markdown_table(model):
+def generate_markdown_table(model: Table) -> str:
     """
     Generate a markdown table for a given SQLAlchemy model.
 
@@ -60,7 +63,7 @@ def generate_markdown_table(model):
     return markdown_table
 
 
-def write_markdown_to_file(markdown_tables, path=DOCS_PATH):
+def write_markdown_to_file(markdown_tables: str, path: str = DOCS_PATH) -> None:
     """
     Write the markdown tables to a file.
 
@@ -73,7 +76,7 @@ def write_markdown_to_file(markdown_tables, path=DOCS_PATH):
         file.write(markdown_tables)
 
 
-def generate_db_schema(models):
+def generate_db_schema(models: Iterable[Table]) -> None:
     """
     Generate and save the database schema in markdown format.
 

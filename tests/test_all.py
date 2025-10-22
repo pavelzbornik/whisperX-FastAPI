@@ -4,8 +4,10 @@ import json
 import os
 import tempfile
 import time
+from typing import Any
 
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from fastapi.testclient import TestClient
 
 from app import main
@@ -24,7 +26,7 @@ TRANSCRIPT_RESULT_2 = " This is the test audio"
 
 
 @pytest.fixture(autouse=True)
-def set_env_variable(monkeypatch):
+def set_env_variable(monkeypatch: MonkeyPatch) -> None:
     """
     Set environment variables for the test environment.
 
@@ -36,7 +38,7 @@ def set_env_variable(monkeypatch):
     # monkeypatch.setenv("COMPUTE_TYPE", "int8")
 
 
-def test_index():
+def test_index() -> None:
     """Test the index route to ensure it redirects to the documentation."""
     response = client.get("/")
     assert response.status_code == 307
@@ -44,7 +46,7 @@ def test_index():
 
 
 # Health check tests
-def test_health_check():
+def test_health_check() -> None:
     """Test the basic health check endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
@@ -53,7 +55,7 @@ def test_health_check():
     assert data["message"] == "Service is running"
 
 
-def test_liveness_check():
+def test_liveness_check() -> None:
     """Test the liveness check endpoint."""
     response = client.get("/health/live")
     assert response.status_code == 200
@@ -65,7 +67,7 @@ def test_liveness_check():
     assert isinstance(data["timestamp"], (int, float))
 
 
-def test_readiness_check():
+def test_readiness_check() -> None:
     """Test the readiness check endpoint."""
     response = client.get("/health/ready")
     assert response.status_code == 200
@@ -75,11 +77,11 @@ def test_readiness_check():
     assert data["message"] == "Application is ready to accept requests"
 
 
-def test_readiness_check_with_db_failure(monkeypatch):
+def test_readiness_check_with_db_failure(monkeypatch: MonkeyPatch) -> None:
     """Test the readiness check endpoint when database connection fails."""
 
     # Create a mock engine connect method that raises an exception
-    def mock_connect(*args, **kwargs):
+    def mock_connect(*args: Any, **kwargs: Any) -> Any:
         class MockConnection:
             def __enter__(self):
                 raise Exception("Database connection failed")
@@ -105,7 +107,7 @@ def test_readiness_check_with_db_failure(monkeypatch):
         monkeypatch.setattr(engine, "connect", original_connect)
 
 
-def get_task_status(identifier):
+def get_task_status(identifier: str) -> str | None:
     """
     Get the status of a task by its identifier.
 
@@ -121,7 +123,9 @@ def get_task_status(identifier):
     return None
 
 
-def wait_for_task_completion(identifier, max_attempts=2, delay=10):
+def wait_for_task_completion(
+    identifier: str, max_attempts: int = 2, delay: int = 10
+) -> bool:
     """
     Wait for a task to complete by polling its status.
 
@@ -147,7 +151,7 @@ def wait_for_task_completion(identifier, max_attempts=2, delay=10):
     return False
 
 
-def generic_transcription(client_url):
+def generic_transcription(client_url: str) -> dict[str, Any]:
     """
     Perform a generic transcription task and validate the result.
 
@@ -183,7 +187,7 @@ def generic_transcription(client_url):
     return task_result.json()["result"]
 
 
-def align(transcript_file):
+def align(transcript_file: str) -> dict[str, Any]:
     """
     Perform an alignment task using a transcript file and validate the result.
 
@@ -221,7 +225,7 @@ def align(transcript_file):
     return task_result.json()["result"]
 
 
-def diarize():
+def diarize() -> list[dict[str, Any]]:
     """
     Perform a diarization task and validate the result.
 
@@ -250,7 +254,7 @@ def diarize():
     return task_result.json()["result"]
 
 
-def combine(aligned_transcript_file, diarazition_file):
+def combine(aligned_transcript_file: str, diarazition_file: str) -> dict[str, Any]:
     """
     Combine aligned transcript and diarization results and validate the result.
 
@@ -291,29 +295,29 @@ def combine(aligned_transcript_file, diarazition_file):
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_speech_to_text():
+def test_speech_to_text() -> None:
     """Test the speech-to-text service."""
     assert generic_transcription("/speech-to-text") is not None
 
 
-def test_transcribe():
+def test_transcribe() -> None:
     """Test the transcription service."""
     assert generic_transcription("/service/transcribe") is not None
 
 
-def test_align():
+def test_align() -> None:
     """Test the alignment service."""
     assert align("tests/test_files/transcript.json") is not None
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_diarize():
+def test_diarize() -> None:
     """Test the diarization service."""
     assert diarize() is not None
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_flow():
+def test_flow() -> None:
     """Test the complete flow of transcription, alignment, diarization, and combination."""
     # Create temporary files for transcript, aligned transcript, and diarization
     with (
@@ -342,7 +346,7 @@ def test_flow():
         # assert result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_2)
 
 
-def test_combine():
+def test_combine() -> None:
     """Test the combination service."""
     result = combine(
         "tests/test_files/aligned_transcript.json",
@@ -358,7 +362,7 @@ def test_combine():
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_speech_to_text_url():
+def test_speech_to_text_url() -> None:
     """Test the speech-to-text service with a URL input."""
     # There is sometimes issue with CUDA memory better run this test individually
     response = client.post(
@@ -385,7 +389,7 @@ def test_speech_to_text_url():
     ) or seg_0_text.lower().startswith(TRANSCRIPT_RESULT_2.lower())
 
 
-def test_get_all_tasks_status():
+def test_get_all_tasks_status() -> None:
     """Test retrieving the status of all tasks."""
     response = client.get("/task/all")
     assert response.status_code == 200
@@ -393,7 +397,7 @@ def test_get_all_tasks_status():
     assert isinstance(response.json()["tasks"], list)
 
 
-def test_delete_task():
+def test_delete_task() -> None:
     """Test deleting a task."""
     # Create a task first to delete
     with open(AUDIO_FILE, "rb") as audio_file:

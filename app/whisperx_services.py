@@ -2,7 +2,10 @@
 
 import gc
 from datetime import datetime
+from typing import Any
 
+import numpy as np
+import pandas as pd
 import torch
 from fastapi import Depends
 from sqlalchemy.orm import Session
@@ -17,31 +20,32 @@ from whisperx import (
 from .config import Config
 from .db import get_db_session
 from .logger import logger  # Import the logger from the new module
-from .schemas import AlignedTranscription, SpeechToTextProcessingParams, TaskStatus
+from .schemas import (
+    AlignedTranscription,
+    ComputeType,
+    Device,
+    SpeechToTextProcessingParams,
+    TaskStatus,
+    WhisperModel,
+)
 from .tasks import update_task_status_in_db
 from .transcript import filter_aligned_transcription
 
-LANG = Config.LANG
-HF_TOKEN = Config.HF_TOKEN
-WHISPER_MODEL = Config.WHISPER_MODEL
-device = Config.DEVICE
-compute_type = Config.COMPUTE_TYPE
-
 
 def transcribe_with_whisper(
-    audio,
-    task,
-    asr_options,
-    vad_options,
-    language,
+    audio: np.ndarray[Any, np.dtype[np.float32]],
+    task: str,
+    asr_options: dict[str, Any],
+    vad_options: dict[str, Any],
+    language: str,
     batch_size: int = 16,
     chunk_size: int = 20,
-    model: str = WHISPER_MODEL,
-    device: str = device,
+    model: WhisperModel = Config.WHISPER_MODEL,
+    device: Device = Config.DEVICE,
     device_index: int = 0,
-    compute_type: str = compute_type,
+    compute_type: ComputeType = Config.COMPUTE_TYPE,
     threads: int = 0,
-):
+) -> dict[str, Any]:
     """
     Transcribe an audio file using the Whisper model.
 
@@ -49,18 +53,18 @@ def transcribe_with_whisper(
        audio (Audio): The audio to transcribe.
        batch_size (int): Batch size for transcription (default 16).
        chunk_size (int): Chunk size for transcription (default 20).
-       model (str): Name of the Whisper model to use.
-       device (str): Device to use for PyTorch inference.
+       model (WhisperModel): Name of the Whisper model to use.
+       device (Device): Device to use for PyTorch inference.
        device_index (int): Device index to use for FasterWhisper inference.
-       compute_type (str): Compute type for computation.
+       compute_type (ComputeType): Compute type for computation.
 
     Returns:
        Transcript: The transcription result.
     """
     logger.debug(
         "Starting transcription with Whisper model: %s on device: %s",
-        WHISPER_MODEL,
-        device,
+        model.value,
+        device.value,
     )
     # Log GPU memory before loading model
     if torch.cuda.is_available():
@@ -75,17 +79,17 @@ def transcribe_with_whisper(
     logger.debug(
         "Loading model with config - model: %s, device: %s, compute_type: %s, threads: %d, task: %s, language: %s",
         model.value,
-        device,
-        compute_type,
+        device.value,
+        compute_type.value,
         faster_whisper_threads,
         task,
         language,
     )
-    model = load_model(
+    loaded_model = load_model(
         model.value,
-        device,
+        device.value,
         device_index=device_index,
-        compute_type=compute_type,
+        compute_type=compute_type.value,
         asr_options=asr_options,
         vad_options=vad_options,
         language=language,
@@ -93,7 +97,7 @@ def transcribe_with_whisper(
         threads=faster_whisper_threads,
     )
     logger.debug("Transcription model loaded successfully")
-    result = model.transcribe(
+    result = loaded_model.transcribe(
         audio=audio, batch_size=batch_size, chunk_size=chunk_size, language=language
     )
 
@@ -106,7 +110,7 @@ def transcribe_with_whisper(
     # delete model
     gc.collect()
     torch.cuda.empty_cache()
-    del model
+    del loaded_model
 
     # Log GPU memory after cleanup
     if torch.cuda.is_available():
@@ -115,20 +119,26 @@ def transcribe_with_whisper(
         )
 
     logger.debug("Completed transcription")
-    return result
+    return result  # type: ignore[no-any-return]
 
 
-def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
+def diarize(
+    audio: np.ndarray[Any, np.dtype[np.float32]],
+    device: Device = Config.DEVICE,
+    min_speakers: int | None = None,
+    max_speakers: int | None = None,
+) -> pd.DataFrame:
     """
     Diarize an audio file using the PyAnnotate model.
 
     Args:
        audio (Audio): The audio to diarize.
+       device (Device): Device to use for PyTorch inference.
 
     Returns:
        Diarizartion: The diarization result.
     """
-    logger.debug("Starting diarization with device: %s", device)
+    logger.debug("Starting diarization with device: %s", device.value)
 
     # Log GPU memory before loading model
     if torch.cuda.is_available():
@@ -136,7 +146,7 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
             f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
-    model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
+    model = DiarizationPipeline(use_auth_token=Config.HF_TOKEN, device=device.value)
     result = model(audio=audio, min_speakers=min_speakers, max_speakers=max_speakers)
 
     # Log GPU memory before cleanup
@@ -156,19 +166,19 @@ def diarize(audio, device: str = device, min_speakers=None, max_speakers=None):
             f"GPU memory after cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
-    logger.debug("Completed diarization with device: %s", device)
-    return result
+    logger.debug("Completed diarization with device: %s", device.value)
+    return result  # type: ignore[no-any-return]
 
 
 def align_whisper_output(
-    transcript,
-    audio,
-    language_code,
-    device: str = device,
-    align_model: str = None,
+    transcript: list[dict[str, Any]],
+    audio: np.ndarray[Any, np.dtype[np.float32]],
+    language_code: str,
+    device: Device = Config.DEVICE,
+    align_model: str | None = None,
     interpolate_method: str = "nearest",
     return_char_alignments: bool = False,
-):
+) -> dict[str, Any]:
     """
     Align the transcript to the original audio.
 
@@ -176,6 +186,7 @@ def align_whisper_output(
        transcript: The text transcript.
        audio: The original audio.
        language_code: The language code.
+       device (Device): Device to use for PyTorch inference.
        align_model: Name of phoneme-level ASR model to do alignment.
        interpolate_method: For word .srt, method to assign timestamps to non-aligned words, or merge them into neighboring.
        return_char_alignments: Whether to return character-level alignments in the output json file.
@@ -186,7 +197,7 @@ def align_whisper_output(
     logger.debug(
         "Starting alignment for language code: %s on device: %s",
         language_code,
-        device,
+        device.value,
     )
 
     # Log GPU memory before loading model
@@ -198,12 +209,12 @@ def align_whisper_output(
     logger.debug(
         "Loading align model with config - language_code: %s, device: %s, interpolate_method: %s, return_char_alignments: %s",
         language_code,
-        device,
+        device.value,
         interpolate_method,
         return_char_alignments,
     )
     align_model, align_metadata = load_align_model(
-        language_code=language_code, device=device, model_name=align_model
+        language_code=language_code, device=device.value, model_name=align_model
     )
 
     result = align(
@@ -211,7 +222,7 @@ def align_whisper_output(
         align_model,
         align_metadata,
         audio,
-        device,
+        device.value,
         interpolate_method=interpolate_method,
         return_char_alignments=return_char_alignments,
     )
@@ -235,12 +246,12 @@ def align_whisper_output(
         )
 
     logger.debug("Completed alignment")
-    return result
+    return result  # type: ignore[no-any-return]
 
 
 def process_audio_common(
     params: SpeechToTextProcessingParams, session: Session = Depends(get_db_session)
-):
+) -> None:
     """
     Process an audio clip to generate a transcript with speaker labels.
 
@@ -260,22 +271,22 @@ def process_audio_common(
 
         logger.debug(
             "Transcription parameters - task: %s, language: %s, batch_size: %d, chunk_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
-            params.whisper_model_params.task,
+            params.whisper_model_params.task.value,
             params.whisper_model_params.language,
             params.whisper_model_params.batch_size,
             params.whisper_model_params.chunk_size,
-            params.whisper_model_params.model,
-            params.whisper_model_params.device,
+            params.whisper_model_params.model.value,
+            params.whisper_model_params.device.value,
             params.whisper_model_params.device_index,
-            params.whisper_model_params.compute_type,
+            params.whisper_model_params.compute_type.value,
             params.whisper_model_params.threads,
         )
 
         segments_before_alignment = transcribe_with_whisper(
             audio=params.audio,
             task=params.whisper_model_params.task.value,
-            asr_options=params.asr_options,
-            vad_options=params.vad_options,
+            asr_options=params.asr_options.model_dump(),
+            vad_options=params.vad_options.model_dump(),
             language=params.whisper_model_params.language,
             batch_size=params.whisper_model_params.batch_size,
             chunk_size=params.whisper_model_params.chunk_size,
@@ -303,11 +314,12 @@ def process_audio_common(
         )
         transcript = AlignedTranscription(**segments_transcript)
         # removing words within each segment that have missing start, end, or score values
-        transcript = filter_aligned_transcription(transcript).model_dump()
+        filtered_transcript = filter_aligned_transcription(transcript)
+        transcript_dict = filtered_transcript.model_dump()
 
         logger.debug(
             "Diarization parameters - device: %s, min_speakers: %s, max_speakers: %s",
-            params.whisper_model_params.device,
+            params.whisper_model_params.device.value,
             params.diarization_params.min_speakers,
             params.diarization_params.max_speakers,
         )
@@ -319,7 +331,7 @@ def process_audio_common(
         )
 
         logger.debug("Starting to combine transcript with diarization results")
-        result = assign_word_speakers(diarization_segments, transcript)
+        result = assign_word_speakers(diarization_segments, transcript_dict)
 
         logger.debug("Completed combining transcript with diarization results")
 

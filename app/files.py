@@ -3,6 +3,7 @@
 import logging
 import os
 from tempfile import NamedTemporaryFile
+from typing import Any
 
 from fastapi import HTTPException
 
@@ -17,7 +18,7 @@ VIDEO_EXTENSIONS = Config.VIDEO_EXTENSIONS
 ALLOWED_EXTENSIONS = Config.ALLOWED_EXTENSIONS
 
 
-def validate_extension(filename, allowed_extensions: dict):
+def validate_extension(filename: str, allowed_extensions: set[str]) -> None:
     """
     Check the file extension of the given file and compare it if its is in the allowed AUDIO and VIDEO.
 
@@ -34,7 +35,7 @@ def validate_extension(filename, allowed_extensions: dict):
         )
 
 
-def check_file_extension(file):
+def check_file_extension(file: str) -> None:
     """
     Check the file extension of the given file and compare it if its is in the allowed AUDIO and VIDEO.
 
@@ -45,7 +46,7 @@ def check_file_extension(file):
     validate_extension(file, ALLOWED_EXTENSIONS)
 
 
-def save_temporary_file(temporary_file, original_filename):
+def save_temporary_file(temporary_file: Any, original_filename: str) -> str:
     """
     Save the contents of a SpooledTemporaryFile to a named temporary file.
 
