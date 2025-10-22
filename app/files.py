@@ -1,6 +1,6 @@
 """This module provides utility functions for file handling."""
 
-import logging
+from .logger import logger
 import os
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -9,22 +9,25 @@ from fastapi import HTTPException
 
 from .config import Config
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 
 AUDIO_EXTENSIONS = Config.AUDIO_EXTENSIONS
 VIDEO_EXTENSIONS = Config.VIDEO_EXTENSIONS
 ALLOWED_EXTENSIONS = Config.ALLOWED_EXTENSIONS
 
 
-def validate_extension(filename: str, allowed_extensions: set[str]) -> None:
+def validate_extension(filename: str, allowed_extensions: set[str]) -> str:
     """
     Check the file extension of the given file and compare it if its is in the allowed AUDIO and VIDEO.
 
     Args:
-        file (str): The path to the file.
+        filename (str): The path to the file.
+        allowed_extensions (set[str]): Set of allowed file extensions.
 
+    Returns:
+        str: The validated file extension in lowercase.
+
+    Raises:
+        HTTPException: If the file extension is not in the allowed set.
     """
     file_extension = os.path.splitext(filename)[1].lower()
     if file_extension not in allowed_extensions:
@@ -33,17 +36,20 @@ def validate_extension(filename: str, allowed_extensions: set[str]) -> None:
             status_code=400,
             detail=f"Invalid file extension for file {filename} . Allowed: {allowed_extensions}",
         )
+    return file_extension
 
 
-def check_file_extension(file: str) -> None:
+def check_file_extension(file: str) -> str:
     """
     Check the file extension of the given file and compare it if its is in the allowed AUDIO and VIDEO.
 
     Args:
         file (str): The path to the file.
 
+    Returns:
+        str: The validated file extension in lowercase.
     """
-    validate_extension(file, ALLOWED_EXTENSIONS)
+    return validate_extension(file, ALLOWED_EXTENSIONS)
 
 
 def save_temporary_file(temporary_file: Any, original_filename: str) -> str:

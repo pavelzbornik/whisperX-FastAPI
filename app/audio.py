@@ -1,6 +1,5 @@
 """This module provides functions for processing audio files."""
 
-import os
 import subprocess
 from tempfile import NamedTemporaryFile
 from typing import Any
@@ -51,8 +50,7 @@ def process_audio_file(audio_file: str) -> np.ndarray[Any, np.dtype[np.float32]]
     Returns:
         Audio: The processed audio.
     """
-    check_file_extension(audio_file)
-    file_extension = os.path.splitext(audio_file)[1].lower()
+    file_extension = check_file_extension(audio_file)
     if file_extension in VIDEO_EXTENSIONS:
         audio_file = convert_video_to_audio(audio_file)
     return load_audio(audio_file)  # type: ignore[no-any-return]

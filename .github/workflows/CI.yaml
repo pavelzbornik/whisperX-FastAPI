@@ -196,17 +196,7 @@ jobs:
           tags: whisperx-fastapi:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Run Trivy vulnerability scanner (table format)
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
-        with:
-          image-ref: whisperx-fastapi:latest
-          format: "table"
-          output: "trivy-results.txt"
-          exit-code: "0"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
-      - name: Run Trivy vulnerability scanner (SARIF format for GitHub Security)
+      - name: Run Trivy vulnerability scanner (SARIF format)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           image-ref: whisperx-fastapi:latest
@@ -216,6 +206,12 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+      - name: Convert SARIF to Markdown table
+        if: always()
+        run: |
+          wget -q https://github.com/Antvirf/go-sarif-to-markdown-table/raw/main/bin/sarif-to-markdown-table-linux
+          chmod +x sarif-to-markdown-table-linux
+          cat trivy-results.sarif | ./sarif-to-markdown-table-linux > trivy-results.txt
       - name: Upload Trivy scan results as artifact
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         if: always()
@@ -223,7 +219,7 @@ jobs:
           name: trivy-results
           path: trivy-results.txt
       - name: Upload Trivy results to GitHub Security
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: github/codeql-action/upload-sarif@16140ae1a102900babc80a33c44059580f687047
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
