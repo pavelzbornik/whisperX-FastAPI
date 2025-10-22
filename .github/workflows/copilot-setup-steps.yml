@@ -1,0 +1,35 @@
+name: "Copilot Setup Steps"
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 59
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+      - name: Common setup
+        uses: ./.github/actions/setup
+        with:
+          python-version: "3.11"
+          dependency-group: dev
+      - name: Install hadolint
+        # Install required CLI tools for validation (not handled by uv dev group)
+
+        run: |
+          wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x /usr/local/bin/hadolint
+      - name: Activate venv and run pre-commit
+        run: |
+          source .venv/bin/activate
+          pre-commit install
+          pre-commit autoupdate
+          pre-commit run --all-files || true

@@ -1,9 +1,92 @@
+[build-system]
+requires = ["setuptools>=78.1.1", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "whisperx-fastapi"
+version = "0.3.0"
+description = "WhisperX REST API for audio transcription, alignment, and diarization"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Pavel Zbornik", email = "12965149+pavelzbornik@users.noreply.github.com" }
+]
+requires-python = ">=3.10"
+keywords = ["whisper", "fastapi", "transcription", "speech-to-text", "diarization"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "colorlog==6.9.0",
+    "fastapi==0.117.1",
+    "gunicorn==23.0.0",
+    "httpx==0.28.1",
+    "numba==0.61.0",
+    "python-dotenv==1.1.1",
+    "python-multipart==0.0.20",
+    "tqdm==4.67.1",
+    "uvicorn==0.38.0",
+    "whisperx==3.7.2",
+    "torch<=2.8.0",
+    "torchaudio<=2.8.0",
+    "torchvision<=0.23.0",
+    "setuptools>=78.1.1",  # CVE-2025-47273 fix
+]
+
+[project.optional-dependencies]
+dev = [
+    "codespell==2.4.1",
+    "pre-commit==4.3.0",
+    "pytest==8.4.2",
+    "pytest-cov==7.0.0",
+    "ruff==0.14.1",
+]
+
+[tool.uv]
+# PyTorch index configuration with environment markers for platform-specific builds
+# CUDA 12.6 on Linux, CPU-only on Windows and macOS
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'darwin'" },
+  { index = "pytorch-cpu", marker = "platform_machine != 'x86_64' and sys_platform != 'darwin'" },
+  { index = "pytorch", marker = "platform_machine == 'x86_64' and sys_platform != 'darwin'" },
+]
+torchaudio = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'darwin'" },
+  { index = "pytorch-cpu", marker = "platform_machine != 'x86_64' and sys_platform != 'darwin'" },
+  { index = "pytorch", marker = "platform_machine == 'x86_64' and sys_platform != 'darwin'" },
+]
+triton = [
+  { index = "pytorch", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
 [tool.isort]
 profile = "black"
 skip_glob = ["migrations/*"]
 
 [tool.codespell]
-skip = ["*.json","*.yaml"]
+skip = ["*.json","*.yaml","*.lock"]
 builtin = "clear,rare,informal,usage,code,names"
 
 [tool.coverage.run]

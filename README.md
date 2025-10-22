@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/github/license/pavelzbornik/whisperX-FastAPI.svg)](https://github.com/pavelzbornik/whisperX-FastAPI/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pavelzbornik/whisperX-FastAPI)
 [![CI Status](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/CI.yaml/badge.svg?branch=dev)](https://github.com/pavelzbornik/whisperX-FastAPI/actions/workflows/CI.yaml)
-![Python 3.9 | 3.11](https://img.shields.io/badge/python-3.9%20|%203.11-blue.svg)
-![CUDA 12.9+](https://img.shields.io/badge/CUDA-12.9%2B-blue.svg)
+![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
+![CUDA 12.8](https://img.shields.io/badge/CUDA-12.8-blue.svg)
 ![Dependency Status](https://img.shields.io/librariesio/github/pavelzbornik/whisperX-FastAPI)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.116+-green.svg)
-![whisperx](https://img.shields.io/badge/whisperx-3.4.2-green.svg)
+![whisperx](https://img.shields.io/badge/whisperx-3.7.2-green.svg)
 
 The whisperX API is a tool for enhancing and analyzing audio content. This API provides a suite of services for processing audio and video files, including transcription, alignment, diarization, and combining transcript with diarization results.
 
@@ -116,19 +116,20 @@ Set default model in `.env` using `WHISPER_MODEL=` (default: tiny)
 
 To get started with the API, follow these steps:
 
-1. Create virtual environment
-2. Install pytorch [See for more details](https://pytorch.org/)
-3. Install the required dependencies (choose one):
+1. Install [`uv`](https://github.com/astral-sh/uv) package manager
+2. Create virtual environment and install dependencies:
 
    ```sh
    # For production dependencies only
-   pip install -r requirements/prod.txt
+   uv sync --no-dev
 
    # For development dependencies (includes production + testing, linting, etc.)
-   pip install -r requirements/dev.txt
+   uv sync
    ```
 
-> **Note:** The above steps use `pip` for local development. For Docker builds, package management is handled by [`uv`](https://github.com/astral-sh/uv) as specified in the [dockerfile](dockerfile) for improved performance and reliability.
+3. Configure your environment (see `.env` file setup below)
+
+> **Note:** This project uses [`uv`](https://github.com/astral-sh/uv) for dependency management with platform-specific PyTorch configuration (CUDA 12.8 on Linux, CPU-only on macOS/Windows). All dependencies are defined in `pyproject.toml`.
 
 ### Logging Configuration
 

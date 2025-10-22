@@ -13,13 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@bba65e51ff35d50c6dbaaacd8a4681db13aa7cb4
         with:
           python-version: "3.11"
+      - name: Install uv
+        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: uv pip install pre-commit
       - name: Run pre-commit autoupdate
         run: pre-commit autoupdate
       - name: Commit and push changes
