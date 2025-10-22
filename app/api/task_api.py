@@ -3,14 +3,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ..db import get_db_session
-from ..logger import logger  # Import the logger from the new module
-from ..schemas import Response, Result, ResultTasks
-from ..tasks import (
+from app.core.logging import logger
+from app.infrastructure.database import (
     delete_task_from_db,
     get_all_tasks_status_from_db,
+    get_db_session,
     get_task_status_from_db,
 )
+from app.schemas import Response, Result, ResultTasks
 
 task_router = APIRouter()
 

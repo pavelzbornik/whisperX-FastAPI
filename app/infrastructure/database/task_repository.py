@@ -6,9 +6,12 @@ from typing import Any
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from .db import get_db_session, handle_database_errors
-from .models import Task
-from .schemas import ResultTasks, TaskSimple
+from app.infrastructure.database.connection import (
+    get_db_session,
+    handle_database_errors,
+)
+from app.infrastructure.database.models import Task
+from app.schemas import ResultTasks, TaskSimple
 
 
 # Add tasks to the database

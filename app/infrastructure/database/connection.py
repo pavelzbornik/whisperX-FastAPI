@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from .config import Config
+from app.core.config import Config
 
 # Load environment variables from .env
 load_dotenv()

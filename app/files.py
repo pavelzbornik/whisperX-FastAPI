@@ -1,13 +1,14 @@
 """This module provides utility functions for file handling."""
 
-from .logger import logger
 import os
+
+from app.core.logging import logger
 from tempfile import NamedTemporaryFile
 from typing import Any
 
 from fastapi import HTTPException
 
-from .config import Config
+from app.core.config import Config
 
 
 AUDIO_EXTENSIONS = Config.AUDIO_EXTENSIONS

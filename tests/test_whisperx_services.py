@@ -8,7 +8,7 @@ import pandas as pd
 import pytest
 import torch
 
-from app.config import Config
+from app.core.config import Config
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -22,7 +22,7 @@ from app.schemas import (
     WhisperModel,
     WhisperModelParams,
 )
-from app.whisperx_services import (
+from app.services import (
     align_whisper_output,
     diarize,
     process_audio_common,
@@ -80,7 +80,10 @@ def test_transcribe_with_whisper_gpu(
     audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_whisper_model: Mock
 ) -> None:
     """Test transcribe_with_whisper function with GPU or fallback to CPU."""
-    with patch("app.whisperx_services.load_model", return_value=mock_whisper_model):
+    with patch(
+        "app.services.whisperx_wrapper_service.load_model",
+        return_value=mock_whisper_model,
+    ):
         result = transcribe_with_whisper(
             audio=audio_data,
             task="transcribe",
@@ -102,7 +105,10 @@ def test_transcribe_with_whisper_cpu(
     audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_whisper_model: Mock
 ) -> None:
     """Test transcribe_with_whisper function with CPU."""
-    with patch("app.whisperx_services.load_model", return_value=mock_whisper_model):
+    with patch(
+        "app.services.whisperx_wrapper_service.load_model",
+        return_value=mock_whisper_model,
+    ):
         result = transcribe_with_whisper(
             audio=audio_data,
             task="transcribe",
@@ -146,10 +152,12 @@ def test_align_whisper_output(
     transcript = [{"text": "Test", "start": 0.0, "end": 1.0}]
 
     with patch(
-        "app.whisperx_services.load_align_model", return_value=(mock_align_model, {})
+        "app.services.whisperx_wrapper_service.load_align_model",
+        return_value=(mock_align_model, {}),
     ):
         with patch(
-            "app.whisperx_services.align", return_value={"segments": transcript}
+            "app.services.whisperx_wrapper_service.align",
+            return_value={"segments": transcript},
         ):
             result = align_whisper_output(
                 transcript=transcript,
@@ -211,9 +219,12 @@ def test_process_audio_common_gpu(
 
     mock_session = Mock()
     mock_session.query.return_value.filter_by.return_value.first.return_value = Mock()
-    with patch("app.whisperx_services.load_model", return_value=mock_whisper_model):
+    with patch(
+        "app.services.whisperx_wrapper_service.load_model",
+        return_value=mock_whisper_model,
+    ):
         with patch(
-            "app.whisperx_services.load_align_model",
+            "app.services.whisperx_wrapper_service.load_align_model",
             return_value=(mock_align_model, {}),
         ):
             with patch(
@@ -221,11 +232,11 @@ def test_process_audio_common_gpu(
                 return_value=mock_diarization_pipeline,
             ):
                 with patch(
-                    "app.whisperx_services.align",
+                    "app.services.whisperx_wrapper_service.align",
                     return_value={"segments": [], "word_segments": []},
                 ):
                     with patch(
-                        "app.whisperx_services.assign_word_speakers",
+                        "app.services.whisperx_wrapper_service.assign_word_speakers",
                         return_value={"segments": [], "word_segments": []},
                     ):
                         process_audio_common(params, session=mock_session)
@@ -244,8 +255,11 @@ def test_gpu_memory_logging() -> None:
             "language": "en",
         }
 
-        with patch("app.whisperx_services.logger.debug") as mock_logger:
-            with patch("app.whisperx_services.load_model", return_value=mock_model):
+        with patch("app.services.whisperx_wrapper_service.logger.debug") as mock_logger:
+            with patch(
+                "app.services.whisperx_wrapper_service.load_model",
+                return_value=mock_model,
+            ):
                 audio_data = torch.randn(16000).numpy()  # Convert to numpy array
                 transcribe_with_whisper(
                     audio=audio_data,

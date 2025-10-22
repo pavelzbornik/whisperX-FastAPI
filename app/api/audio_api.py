@@ -22,11 +22,11 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 
-from ..audio import get_audio_duration, process_audio_file
-from ..db import get_db_session
-from ..files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
-from ..logger import logger  # Import the logger from the new module
-from ..schemas import (
+from app.audio import get_audio_duration, process_audio_file
+from app.core.logging import logger
+from app.files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from app.infrastructure.database import add_task_to_db, get_db_session
+from app.schemas import (
     AlignmentParams,
     ASROptions,
     DiarizationParams,
@@ -37,8 +37,7 @@ from ..schemas import (
     VADOptions,
     WhisperModelParams,
 )
-from ..tasks import add_task_to_db
-from ..whisperx_services import process_audio_common
+from app.services import process_audio_common
 
 
 # Custom secure_filename implementation (no Werkzeug dependency)
