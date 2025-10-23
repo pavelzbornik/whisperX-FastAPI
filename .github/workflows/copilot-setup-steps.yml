@@ -44,7 +44,7 @@ jobs:
           pre-commit run --all-files || true
       - name: Pre-download Whisper tiny model
         run: |
-          python << 'EOF'
+          uv run python << 'EOF'
           import os
           os.environ['HF_TOKEN'] = os.getenv('HF_TOKEN', '')
 
