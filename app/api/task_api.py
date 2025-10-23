@@ -2,29 +2,29 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.dependencies import get_task_repository
+from app.api.dependencies import get_task_management_service
 from app.core.logging import logger
-from app.domain.repositories.task_repository import ITaskRepository
 from app.schemas import Metadata, Response, Result, ResultTasks, TaskSimple
+from app.services.task_management_service import TaskManagementService
 
 task_router = APIRouter()
 
 
 @task_router.get("/task/all", tags=["Tasks Management"])
 async def get_all_tasks_status(
-    repository: ITaskRepository = Depends(get_task_repository),
+    service: TaskManagementService = Depends(get_task_management_service),
 ) -> ResultTasks:
     """
     Retrieve the status of all tasks.
 
     Args:
-        repository (ITaskRepository): Task repository dependency.
+        service: Task management service dependency.
 
     Returns:
         ResultTasks: The status of all tasks.
     """
     logger.info("Retrieving status of all tasks")
-    tasks = repository.get_all()
+    tasks = service.get_all_tasks()
 
     # Convert domain tasks to TaskSimple schema using helper
     task_simples = [TaskSimple.from_domain(task) for task in tasks]
@@ -35,14 +35,14 @@ async def get_all_tasks_status(
 @task_router.get("/task/{identifier}", tags=["Tasks Management"])
 async def get_transcription_status(
     identifier: str,
-    repository: ITaskRepository = Depends(get_task_repository),
+    service: TaskManagementService = Depends(get_task_management_service),
 ) -> Result:
     """
     Retrieve the status of a specific task by its identifier.
 
     Args:
         identifier (str): The identifier of the task.
-        repository (ITaskRepository): Task repository dependency.
+        service: Task management service dependency.
 
     Returns:
         Result: The status of the task.
@@ -51,7 +51,7 @@ async def get_transcription_status(
         HTTPException: If the identifier is not found.
     """
     logger.info("Retrieving status for task ID: %s", identifier)
-    task = repository.get_by_id(identifier)
+    task = service.get_task(identifier)
 
     if task is not None:
         logger.info("Status retrieved for task ID: %s", identifier)
@@ -79,14 +79,14 @@ async def get_transcription_status(
 @task_router.delete("/task/{identifier}/delete", tags=["Tasks Management"])
 async def delete_task(
     identifier: str,
-    repository: ITaskRepository = Depends(get_task_repository),
+    service: TaskManagementService = Depends(get_task_management_service),
 ) -> Response:
     """
     Delete a specific task by its identifier.
 
     Args:
         identifier (str): The identifier of the task.
-        repository (ITaskRepository): Task repository dependency.
+        service: Task management service dependency.
 
     Returns:
         Response: Confirmation message of task deletion.
@@ -95,7 +95,7 @@ async def delete_task(
         HTTPException: If the task is not found.
     """
     logger.info("Deleting task ID: %s", identifier)
-    if repository.delete(identifier):
+    if service.delete_task(identifier):
         logger.info("Task deleted: ID %s", identifier)
         return Response(identifier=identifier, message="Task deleted")
     else:
