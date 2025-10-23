@@ -3,12 +3,12 @@
 import os
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Optional
+from typing import Any
 
 import numpy as np
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from whisperx import utils
+from whisperx import utils  # pyright: ignore[reportMissingTypeStubs]
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL")
 LANG = os.getenv("DEFAULT_LANG", "en")
@@ -25,14 +25,14 @@ class Metadata(BaseModel):
     """Metadata model for task information."""
 
     task_type: str
-    task_params: Optional[dict]
-    language: Optional[str]
-    file_name: Optional[str]
-    url: Optional[str]
-    duration: Optional[float]
-    audio_duration: Optional[float] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    task_params: dict[str, Any] | None
+    language: str | None
+    file_name: str | None
+    url: str | None
+    duration: float | None
+    audio_duration: float | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
 
 
 class TaskSimple(BaseModel):
@@ -41,20 +41,42 @@ class TaskSimple(BaseModel):
     identifier: str
     status: str
     task_type: str
-    language: Optional[str]
-    file_name: Optional[str]
-    error: Optional[str]
-    url: Optional[str]
-    duration: Optional[float]
-    audio_duration: Optional[float] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
+    language: str | None
+    file_name: str | None
+    error: str | None
+    url: str | None
+    duration: float | None
+    audio_duration: float | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+
+    @classmethod
+    def from_domain(cls, task: object) -> "TaskSimple":
+        """Create TaskSimple from a domain Task entity.
+
+        The domain Task is expected to have attributes matching the fields
+        used here (uuid, status, task_type, language, file_name, error, url,
+        duration, audio_duration, start_time, end_time).
+        """
+        return cls(
+            identifier=getattr(task, "uuid", ""),
+            status=getattr(task, "status", ""),
+            task_type=getattr(task, "task_type", ""),
+            language=getattr(task, "language", None),
+            file_name=getattr(task, "file_name", None),
+            error=getattr(task, "error", None),
+            url=getattr(task, "url", None),
+            duration=getattr(task, "duration", None),
+            audio_duration=getattr(task, "audio_duration", None),
+            start_time=getattr(task, "start_time", None),
+            end_time=getattr(task, "end_time", None),
+        )
 
 
 class ResultTasks(BaseModel):
     """Model for a list of simple tasks."""
 
-    tasks: List[TaskSimple]
+    tasks: list[TaskSimple]
 
 
 class TranscriptionSegment(BaseModel):
@@ -70,17 +92,17 @@ class Segment(BaseModel):
 
     start: float
     end: float
-    text: Optional[str]
-    speaker: Optional[str]
+    text: str | None
+    speaker: str | None
 
 
 class Word(BaseModel):
     """Model for a word with optional timing and score information."""
 
     word: str
-    start: Optional[float] = None
-    end: Optional[float] = None
-    score: Optional[float] = None
+    start: float | None = None
+    end: float | None = None
+    score: float | None = None
 
 
 class AlignmentSegment(BaseModel):
@@ -89,14 +111,14 @@ class AlignmentSegment(BaseModel):
     start: float
     end: float
     text: str
-    words: List[Word]
+    words: list[Word]
 
 
 class AlignedTranscription(BaseModel):
     """Model for aligned transcription with segments and word segments."""
 
-    segments: List[AlignmentSegment]
-    word_segments: List[Word]
+    segments: list[AlignmentSegment]
+    word_segments: list[Word]
 
 
 class DiarizationSegment(BaseModel):
@@ -111,14 +133,14 @@ class DiarizationSegment(BaseModel):
 class DiarizedTranscript(BaseModel):
     """Model for a diarized transcript with segments."""
 
-    segments: List[Segment]
+    segments: list[Segment]
 
 
 class Transcript(BaseModel):
     """Model for a transcript with segments and language."""
 
-    segments: List[TranscriptionSegment]
-    language: Optional[str]
+    segments: list[TranscriptionSegment]
+    language: str | None
 
 
 class TranscriptInput(BaseModel):
@@ -133,7 +155,7 @@ class Result(BaseModel):
     status: str
     result: Any
     metadata: Metadata
-    error: Optional[str]
+    error: str | None
 
 
 class ComputeType(str, Enum):
@@ -231,25 +253,25 @@ class ASROptions(BaseModel):
             description="If the probability of the token is higher than this value AND the decoding has failed due to `logprob_threshold`, consider the segment as silence",
         )
     )
-    initial_prompt: Optional[str] = Field(
+    initial_prompt: str | None = Field(
         Query(
             None,
             description="Optional text to provide as a prompt for the first window.",
         )
     )
-    suppress_tokens: List[int] = Field(
+    suppress_tokens: list[int] = Field(
         Query(
             [-1],
             description="Comma-separated list of token ids to suppress during sampling",
         )
     )
-    suppress_numerals: Optional[bool] = Field(
+    suppress_numerals: bool | None = Field(
         Query(
             False,
             description="Whether to suppress numeric symbols and currency symbols during sampling",
         )
     )
-    hotwords: Optional[str] = Field(
+    hotwords: str | None = Field(
         Query(
             None,
             description="Hotwords related prompt applied before each transcription window",
@@ -336,7 +358,7 @@ class WhisperModelParams(BaseModel):
 class AlignmentParams(BaseModel):
     """Model for alignment parameters."""
 
-    align_model: Optional[str] = Field(
+    align_model: str | None = Field(
         Query(None, description="Name of phoneme-level ASR model to do alignment")
     )
     interpolate_method: InterpolateMethod = Field(
@@ -356,10 +378,10 @@ class AlignmentParams(BaseModel):
 class DiarizationParams(BaseModel):
     """Model for diarization parameters."""
 
-    min_speakers: Optional[int] = Field(
+    min_speakers: int | None = Field(
         Query(None, description="Minimum number of speakers to in audio file")
     )
-    max_speakers: Optional[int] = Field(
+    max_speakers: int | None = Field(
         Query(None, description="Maximum number of speakers to in audio file")
     )
 

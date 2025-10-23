@@ -217,31 +217,46 @@ def test_process_audio_common_gpu(
         diarization_params=DiarizationParams(min_speakers=1, max_speakers=2),
     )
 
+    # Mock the database session and repository
     mock_session = Mock()
-    mock_session.query.return_value.filter_by.return_value.first.return_value = Mock()
-    with patch(
-        "app.services.whisperx_wrapper_service.load_model",
-        return_value=mock_whisper_model,
-    ):
-        with patch(
+    mock_repository = Mock()
+
+    with (
+        patch(
+            "app.services.whisperx_wrapper_service.SessionLocal",
+            return_value=mock_session,
+        ),
+        patch(
+            "app.services.whisperx_wrapper_service.SQLAlchemyTaskRepository",
+            return_value=mock_repository,
+        ),
+        patch(
+            "app.services.whisperx_wrapper_service.load_model",
+            return_value=mock_whisper_model,
+        ),
+        patch(
             "app.services.whisperx_wrapper_service.load_align_model",
             return_value=(mock_align_model, {}),
-        ):
-            with patch(
-                "whisperx.diarize.DiarizationPipeline",
-                return_value=mock_diarization_pipeline,
-            ):
-                with patch(
-                    "app.services.whisperx_wrapper_service.align",
-                    return_value={"segments": [], "word_segments": []},
-                ):
-                    with patch(
-                        "app.services.whisperx_wrapper_service.assign_word_speakers",
-                        return_value={"segments": [], "word_segments": []},
-                    ):
-                        process_audio_common(params, session=mock_session)
-                        # The function updates task status in DB, no return value to assert
-                        # Success is indicated by no exceptions being raised
+        ),
+        patch(
+            "whisperx.diarize.DiarizationPipeline",
+            return_value=mock_diarization_pipeline,
+        ),
+        patch(
+            "app.services.whisperx_wrapper_service.align",
+            return_value={"segments": [], "word_segments": []},
+        ),
+        patch(
+            "app.services.whisperx_wrapper_service.assign_word_speakers",
+            return_value={"segments": [], "word_segments": []},
+        ),
+    ):
+        process_audio_common(params)
+
+        # Verify repository update was called
+        assert mock_repository.update.called
+        # Verify session close was called
+        assert mock_session.close.called
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")

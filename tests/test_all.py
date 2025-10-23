@@ -10,11 +10,18 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from fastapi.testclient import TestClient
 
-from app import main
-from app.infrastructure.database import engine
-from app.schemas import TaskStatus
 
-client = TestClient(main.app, follow_redirects=False)
+@pytest.fixture(scope="session")
+def client() -> TestClient:
+    """
+    Create and return test client.
+
+    Returns:
+        TestClient: The FastAPI test client instance
+    """
+    from app import main
+
+    return TestClient(main.app, follow_redirects=False)
 
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
@@ -34,11 +41,12 @@ def set_env_variable(monkeypatch: MonkeyPatch) -> None:
         monkeypatch (pytest.MonkeyPatch): The monkeypatch fixture for setting environment variables.
     """
     monkeypatch.setenv("DB_URL", "sqlite:///:memory:")
-    # monkeypatch.setenv("DEVICE", "cpu")
-    # monkeypatch.setenv("COMPUTE_TYPE", "int8")
+    monkeypatch.setenv("DEVICE", "cpu")
+    monkeypatch.setenv("COMPUTE_TYPE", "int8")
+    monkeypatch.setenv("WHISPER_MODEL", "tiny")
 
 
-def test_index() -> None:
+def test_index(client: TestClient) -> None:
     """Test the index route to ensure it redirects to the documentation."""
     response = client.get("/")
     assert response.status_code == 307
@@ -46,7 +54,7 @@ def test_index() -> None:
 
 
 # Health check tests
-def test_health_check() -> None:
+def test_health_check(client: TestClient) -> None:
     """Test the basic health check endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
@@ -55,7 +63,7 @@ def test_health_check() -> None:
     assert data["message"] == "Service is running"
 
 
-def test_liveness_check() -> None:
+def test_liveness_check(client: TestClient) -> None:
     """Test the liveness check endpoint."""
     response = client.get("/health/live")
     assert response.status_code == 200
@@ -67,7 +75,7 @@ def test_liveness_check() -> None:
     assert isinstance(data["timestamp"], (int, float))
 
 
-def test_readiness_check() -> None:
+def test_readiness_check(client: TestClient) -> None:
     """Test the readiness check endpoint."""
     response = client.get("/health/ready")
     assert response.status_code == 200
@@ -77,16 +85,19 @@ def test_readiness_check() -> None:
     assert data["message"] == "Application is ready to accept requests"
 
 
-def test_readiness_check_with_db_failure(monkeypatch: MonkeyPatch) -> None:
+def test_readiness_check_with_db_failure(
+    client: TestClient, monkeypatch: MonkeyPatch
+) -> None:
     """Test the readiness check endpoint when database connection fails."""
+    from app.infrastructure.database import engine
 
     # Create a mock engine connect method that raises an exception
     def mock_connect(*args: Any, **kwargs: Any) -> Any:
         class MockConnection:
-            def __enter__(self):
+            def __enter__(self) -> "MockConnection":
                 raise Exception("Database connection failed")
 
-            def __exit__(self, *args):
+            def __exit__(self, *args: Any) -> None:
                 pass
 
         return MockConnection()
@@ -107,11 +118,12 @@ def test_readiness_check_with_db_failure(monkeypatch: MonkeyPatch) -> None:
         monkeypatch.setattr(engine, "connect", original_connect)
 
 
-def get_task_status(identifier: str) -> str | None:
+def get_task_status(client: TestClient, identifier: str) -> str | None:
     """
     Get the status of a task by its identifier.
 
     Args:
+        client (TestClient): The FastAPI test client
         identifier (str): The task identifier.
 
     Returns:
@@ -124,12 +136,13 @@ def get_task_status(identifier: str) -> str | None:
 
 
 def wait_for_task_completion(
-    identifier: str, max_attempts: int = 2, delay: int = 10
+    client: TestClient, identifier: str, max_attempts: int = 2, delay: int = 10
 ) -> bool:
     """
     Wait for a task to complete by polling its status.
 
     Args:
+        client (TestClient): The FastAPI test client
         identifier (str): The task identifier.
         max_attempts (int): Maximum number of polling attempts.
         delay (int): Delay between polling attempts in seconds.
@@ -137,9 +150,11 @@ def wait_for_task_completion(
     Returns:
         bool: True if the task completed, False otherwise.
     """
+    from app.schemas import TaskStatus
+
     attempts = 0
     while attempts < max_attempts:
-        status = get_task_status(identifier)
+        status = get_task_status(client, identifier)
         if status == TaskStatus.completed:
             return True
         if status == TaskStatus.failed:
@@ -151,11 +166,12 @@ def wait_for_task_completion(
     return False
 
 
-def generic_transcription(client_url: str) -> dict[str, Any]:
+def generic_transcription(client: TestClient, client_url: str) -> dict[str, Any]:
     """
     Perform a generic transcription task and validate the result.
 
     Args:
+        client (TestClient): The FastAPI test client
         client_url (str): The URL endpoint for the transcription service.
 
     Returns:
@@ -174,7 +190,7 @@ def generic_transcription(client_url: str) -> dict[str, Any]:
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(identifier), (
+    assert wait_for_task_completion(client, identifier), (
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
@@ -187,24 +203,25 @@ def generic_transcription(client_url: str) -> dict[str, Any]:
     return task_result.json()["result"]
 
 
-def align(transcript_file: str) -> dict[str, Any]:
+def align(client: TestClient, transcript_file: str) -> dict[str, Any]:
     """
     Perform an alignment task using a transcript file and validate the result.
 
     Args:
+        client (TestClient): The FastAPI test client
         transcript_file (str): The path to the transcript file.
 
     Returns:
         dict: The result of the alignment task.
     """
     with (
-        open(transcript_file, "rb") as transcript_file,
+        open(transcript_file, "rb") as transcript_fp,
         open(AUDIO_FILE, "rb") as audio_file,
     ):
         response = client.post(
             f"/service/align?device={os.getenv('DEVICE')}",
             files={
-                "transcript": ("transcript.json", transcript_file),
+                "transcript": ("transcript.json", transcript_fp),
                 "file": ("audio_file.mp3", audio_file),
             },
         )
@@ -216,7 +233,7 @@ def align(transcript_file: str) -> dict[str, Any]:
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(identifier), (
+    assert wait_for_task_completion(client, identifier), (
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
@@ -225,9 +242,12 @@ def align(transcript_file: str) -> dict[str, Any]:
     return task_result.json()["result"]
 
 
-def diarize() -> list[dict[str, Any]]:
+def diarize(client: TestClient) -> list[dict[str, Any]]:
     """
     Perform a diarization task and validate the result.
+
+    Args:
+        client (TestClient): The FastAPI test client
 
     Returns:
         dict: The result of the diarization task.
@@ -245,7 +265,7 @@ def diarize() -> list[dict[str, Any]]:
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(identifier), (
+    assert wait_for_task_completion(client, identifier), (
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
@@ -254,11 +274,14 @@ def diarize() -> list[dict[str, Any]]:
     return task_result.json()["result"]
 
 
-def combine(aligned_transcript_file: str, diarazition_file: str) -> dict[str, Any]:
+def combine(
+    client: TestClient, aligned_transcript_file: str, diarazition_file: str
+) -> dict[str, Any]:
     """
     Combine aligned transcript and diarization results and validate the result.
 
     Args:
+        client (TestClient): The FastAPI test client
         aligned_transcript_file (str): The path to the aligned transcript file.
         diarazition_file (str): The path to the diarization result file.
 
@@ -285,7 +308,7 @@ def combine(aligned_transcript_file: str, diarazition_file: str) -> dict[str, An
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(identifier), (
+    assert wait_for_task_completion(client, identifier), (
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
@@ -295,29 +318,29 @@ def combine(aligned_transcript_file: str, diarazition_file: str) -> dict[str, An
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_speech_to_text() -> None:
+def test_speech_to_text(client: TestClient) -> None:
     """Test the speech-to-text service."""
-    assert generic_transcription("/speech-to-text") is not None
+    assert generic_transcription(client, "/speech-to-text") is not None
 
 
-def test_transcribe() -> None:
+def test_transcribe(client: TestClient) -> None:
     """Test the transcription service."""
-    assert generic_transcription("/service/transcribe") is not None
+    assert generic_transcription(client, "/service/transcribe") is not None
 
 
-def test_align() -> None:
+def test_align(client: TestClient) -> None:
     """Test the alignment service."""
-    assert align("tests/test_files/transcript.json") is not None
+    assert align(client, "tests/test_files/transcript.json") is not None
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_diarize() -> None:
+def test_diarize(client: TestClient) -> None:
     """Test the diarization service."""
-    assert diarize() is not None
+    assert diarize(client) is not None
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_flow() -> None:
+def test_flow(client: TestClient) -> None:
     """Test the complete flow of transcription, alignment, diarization, and combination."""
     # Create temporary files for transcript, aligned transcript, and diarization
     with (
@@ -326,18 +349,18 @@ def test_flow() -> None:
         tempfile.NamedTemporaryFile(mode="w", delete=False) as diarization_file,
     ):
         # Write the transcription result to the temporary transcript file
-        json.dump(generic_transcription("/service/transcribe"), transcript_file)
+        json.dump(generic_transcription(client, "/service/transcribe"), transcript_file)
         transcript_file.flush()  # Ensure data is written to the file
 
         # Write the aligned transcription result to the temporary aligned transcript file
-        json.dump(align(transcript_file.name), aligned_transcript_file)
+        json.dump(align(client, transcript_file.name), aligned_transcript_file)
         aligned_transcript_file.flush()
 
         # Write the diarization result to the temporary diarization file
-        json.dump(diarize(), diarization_file)
+        json.dump(diarize(client), diarization_file)
         diarization_file.flush()
 
-        result = combine(aligned_transcript_file.name, diarization_file.name)
+        result = combine(client, aligned_transcript_file.name, diarization_file.name)
         assert result["segments"][0]["text"].lower().startswith(
             TRANSCRIPT_RESULT_1.lower()
         ) or result["segments"][0]["text"].lower().startswith(
@@ -346,9 +369,10 @@ def test_flow() -> None:
         # assert result["segments"][0]["text"].startswith(TRANSCRIPT_RESULT_2)
 
 
-def test_combine() -> None:
+def test_combine(client: TestClient) -> None:
     """Test the combination service."""
     result = combine(
+        client,
         "tests/test_files/aligned_transcript.json",
         "tests/test_files/diarazition.json",
     )
@@ -362,7 +386,7 @@ def test_combine() -> None:
 
 
 # @pytest.mark.skipif(os.getenv("DEVICE") == "cpu", reason="Test requires GPU")
-def test_speech_to_text_url() -> None:
+def test_speech_to_text_url(client: TestClient) -> None:
     """Test the speech-to-text service with a URL input."""
     # There is sometimes issue with CUDA memory better run this test individually
     response = client.post(
@@ -378,7 +402,7 @@ def test_speech_to_text_url() -> None:
     identifier = response.json()["identifier"]
 
     # Wait for the task to be completed
-    assert wait_for_task_completion(identifier), (
+    assert wait_for_task_completion(client, identifier), (
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
@@ -389,7 +413,7 @@ def test_speech_to_text_url() -> None:
     ) or seg_0_text.lower().startswith(TRANSCRIPT_RESULT_2.lower())
 
 
-def test_get_all_tasks_status() -> None:
+def test_get_all_tasks_status(client: TestClient) -> None:
     """Test retrieving the status of all tasks."""
     response = client.get("/task/all")
     assert response.status_code == 200
@@ -397,7 +421,7 @@ def test_get_all_tasks_status() -> None:
     assert isinstance(response.json()["tasks"], list)
 
 
-def test_delete_task() -> None:
+def test_delete_task(client: TestClient) -> None:
     """Test deleting a task."""
     # Create a task first to delete
     with open(AUDIO_FILE, "rb") as audio_file:
