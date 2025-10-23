@@ -13,6 +13,12 @@ jobs:
     timeout-minutes: 59
     permissions:
       contents: read
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      WHISPER_MODEL: tiny
+      DEFAULT_LANG: en
+      DEVICE: cpu
+      COMPUTE_TYPE: int8
     steps:
       - name: Checkout code
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
