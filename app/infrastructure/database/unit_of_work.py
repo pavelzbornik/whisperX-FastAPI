@@ -74,6 +74,7 @@ class SQLAlchemyUnitOfWork:
         """
         self._session = session
         self._should_close_session = session is None
+        self._committed = False
 
     def __enter__(self) -> "SQLAlchemyUnitOfWork":
         """
@@ -114,8 +115,14 @@ class SQLAlchemyUnitOfWork:
             logger.error(f"Exception in Unit of Work: {exc_val}")
             self.rollback()
         else:
-            # Rollback if commit was not explicitly called
-            self.rollback()
+            # If no exception occurred but commit() was not called, rollback
+            # and warn the developer about the missing commit
+            if not self._committed:
+                logger.warning(
+                    "Unit of Work exiting without explicit commit() - rolling back changes. "
+                    "Did you forget to call uow.commit()?"
+                )
+                self.rollback()
 
         if self._should_close_session and self._session:
             self._session.close()
@@ -134,6 +141,7 @@ class SQLAlchemyUnitOfWork:
         try:
             if self._session:
                 self._session.commit()
+                self._committed = True
                 logger.debug("Unit of Work committed successfully")
         except Exception as e:
             logger.error(f"Failed to commit Unit of Work: {str(e)}")

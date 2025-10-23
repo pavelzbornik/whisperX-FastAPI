@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.api.dependencies import get_task_repository
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
-from app.schemas import Response, Result, ResultTasks, TaskSimple, Metadata
+from app.schemas import Metadata, Response, Result, ResultTasks, TaskSimple
 
 task_router = APIRouter()
 
@@ -26,23 +26,8 @@ async def get_all_tasks_status(
     logger.info("Retrieving status of all tasks")
     tasks = repository.get_all()
 
-    # Convert domain tasks to TaskSimple schema
-    task_simples = [
-        TaskSimple(
-            identifier=task.uuid,
-            status=task.status,
-            task_type=task.task_type,
-            language=task.language,
-            file_name=task.file_name,
-            error=task.error,
-            url=task.url,
-            duration=task.duration,
-            audio_duration=task.audio_duration,
-            start_time=task.start_time,
-            end_time=task.end_time,
-        )
-        for task in tasks
-    ]
+    # Convert domain tasks to TaskSimple schema using helper
+    task_simples = [TaskSimple.from_domain(task) for task in tasks]
 
     return ResultTasks(tasks=task_simples)
 
