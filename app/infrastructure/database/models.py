@@ -1,10 +1,11 @@
 """This module defines the database models for the application."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
+from typing import Any
 
-from sqlalchemy import JSON, Column, DateTime, Float, Integer, String
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import JSON, DateTime, Float, Integer, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -31,35 +32,57 @@ class Task(Base):
     """
 
     __tablename__ = "tasks"
-    id = Column(
+    id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
         autoincrement=True,
         comment="Unique identifier for each task (Primary Key)",
     )
-    uuid = Column(
+    uuid: Mapped[str] = mapped_column(
         String,
         default=lambda: str(uuid4()),
         comment="Universally unique identifier for each task",
     )
-    status = Column(String, comment="Current status of the task")
-    result = Column(JSON, comment="JSON data representing the result of the task")
-    file_name = Column(String, comment="Name of the file associated with the task")
-    url = Column(String, comment="URL of the file associated with the task")
-    audio_duration = Column(Float, comment="Duration of the audio in seconds")
-    language = Column(String, comment="Language of the file associated with the task")
-    task_type = Column(String, comment="Type/category of the task")
-    task_params = Column(JSON, comment="Parameters of the task")
-    duration = Column(Float, comment="Duration of the task execution")
-    start_time = Column(DateTime, comment="Start time of the task execution")
-    end_time = Column(DateTime, comment="End time of the task execution")
-    error = Column(String, comment="Error message, if any, associated with the task")
-    created_at = Column(
-        DateTime, default=datetime.utcnow, comment="Date and time of creation"
+    status: Mapped[str] = mapped_column(String, comment="Current status of the task")
+    result: Mapped[dict[str, Any]] = mapped_column(
+        JSON, comment="JSON data representing the result of the task"
     )
-    updated_at = Column(
+    file_name: Mapped[str] = mapped_column(
+        String, comment="Name of the file associated with the task"
+    )
+    url: Mapped[str] = mapped_column(
+        String, comment="URL of the file associated with the task"
+    )
+    audio_duration: Mapped[float] = mapped_column(
+        Float, comment="Duration of the audio in seconds"
+    )
+    language: Mapped[str] = mapped_column(
+        String, comment="Language of the file associated with the task"
+    )
+    task_type: Mapped[str] = mapped_column(String, comment="Type/category of the task")
+    task_params: Mapped[dict[str, Any]] = mapped_column(
+        JSON, comment="Parameters of the task"
+    )
+    duration: Mapped[float] = mapped_column(
+        Float, comment="Duration of the task execution"
+    )
+    start_time: Mapped[datetime] = mapped_column(
+        DateTime, comment="Start time of the task execution"
+    )
+    end_time: Mapped[datetime] = mapped_column(
+        DateTime, comment="End time of the task execution"
+    )
+    error: Mapped[str] = mapped_column(
+        String, comment="Error message, if any, associated with the task"
+    )
+    created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=datetime.now(timezone.utc),
+        comment="Date and time of creation",
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.now(timezone.utc),
+        onupdate=datetime.now(timezone.utc),
         comment="Date and time of last update",
     )

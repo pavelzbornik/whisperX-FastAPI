@@ -3,15 +3,27 @@ default_language_version:
   python: python3.11
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0 # Use the latest tag from the repository
+    rev: v6.0.0
     hooks:
+      # --- General File Fixes ---
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: check-yaml
+      - id: mixed-line-ending
+        args: [--fix=lf] # Enforce LF line endings
+      - id: check-illegal-windows-names
+      # --- Git Sanity Checks ---
       - id: check-added-large-files
         args: ['--maxkb=500', '--enforce-all']
         exclude: '^(uv\.lock|tests/test_files/.*\.(mp4|flv))$'
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      # --- Security ---
       - id: detect-private-key
+      # --- Python ---
+      - id: check-ast
+      - id: check-docstring-first
+      # - id: name-tests-test
+      - id: check-toml
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.1
     hooks:
@@ -40,14 +52,6 @@ repos:
     rev: 6.3.0 # Use the latest stable version of pydocstyle
     hooks:
       - id: pydocstyle
-  - repo: https://github.com/adrienverge/yamllint
-    # Lint: YAML
-
-    rev: v1.37.1
-    hooks:
-      - id: yamllint
-        args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
-        files: \.(yaml|yml)$
   - repo: https://github.com/google/yamlfmt
     rev: v0.20.0
     hooks:
