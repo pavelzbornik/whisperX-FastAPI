@@ -94,10 +94,10 @@ def test_readiness_check_with_db_failure(
     # Create a mock engine connect method that raises an exception
     def mock_connect(*args: Any, **kwargs: Any) -> Any:
         class MockConnection:
-            def __enter__(self):
+            def __enter__(self) -> "MockConnection":
                 raise Exception("Database connection failed")
 
-            def __exit__(self, *args):
+            def __exit__(self, *args: Any) -> None:
                 pass
 
         return MockConnection()
@@ -215,13 +215,13 @@ def align(client: TestClient, transcript_file: str) -> dict[str, Any]:
         dict: The result of the alignment task.
     """
     with (
-        open(transcript_file, "rb") as transcript_file,
+        open(transcript_file, "rb") as transcript_fp,
         open(AUDIO_FILE, "rb") as audio_file,
     ):
         response = client.post(
             f"/service/align?device={os.getenv('DEVICE')}",
             files={
-                "transcript": ("transcript.json", transcript_file),
+                "transcript": ("transcript.json", transcript_fp),
                 "file": ("audio_file.mp3", audio_file),
             },
         )

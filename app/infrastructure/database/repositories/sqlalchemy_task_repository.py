@@ -120,15 +120,15 @@ class SQLAlchemyTaskRepository:
             ValueError: If the task is not found
             Exception: If update fails
         """
+        orm_task = (
+            self.session.query(ORMTask).filter(ORMTask.uuid == identifier).first()
+        )
+
+        if not orm_task:
+            logger.error(f"Task not found for update with UUID: {identifier}")
+            raise ValueError(f"Task not found with UUID: {identifier}")
+
         try:
-            orm_task = (
-                self.session.query(ORMTask).filter(ORMTask.uuid == identifier).first()
-            )
-
-            if not orm_task:
-                logger.error(f"Task not found for update with UUID: {identifier}")
-                raise ValueError(f"Task not found with UUID: {identifier}")
-
             # Update attributes
             for key, value in update_data.items():
                 if hasattr(orm_task, key):
