@@ -60,20 +60,20 @@ class Task(Base):
         String, nullable=True, comment="Language of the file associated with the task"
     )
     task_type: Mapped[str] = mapped_column(String, comment="Type/category of the task")
-    task_params: Mapped[dict[str, Any]] = mapped_column(
-        JSON, comment="Parameters of the task"
+    task_params: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True, comment="Parameters of the task"
     )
-    duration: Mapped[float] = mapped_column(
-        Float, comment="Duration of the task execution"
+    duration: Mapped[float | None] = mapped_column(
+        Float, nullable=True, comment="Duration of the task execution"
     )
-    start_time: Mapped[datetime] = mapped_column(
-        DateTime, comment="Start time of the task execution"
+    start_time: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="Start time of the task execution"
     )
-    end_time: Mapped[datetime] = mapped_column(
-        DateTime, comment="End time of the task execution"
+    end_time: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="End time of the task execution"
     )
-    error: Mapped[str] = mapped_column(
-        String, comment="Error message, if any, associated with the task"
+    error: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Error message, if any, associated with the task"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
