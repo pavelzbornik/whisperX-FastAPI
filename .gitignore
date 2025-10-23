@@ -4,6 +4,8 @@ __pycache__
 *.db
 *.env
 .coverage
+coverage.xml
+pytest-report.xml
 .venv
 *.egg-info
 .cache
