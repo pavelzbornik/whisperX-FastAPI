@@ -52,7 +52,7 @@ jobs:
       - name: Run full pre-commit validation
         uses: pre-commit/action@1b06ec171f2f6faa71ed760c4042bd969e4f8b43
       - name: Comment on PR if lint job fails
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
@@ -108,7 +108,7 @@ jobs:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
       - name: Comment on PR if test job fails
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
@@ -143,7 +143,7 @@ jobs:
         with:
           fail-on-severity: moderate
       - name: Comment on PR if dependency review fails
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
@@ -171,6 +171,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write # Needed for PR failure comment
+      security-events: write # Needed for uploading SARIF reports
     steps:
       - name: Checkout code
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
@@ -237,7 +238,7 @@ jobs:
           cat trivy-results.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
       - name: Comment on PR if build job fails
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
         with:
           message: |
