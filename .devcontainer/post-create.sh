@@ -7,8 +7,11 @@ set -e
 echo "Verifying uv is in PATH..."
 which uv
 
-# Install system dependencies needed for pre-commit hooks
-apt-get update && apt-get install -y libatomic1
+# Install system dependencies needed for pre-commit hooks and SonarLint (Java 17+)
+apt-get update && apt-get install -y libatomic1 openjdk-17-jre-headless
+
+# Verify Java installation
+java -version
 
 # Install dependencies from pyproject.toml with dev extras
 uv sync --all-extras

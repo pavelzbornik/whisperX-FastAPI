@@ -22,7 +22,7 @@
         "george-alisson.html-preview-vscode",
         "prettier.prettier-vscode",
         "ms-azuretools.vscode-docker",
-        "SonarSource.sonarlint-vscode",
+        "SonarSource.sonarlint-vscode"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -46,7 +46,10 @@
         },
         "ruff.lint.enable": true,
         "ruff.format.enable": true,
-        "python.linting.enabled": true
+        "python.linting.enabled": true,
+        "sonarlint.ls.javaHome": "/usr/lib/jvm/java-17-openjdk-amd64",
+        "sonarlint.rules": {},
+        "sonarlint.connectedMode.servers": []
       }
     }
   },
@@ -54,10 +57,10 @@
   "postAttachCommand": "chmod +x .devcontainer/post-attach.sh && ./.devcontainer/post-attach.sh",
   "remoteUser": "root",
   "remoteEnv": {
-        "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
-        "UV_CACHE_DIR": "/workspaces/whisperX-FastAPI/.uv_cache",
-        "UV_LINK_MODE": "copy",
-        "PRE_COMMIT_HOME": "/workspaces/whisperX-FastAPI/.cache/pre-commit",
-        "PRE_COMMIT_USE_UV": "0"
-      }
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
+    "UV_CACHE_DIR": "/workspaces/whisperX-FastAPI/.uv_cache",
+    "UV_LINK_MODE": "copy",
+    "PRE_COMMIT_HOME": "/workspaces/whisperX-FastAPI/.cache/pre-commit",
+    "PRE_COMMIT_USE_UV": "0"
+  }
 }
