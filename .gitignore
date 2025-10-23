@@ -10,3 +10,4 @@ __pycache__
 .uv_cache
 .ruff_cache
 .pytest_cache
+docs/stories/
