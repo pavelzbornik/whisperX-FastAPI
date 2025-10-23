@@ -6,6 +6,7 @@ Alignment, diarization, and combining transcripts with diarization results.
 
 import json
 from datetime import datetime, timezone
+from uuid import uuid4
 
 import pandas as pd
 from fastapi import (
@@ -18,13 +19,14 @@ from fastapi import (
     UploadFile,
 )
 from pydantic import ValidationError
-from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_task_repository
 from app.audio import get_audio_duration, process_audio_file
 from app.core.config import Config
 from app.core.logging import logger
+from app.domain.entities.task import Task as DomainTask
+from app.domain.repositories.task_repository import ITaskRepository
 from app.files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
-from app.infrastructure.database import add_task_to_db, get_db_session
 from app.schemas import (
     AlignedTranscription,
     AlignmentParams,
@@ -61,7 +63,7 @@ async def transcribe(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """
     Transcribe an uploaded audio file.
@@ -72,7 +74,7 @@ async def transcribe(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
-        session (Session): Database session dependency.
+        repository (ITaskRepository): Task repository dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -87,7 +89,9 @@ async def transcribe(
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
 
-    identifier = add_task_to_db(
+    # Create domain task
+    task = DomainTask(
+        uuid=str(uuid4()),
         status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
@@ -99,8 +103,9 @@ async def transcribe(
             "vad_options": vad_options_params.model_dump(),
         },
         start_time=datetime.now(tz=timezone.utc),
-        session=session,
     )
+
+    identifier = repository.add(task)
 
     background_tasks.add_task(
         process_transcribe,
@@ -109,7 +114,7 @@ async def transcribe(
         model_params,
         asr_options_params,
         vad_options_params,
-        session,
+        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -134,7 +139,7 @@ def align(
         description="Device to use for PyTorch inference",
     ),
     align_params: AlignmentParams = Depends(),
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """
     Align a transcript with an audio file.
@@ -145,7 +150,7 @@ def align(
         file (UploadFile): Uploaded audio file.
         device (Device): Device for PyTorch inference.
         align_params (AlignmentParams): Alignment parameters.
-        session (Session): Database session dependency.
+        repository (ITaskRepository): Task repository dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -176,7 +181,9 @@ def align(
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
 
-    identifier = add_task_to_db(
+    # Create domain task
+    task = DomainTask(
+        uuid=str(uuid4()),
         status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
@@ -187,8 +194,9 @@ def align(
             "device": device,
         },
         start_time=datetime.now(tz=timezone.utc),
-        session=session,
     )
+
+    identifier = repository.add(task)
 
     background_tasks.add_task(
         process_alignment,
@@ -197,7 +205,7 @@ def align(
         identifier,
         device,
         align_params,
-        session,
+        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -210,7 +218,7 @@ def align(
 async def diarize(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository = Depends(get_task_repository),
     device: Device = Query(
         default=Config.DEVICE,
         description="Device to use for PyTorch inference",
@@ -223,7 +231,7 @@ async def diarize(
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
         file (UploadFile): Uploaded audio file.
-        session (Session): Database session dependency.
+        repository (ITaskRepository): Task repository dependency.
         device (Device): Device for PyTorch inference.
         diarize_params (DiarizationParams): Diarization parameters.
 
@@ -240,8 +248,9 @@ async def diarize(
     temp_file = save_temporary_file(file.file, file.filename)
     audio = process_audio_file(temp_file)
 
-    identifier = add_task_to_db(
-        # identifier=identifier,
+    # Create domain task
+    task = DomainTask(
+        uuid=str(uuid4()),
         status=TaskStatus.processing,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
@@ -251,15 +260,17 @@ async def diarize(
             "device": device,
         },
         start_time=datetime.now(tz=timezone.utc),
-        session=session,
     )
+
+    identifier = repository.add(task)
+
     background_tasks.add_task(
         process_diarize,
         audio,
         identifier,
         device,
         diarize_params,
-        session,
+        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -275,7 +286,7 @@ async def combine(
     background_tasks: BackgroundTasks,
     aligned_transcript: UploadFile = File(...),
     diarization_result: UploadFile = File(...),
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """
     Combine a transcript with diarization results.
@@ -284,7 +295,7 @@ async def combine(
         background_tasks (BackgroundTasks): Background tasks dependency.
         aligned_transcript (UploadFile): Uploaded aligned transcript file.
         diarization_result (UploadFile): Uploaded diarization result file.
-        session (Session): Database session dependency.
+        repository (ITaskRepository): Task repository dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -324,19 +335,23 @@ async def combine(
         logger.error("Invalid JSON content in diarization result file: %s", str(e))
         raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
 
-    identifier = add_task_to_db(
+    # Create domain task
+    task = DomainTask(
+        uuid=str(uuid4()),
         status=TaskStatus.processing,
         file_name=None,
         task_type=TaskType.combine_transcript_diarization,
         start_time=datetime.now(tz=timezone.utc),
-        session=session,
     )
+
+    identifier = repository.add(task)
+
     background_tasks.add_task(
         process_speaker_assignment,
         pd.json_normalize([segment.model_dump() for segment in diarization_segments]),
         transcript.model_dump(),
         identifier,
-        session,
+        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)

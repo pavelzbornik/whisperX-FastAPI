@@ -7,8 +7,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import torch
-from fastapi import Depends
-from sqlalchemy.orm import Session
 from whisperx.diarize import DiarizationPipeline
 from whisperx import (
     align,
@@ -19,7 +17,7 @@ from whisperx import (
 
 from app.core.config import Config
 from app.core.logging import logger
-from app.infrastructure.database import get_db_session, update_task_status_in_db
+from app.domain.repositories.task_repository import ITaskRepository
 from app.schemas import (
     AlignedTranscription,
     ComputeType,
@@ -249,14 +247,14 @@ def align_whisper_output(
 
 
 def process_audio_common(
-    params: SpeechToTextProcessingParams, session: Session = Depends(get_db_session)
+    params: SpeechToTextProcessingParams, repository: ITaskRepository
 ) -> None:
     """
     Process an audio clip to generate a transcript with speaker labels.
 
     Args:
         params (SpeechToTextProcessingParams): The speech-to-text processing parameters
-        session (Session): Database session
+        repository (ITaskRepository): The task repository
 
     Returns:
         None: The result is saved in the transcription requests dict.
@@ -342,7 +340,7 @@ def process_audio_common(
             duration,
         )
 
-        update_task_status_in_db(
+        repository.update(
             identifier=params.identifier,
             update_data={
                 "status": TaskStatus.completed,
@@ -351,7 +349,6 @@ def process_audio_common(
                 "start_time": start_time,
                 "end_time": end_time,
             },
-            session=session,
         )
     except (RuntimeError, ValueError, KeyError) as e:
         logger.error(
@@ -359,20 +356,18 @@ def process_audio_common(
             params.identifier,
             str(e),
         )
-        update_task_status_in_db(
+        repository.update(
             identifier=params.identifier,
             update_data={
                 "status": TaskStatus.failed,
                 "error": str(e),
             },
-            session=session,
         )
     except MemoryError as e:
         logger.error(
             f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
         )
-        update_task_status_in_db(
+        repository.update(
             identifier=params.identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
-            session=session,
         )

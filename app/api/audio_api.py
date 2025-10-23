@@ -9,6 +9,7 @@ import os
 import re
 from datetime import datetime, timezone
 from tempfile import NamedTemporaryFile
+from uuid import uuid4
 
 import requests
 from fastapi import (
@@ -20,12 +21,13 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
-from sqlalchemy.orm import Session
 
+from app.api.dependencies import get_task_repository
 from app.audio import get_audio_duration, process_audio_file
 from app.core.logging import logger
+from app.domain.entities.task import Task as DomainTask
+from app.domain.repositories.task_repository import ITaskRepository
 from app.files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
-from app.infrastructure.database import add_task_to_db, get_db_session
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -76,7 +78,7 @@ async def speech_to_text(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(...),
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """
     Process an uploaded audio file for speech-to-text conversion.
@@ -89,7 +91,7 @@ async def speech_to_text(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
-        session (Session): Database session dependency.
+        repository (ITaskRepository): Task repository dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -108,10 +110,12 @@ async def speech_to_text(
     audio_duration = get_audio_duration(audio)
     logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
 
-    identifier = add_task_to_db(
+    # Create domain task
+    task = DomainTask(
+        uuid=str(uuid4()),
         status=TaskStatus.processing,
         file_name=file.filename,
-        audio_duration=get_audio_duration(audio),
+        audio_duration=audio_duration,
         language=model_params.language,
         task_type=TaskType.full_process,
         task_params={
@@ -122,8 +126,9 @@ async def speech_to_text(
             **diarize_params.model_dump(),
         },
         start_time=datetime.now(tz=timezone.utc),
-        session=session,
     )
+
+    identifier = repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
     audio_params = SpeechToTextProcessingParams(
@@ -136,7 +141,7 @@ async def speech_to_text(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params, session)
+    background_tasks.add_task(process_audio_common, audio_params, repository)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
@@ -151,7 +156,7 @@ async def speech_to_text_url(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     url: str = Form(...),
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """
     Process an audio file from a URL for speech-to-text conversion.
@@ -164,7 +169,7 @@ async def speech_to_text_url(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         url (str): URL of the audio file.
-        session (Session): Database session dependency.
+        repository (ITaskRepository): Task repository dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -213,7 +218,9 @@ async def speech_to_text_url(
     audio = process_audio_file(temp_audio_file.name)
     logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
 
-    identifier = add_task_to_db(
+    # Create domain task
+    task = DomainTask(
+        uuid=str(uuid4()),
         status=TaskStatus.processing,
         file_name=temp_audio_file.name,
         audio_duration=get_audio_duration(audio),
@@ -228,8 +235,9 @@ async def speech_to_text_url(
         },
         url=url,
         start_time=datetime.now(tz=timezone.utc),
-        session=session,
     )
+
+    identifier = repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
     audio_params = SpeechToTextProcessingParams(
@@ -242,7 +250,7 @@ async def speech_to_text_url(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params, session)
+    background_tasks.add_task(process_audio_common, audio_params, repository)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
