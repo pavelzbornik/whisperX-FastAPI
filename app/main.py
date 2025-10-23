@@ -2,7 +2,7 @@
 
 from collections.abc import AsyncGenerator
 
-from .warnings_filter import filter_warnings
+from app.core.warnings_filter import filter_warnings
 
 filter_warnings()
 
@@ -15,11 +15,10 @@ from fastapi import FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-from .config import Config  # noqa: E402
-from .db import engine  # noqa: E402
-from .docs import generate_db_schema, save_openapi_json  # noqa: E402
-from .models import Base  # noqa: E402
-from .routers import stt, stt_services, task  # noqa: E402
+from app.api import service_router, stt_router, task_router  # noqa: E402
+from app.core.config import Config  # noqa: E402
+from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
+from app.infrastructure.database import Base, engine  # noqa: E402
 
 # Load environment variables from .env
 load_dotenv()
@@ -95,9 +94,9 @@ app = FastAPI(
 )
 
 # Include routers
-app.include_router(stt.stt_router)
-app.include_router(task.task_router)
-app.include_router(stt_services.service_router)
+app.include_router(stt_router)
+app.include_router(task_router)
+app.include_router(service_router)
 
 
 @app.get("/", include_in_schema=False)

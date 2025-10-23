@@ -13,7 +13,10 @@ debug = env == "development"
 log_level = os.getenv("LOG_LEVEL", "DEBUG" if debug else "INFO").upper()
 
 # Load logging configuration from YAML file
-config_path = os.path.join(os.path.dirname(__file__), "uvicorn_log_conf.yaml")
+# Navigate up to app directory to find the yaml file
+config_path = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "uvicorn_log_conf.yaml"
+)
 with open(config_path, "r") as f:
     config = yaml.safe_load(f.read())
 

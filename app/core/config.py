@@ -5,8 +5,8 @@ import os
 import torch
 from dotenv import load_dotenv
 
-from .logger import logger
-from .schemas import ComputeType, Device, WhisperModel
+from app.core.logging import logger
+from app.schemas import ComputeType, Device, WhisperModel
 
 # Load environment variables from .env
 load_dotenv()
