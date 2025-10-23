@@ -4,25 +4,12 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from whisperx import utils as whisperx_utils
+import whisperx
+from fastapi import Depends, HTTPException
+from sqlalchemy.orm import Session
 
-from app.core.exceptions import (
-    AudioProcessingError,
-    DiarizationFailedError,
-    InsufficientMemoryError,
-    TranscriptionFailedError,
-    ValidationError,
-)
 from app.core.logging import logger
-from app.domain.repositories.task_repository import ITaskRepository
-from app.domain.services.alignment_service import IAlignmentService
-from app.domain.services.diarization_service import IDiarizationService
-from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
-from app.domain.services.transcription_service import ITranscriptionService
-from app.infrastructure.database.connection import SessionLocal
-from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
-    SQLAlchemyTaskRepository,
-)
+from app.infrastructure.database import get_db_session, update_task_status_in_db
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -31,6 +18,11 @@ from app.schemas import (
     TaskStatus,
     VADOptions,
     WhisperModelParams,
+)
+from app.services.whisperx_wrapper_service import (
+    align_whisper_output,
+    diarize,
+    transcribe_with_whisper,
 )
 
 
@@ -41,40 +33,37 @@ def validate_language_code(language_code: str) -> None:
     Args:
         language_code (str): The language code to validate.
 
-    Raises:
-        ValidationError: If the language code is invalid.
+    Returns:
+        str: The validated language code.
     """
-    if language_code not in whisperx_utils.LANGUAGES:
-        raise ValidationError(
-            message=f"Invalid language code: {language_code}",
-            code="INVALID_LANGUAGE_CODE",
-            user_message=f"Language code '{language_code}' is not supported.",
-            language_code=language_code,
+    if language_code not in whisperx.utils.LANGUAGES:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid language code: {language_code}"
         )
 
 
 def process_audio_task(
-    audio_processor: Callable[[], Any],
+    audio_processor: Callable[..., Any],
     identifier: str,
     task_type: str,
+    session: Session = Depends(get_db_session),
+    *args: Any,
 ) -> None:
     """
     Process an audio task.
 
     Args:
-        audio_processor: Parameterless callable that returns the processing result.
+        audio_processor (callable): The function to process the audio.
         identifier (str): The task identifier.
         task_type (str): The type of the task.
+        session (Session): The database session.
+        *args: Additional arguments for the audio processor.
     """
-    # Create repository for this background task
-    session = SessionLocal()
-    repository: ITaskRepository = SQLAlchemyTaskRepository(session)
-
     try:
         start_time = datetime.now()
         logger.info(f"Starting {task_type} task for identifier {identifier}")
 
-        result = audio_processor()
+        result = audio_processor(*args)
 
         if task_type == "diarization":
             result = result.drop(columns=["segment"]).to_dict(orient="records")
@@ -85,7 +74,7 @@ def process_audio_task(
             f"Completed {task_type} task for identifier {identifier}. Duration: {duration}s"
         )
 
-        repository.update(
+        update_task_status_in_db(
             identifier=identifier,
             update_data={
                 "status": TaskStatus.completed,
@@ -94,35 +83,27 @@ def process_audio_task(
                 "start_time": start_time,
                 "end_time": end_time,
             },
+            session=session,
         )
 
-    except (
-        ValueError,
-        TypeError,
-        RuntimeError,
-        MemoryError,
-        TranscriptionFailedError,
-        DiarizationFailedError,
-        AudioProcessingError,
-        InsufficientMemoryError,
-    ) as e:
+    except (ValueError, TypeError, RuntimeError) as e:
         logger.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
-        repository.update(
+        update_task_status_in_db(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
+            session=session,
         )
-    except Exception as e:
+    except MemoryError as e:
         logger.error(
-            f"Task {task_type} failed for identifier {identifier} with unexpected error. Error: {str(e)}"
+            f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
         )
-        repository.update(
+        update_task_status_in_db(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
+            session=session,
         )
-    finally:
-        session.close()
 
 
 def process_transcribe(
@@ -131,10 +112,10 @@ def process_transcribe(
     model_params: WhisperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
-    transcription_service: ITranscriptionService,
+    session: Session = Depends(get_db_session),
 ) -> None:
     """
-    Process a transcription task using the transcription service.
+    Process a transcription task.
 
     Args:
         audio: The audio data.
@@ -142,29 +123,25 @@ def process_transcribe(
         model_params (WhisperModelParams): The model parameters.
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
-        transcription_service: The transcription service to use.
+        session (Session): The database session.
     """
-
-    def transcribe_task() -> Any:
-        return transcription_service.transcribe(
-            audio=audio,
-            task=model_params.task.value,
-            asr_options=asr_options_params.model_dump(),
-            vad_options=vad_options_params.model_dump(),
-            language=model_params.language,
-            batch_size=model_params.batch_size,
-            chunk_size=model_params.chunk_size,
-            model=model_params.model.value,
-            device=model_params.device.value,
-            device_index=model_params.device_index,
-            compute_type=model_params.compute_type.value,
-            threads=model_params.threads,
-        )
-
     process_audio_task(
-        transcribe_task,
+        transcribe_with_whisper,
         identifier,
         "transcription",
+        session,
+        audio,
+        model_params.task.value,
+        asr_options_params.model_dump(),
+        vad_options_params.model_dump(),
+        model_params.language,
+        model_params.batch_size,
+        model_params.chunk_size,
+        model_params.model,
+        model_params.device,
+        model_params.device_index,
+        model_params.compute_type,
+        model_params.threads,
     )
 
 
@@ -173,31 +150,27 @@ def process_diarize(
     identifier: str,
     device: Device,
     diarize_params: DiarizationParams,
-    diarization_service: IDiarizationService,
+    session: Session = Depends(get_db_session),
 ) -> None:
     """
-    Process a diarization task using the diarization service.
+    Process a diarization task.
 
     Args:
         audio: The audio data.
         identifier (str): The task identifier.
         device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
-        diarization_service: The diarization service to use.
+        session (Session): The database session.
     """
-
-    def diarize_task() -> Any:
-        return diarization_service.diarize(
-            audio=audio,
-            device=device.value,
-            min_speakers=diarize_params.min_speakers,
-            max_speakers=diarize_params.max_speakers,
-        )
-
     process_audio_task(
-        diarize_task,
+        diarize,
         identifier,
         "diarization",
+        session,
+        audio,
+        device,
+        diarize_params.min_speakers,
+        diarize_params.max_speakers,
     )
 
 
@@ -207,10 +180,10 @@ def process_alignment(
     identifier: str,
     device: Device,
     align_params: AlignmentParams,
-    alignment_service: IAlignmentService,
+    session: Session = Depends(get_db_session),
 ) -> None:
     """
-    Process a transcription alignment task using the alignment service.
+    Process a transcription alignment task.
 
     Args:
         audio: The audio data.
@@ -218,24 +191,20 @@ def process_alignment(
         identifier (str): The task identifier.
         device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
-        alignment_service: The alignment service to use.
+        session (Session): The database session.
     """
-
-    def align_task() -> Any:
-        return alignment_service.align(
-            transcript=transcript["segments"],
-            audio=audio,
-            language_code=transcript["language"],
-            device=device.value,
-            align_model=align_params.align_model,
-            interpolate_method=align_params.interpolate_method,
-            return_char_alignments=align_params.return_char_alignments,
-        )
-
     process_audio_task(
-        align_task,
+        align_whisper_output,
         identifier,
         "transcription_alignment",
+        session,
+        transcript["segments"],
+        audio,
+        transcript["language"],
+        device,
+        align_params.align_model,
+        align_params.interpolate_method,
+        align_params.return_char_alignments,
     )
 
 
@@ -243,26 +212,22 @@ def process_speaker_assignment(
     diarization_segments: Any,
     transcript: dict[str, Any],
     identifier: str,
-    speaker_service: ISpeakerAssignmentService,
+    session: Session = Depends(get_db_session),
 ) -> None:
     """
-    Process a speaker assignment task using the speaker assignment service.
+    Process a speaker assignment task.
 
     Args:
         diarization_segments: The diarization segments.
         transcript: The transcript data.
         identifier (str): The task identifier.
-        speaker_service: The speaker assignment service to use.
+        session (Session): The database session.
     """
-
-    def assign_task() -> Any:
-        return speaker_service.assign_speakers(
-            diarization_segments=diarization_segments,
-            transcript=transcript,
-        )
-
     process_audio_task(
-        assign_task,
+        whisperx.assign_word_speakers,
         identifier,
         "combine_transcript&diarization",
+        session,
+        diarization_segments,
+        transcript,
     )

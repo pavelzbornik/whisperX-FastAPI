@@ -5,25 +5,27 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
+import os
+import re
 from datetime import datetime, timezone
-from uuid import uuid4
+from tempfile import NamedTemporaryFile
 
+import requests
 from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
     File,
     Form,
+    HTTPException,
     UploadFile,
 )
+from sqlalchemy.orm import Session
 
-from app.api.dependencies import get_file_service, get_task_repository
 from app.audio import get_audio_duration, process_audio_file
-from app.core.exceptions import FileValidationError
 from app.core.logging import logger
-from app.domain.entities.task import Task as DomainTask
-from app.domain.repositories.task_repository import ITaskRepository
-from app.files import ALLOWED_EXTENSIONS
+from app.files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from app.infrastructure.database import add_task_to_db, get_db_session
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -36,13 +38,33 @@ from app.schemas import (
     WhisperModelParams,
 )
 from app.services import process_audio_common
-from app.services.file_service import FileService
+
+
+# Custom secure_filename implementation (no Werkzeug dependency)
+def secure_filename(filename: str) -> str:
+    """Sanitize the filename to ensure it is safe for use in file systems."""
+    filename = os.path.basename(filename)
+    # Only allow alphanumerics, dash, underscore, and dot
+    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
+    # Replace multiple consecutive dots or underscores with a single underscore
+    filename = re.sub(r"[._]{2,}", "_", filename)
+    # Remove leading dots or underscores
+    filename = re.sub(r"^[._]+", "", filename)
+    # Ensure filename is not empty or problematic
+    if not filename or filename in {".", ".."}:
+        raise ValueError(
+            "Filename is empty or contains only special characters after sanitization."
+        )
+    return filename
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 stt_router = APIRouter()
+
+# Module-level constant for lowercased allowed extensions
+ALLOWED_EXTENSIONS_LOWER = {ext.lower() for ext in ALLOWED_EXTENSIONS}
 
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
@@ -54,8 +76,7 @@ async def speech_to_text(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(...),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
+    session: Session = Depends(get_db_session),
 ) -> Response:
     """
     Process an uploaded audio file for speech-to-text conversion.
@@ -68,35 +89,29 @@ async def speech_to_text(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
-        repository (ITaskRepository): Task repository dependency.
-        file_service (FileService): File service dependency.
+        session (Session): Database session dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
     """
     logger.info("Received file upload request: %s", file.filename)
 
-    # Validate file using file service
     if file.filename is None:
-        raise FileValidationError(filename="unknown", reason="Filename is missing")
+        raise HTTPException(status_code=400, detail="Filename is missing")
 
-    file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
+    validate_extension(file.filename, ALLOWED_EXTENSIONS)
 
-    # Save file using file service
-    temp_file = file_service.save_upload(file)
+    temp_file = save_temporary_file(file.file, file.filename)
     logger.info("%s saved as temporary file: %s", file.filename, temp_file)
 
-    # Process audio
     audio = process_audio_file(temp_file)
     audio_duration = get_audio_duration(audio)
     logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
 
-    # Create domain task
-    task = DomainTask(
-        uuid=str(uuid4()),
+    identifier = add_task_to_db(
         status=TaskStatus.processing,
         file_name=file.filename,
-        audio_duration=audio_duration,
+        audio_duration=get_audio_duration(audio),
         language=model_params.language,
         task_type=TaskType.full_process,
         task_params={
@@ -107,9 +122,8 @@ async def speech_to_text(
             **diarize_params.model_dump(),
         },
         start_time=datetime.now(tz=timezone.utc),
+        session=session,
     )
-
-    identifier = repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
     audio_params = SpeechToTextProcessingParams(
@@ -122,7 +136,7 @@ async def speech_to_text(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params)
+    background_tasks.add_task(process_audio_common, audio_params, session)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
@@ -137,8 +151,7 @@ async def speech_to_text_url(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     url: str = Form(...),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
+    session: Session = Depends(get_db_session),
 ) -> Response:
     """
     Process an audio file from a URL for speech-to-text conversion.
@@ -151,30 +164,46 @@ async def speech_to_text_url(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         url (str): URL of the audio file.
-        repository (ITaskRepository): Task repository dependency.
-        file_service (FileService): File service dependency.
+        session (Session): Database session dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
     """
     logger.info("Received URL for processing: %s", url)
 
-    # Download file using file service
-    temp_audio_file, filename = file_service.download_from_url(url)
-    logger.info("File downloaded and saved temporarily: %s", temp_audio_file)
+    # Extract filename from HTTP response headers or URL
+    with requests.get(url, stream=True) as response:
+        response.raise_for_status()
 
-    # Validate extension
-    file_service.validate_file_extension(temp_audio_file, ALLOWED_EXTENSIONS)
+        # Check for filename in Content-Disposition header
+        content_disposition = response.headers.get("Content-Disposition")
+        if content_disposition and "filename=" in content_disposition:
+            filename = content_disposition.split("filename=")[1].strip('"')
+        else:
+            # Fall back to extracting from the URL path
+            filename = os.path.basename(url)
+            filename = secure_filename(filename)  # Sanitize the filename
 
-    # Process audio
-    audio = process_audio_file(temp_audio_file)
+        # Get the file extension
+        _, original_extension = os.path.splitext(filename)
+        original_extension = original_extension.lower()  # Normalize the extension
+        if original_extension not in ALLOWED_EXTENSIONS_LOWER:
+            raise ValueError(f"Invalid file extension: {original_extension}")
+
+        # Save the file to a temporary location
+        temp_audio_file = NamedTemporaryFile(suffix=original_extension, delete=False)
+        for chunk in response.iter_content(chunk_size=8192):
+            temp_audio_file.write(chunk)
+
+    logger.info("File downloaded and saved temporarily: %s", temp_audio_file.name)
+    validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
+
+    audio = process_audio_file(temp_audio_file.name)
     logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
 
-    # Create domain task
-    task = DomainTask(
-        uuid=str(uuid4()),
+    identifier = add_task_to_db(
         status=TaskStatus.processing,
-        file_name=filename,
+        file_name=temp_audio_file.name,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
         task_type=TaskType.full_process,
@@ -187,9 +216,8 @@ async def speech_to_text_url(
         },
         url=url,
         start_time=datetime.now(tz=timezone.utc),
+        session=session,
     )
-
-    identifier = repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
     audio_params = SpeechToTextProcessingParams(
@@ -202,7 +230,7 @@ async def speech_to_text_url(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params)
+    background_tasks.add_task(process_audio_common, audio_params, session)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
