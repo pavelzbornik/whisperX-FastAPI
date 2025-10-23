@@ -15,9 +15,9 @@ from whisperx import (
     load_model,
 )
 
+from app.api.dependencies import get_task_repository_for_background
 from app.core.config import Config
 from app.core.logging import logger
-from app.domain.repositories.task_repository import ITaskRepository
 from app.schemas import (
     AlignedTranscription,
     ComputeType,
@@ -246,19 +246,18 @@ def align_whisper_output(
     return result  # type: ignore[no-any-return]
 
 
-def process_audio_common(
-    params: SpeechToTextProcessingParams, repository: ITaskRepository
-) -> None:
+def process_audio_common(params: SpeechToTextProcessingParams) -> None:
     """
     Process an audio clip to generate a transcript with speaker labels.
 
     Args:
         params (SpeechToTextProcessingParams): The speech-to-text processing parameters
-        repository (ITaskRepository): The task repository
 
     Returns:
         None: The result is saved in the transcription requests dict.
     """
+    repository = get_task_repository_for_background()
+
     try:
         start_time = datetime.now()
         logger.info(
