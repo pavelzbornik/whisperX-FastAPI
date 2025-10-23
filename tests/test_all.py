@@ -8,13 +8,37 @@ from typing import Any
 
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
-from fastapi.testclient import TestClient
 
-from app import main
-from app.infrastructure.database import engine
-from app.schemas import TaskStatus
+# Import these at runtime, not at module level
+# from app import main
+# from app.infrastructure.database import engine
+# from app.schemas import TaskStatus
 
-client = TestClient(main.app, follow_redirects=False)
+# Create client lazily
+_client = None
+
+
+def get_client():
+    """Get or create test client."""
+    global _client
+    if _client is None:
+        from fastapi.testclient import TestClient
+        from app import main
+
+        _client = TestClient(main.app, follow_redirects=False)
+    return _client
+
+
+# For backwards compatibility
+@pytest.fixture(scope="session", autouse=True)
+def setup_client():
+    """Initialize client before any tests run."""
+    global client
+    client = get_client()
+    return client
+
+
+client = None  # Will be set by fixture
 
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
@@ -34,8 +58,9 @@ def set_env_variable(monkeypatch: MonkeyPatch) -> None:
         monkeypatch (pytest.MonkeyPatch): The monkeypatch fixture for setting environment variables.
     """
     monkeypatch.setenv("DB_URL", "sqlite:///:memory:")
-    # monkeypatch.setenv("DEVICE", "cpu")
-    # monkeypatch.setenv("COMPUTE_TYPE", "int8")
+    monkeypatch.setenv("DEVICE", "cpu")
+    monkeypatch.setenv("COMPUTE_TYPE", "int8")
+    monkeypatch.setenv("WHISPER_MODEL", "tiny")
 
 
 def test_index() -> None:
@@ -79,6 +104,7 @@ def test_readiness_check() -> None:
 
 def test_readiness_check_with_db_failure(monkeypatch: MonkeyPatch) -> None:
     """Test the readiness check endpoint when database connection fails."""
+    from app.infrastructure.database import engine
 
     # Create a mock engine connect method that raises an exception
     def mock_connect(*args: Any, **kwargs: Any) -> Any:
@@ -137,6 +163,8 @@ def wait_for_task_completion(
     Returns:
         bool: True if the task completed, False otherwise.
     """
+    from app.schemas import TaskStatus
+
     attempts = 0
     while attempts < max_attempts:
         status = get_task_status(identifier)

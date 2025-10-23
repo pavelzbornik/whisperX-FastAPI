@@ -141,7 +141,7 @@ async def speech_to_text(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params, repository)
+    background_tasks.add_task(process_audio_common, audio_params)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
@@ -250,7 +250,7 @@ async def speech_to_text_url(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params, repository)
+    background_tasks.add_task(process_audio_common, audio_params)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")

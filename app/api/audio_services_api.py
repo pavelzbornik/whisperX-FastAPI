@@ -114,7 +114,6 @@ async def transcribe(
         model_params,
         asr_options_params,
         vad_options_params,
-        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -205,7 +204,6 @@ def align(
         identifier,
         device,
         align_params,
-        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -270,7 +268,6 @@ async def diarize(
         identifier,
         device,
         diarize_params,
-        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -351,7 +348,6 @@ async def combine(
         pd.json_normalize([segment.model_dump() for segment in diarization_segments]),
         transcript.model_dump(),
         identifier,
-        repository,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)

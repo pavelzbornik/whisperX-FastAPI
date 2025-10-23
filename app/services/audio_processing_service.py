@@ -7,6 +7,7 @@ from typing import Any
 import whisperx
 from fastapi import HTTPException
 
+from app.api.dependencies import get_task_repository_for_background
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
 from app.schemas import (
@@ -108,7 +109,6 @@ def process_transcribe(
     model_params: WhisperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
-    repository: ITaskRepository,
 ) -> None:
     """
     Process a transcription task.
@@ -119,8 +119,8 @@ def process_transcribe(
         model_params (WhisperModelParams): The model parameters.
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
-        repository (ITaskRepository): The task repository.
     """
+    repository = get_task_repository_for_background()
     process_audio_task(
         transcribe_with_whisper,
         identifier,
@@ -146,7 +146,6 @@ def process_diarize(
     identifier: str,
     device: Device,
     diarize_params: DiarizationParams,
-    repository: ITaskRepository,
 ) -> None:
     """
     Process a diarization task.
@@ -156,8 +155,8 @@ def process_diarize(
         identifier (str): The task identifier.
         device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
-        repository (ITaskRepository): The task repository.
     """
+    repository = get_task_repository_for_background()
     process_audio_task(
         diarize,
         identifier,
@@ -176,7 +175,6 @@ def process_alignment(
     identifier: str,
     device: Device,
     align_params: AlignmentParams,
-    repository: ITaskRepository,
 ) -> None:
     """
     Process a transcription alignment task.
@@ -187,8 +185,8 @@ def process_alignment(
         identifier (str): The task identifier.
         device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
-        repository (ITaskRepository): The task repository.
     """
+    repository = get_task_repository_for_background()
     process_audio_task(
         align_whisper_output,
         identifier,
@@ -208,7 +206,6 @@ def process_speaker_assignment(
     diarization_segments: Any,
     transcript: dict[str, Any],
     identifier: str,
-    repository: ITaskRepository,
 ) -> None:
     """
     Process a speaker assignment task.
@@ -217,8 +214,8 @@ def process_speaker_assignment(
         diarization_segments: The diarization segments.
         transcript: The transcript data.
         identifier (str): The task identifier.
-        repository (ITaskRepository): The task repository.
     """
+    repository = get_task_repository_for_background()
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,
