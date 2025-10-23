@@ -5,13 +5,9 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
-import os
-import re
 from datetime import datetime, timezone
-from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
-import requests
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -22,12 +18,12 @@ from fastapi import (
     UploadFile,
 )
 
-from app.api.dependencies import get_task_repository
+from app.api.dependencies import get_file_service, get_task_repository
 from app.audio import get_audio_duration, process_audio_file
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
-from app.files import ALLOWED_EXTENSIONS, save_temporary_file, validate_extension
+from app.files import ALLOWED_EXTENSIONS
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -40,33 +36,13 @@ from app.schemas import (
     WhisperModelParams,
 )
 from app.services import process_audio_common
-
-
-# Custom secure_filename implementation (no Werkzeug dependency)
-def secure_filename(filename: str) -> str:
-    """Sanitize the filename to ensure it is safe for use in file systems."""
-    filename = os.path.basename(filename)
-    # Only allow alphanumerics, dash, underscore, and dot
-    filename = re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
-    # Replace multiple consecutive dots or underscores with a single underscore
-    filename = re.sub(r"[._]{2,}", "_", filename)
-    # Remove leading dots or underscores
-    filename = re.sub(r"^[._]+", "", filename)
-    # Ensure filename is not empty or problematic
-    if not filename or filename in {".", ".."}:
-        raise ValueError(
-            "Filename is empty or contains only special characters after sanitization."
-        )
-    return filename
+from app.services.file_service import FileService
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 stt_router = APIRouter()
-
-# Module-level constant for lowercased allowed extensions
-ALLOWED_EXTENSIONS_LOWER = {ext.lower() for ext in ALLOWED_EXTENSIONS}
 
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
@@ -79,6 +55,7 @@ async def speech_to_text(
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(...),
     repository: ITaskRepository = Depends(get_task_repository),
+    file_service: FileService = Depends(get_file_service),
 ) -> Response:
     """
     Process an uploaded audio file for speech-to-text conversion.
@@ -92,20 +69,24 @@ async def speech_to_text(
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
         repository (ITaskRepository): Task repository dependency.
+        file_service (FileService): File service dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
     """
     logger.info("Received file upload request: %s", file.filename)
 
+    # Validate file using file service
     if file.filename is None:
         raise HTTPException(status_code=400, detail="Filename is missing")
 
-    validate_extension(file.filename, ALLOWED_EXTENSIONS)
+    file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
 
-    temp_file = save_temporary_file(file.file, file.filename)
+    # Save file using file service
+    temp_file = file_service.save_upload(file)
     logger.info("%s saved as temporary file: %s", file.filename, temp_file)
 
+    # Process audio
     audio = process_audio_file(temp_file)
     audio_duration = get_audio_duration(audio)
     logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
@@ -157,6 +138,7 @@ async def speech_to_text_url(
     vad_options_params: VADOptions = Depends(),
     url: str = Form(...),
     repository: ITaskRepository = Depends(get_task_repository),
+    file_service: FileService = Depends(get_file_service),
 ) -> Response:
     """
     Process an audio file from a URL for speech-to-text conversion.
@@ -170,59 +152,29 @@ async def speech_to_text_url(
         vad_options_params (VADOptions): VAD options parameters.
         url (str): URL of the audio file.
         repository (ITaskRepository): Task repository dependency.
+        file_service (FileService): File service dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
     """
     logger.info("Received URL for processing: %s", url)
 
-    # Extract filename from HTTP response headers or URL
-    with requests.get(url, stream=True) as response:
-        response.raise_for_status()
+    # Download file using file service
+    temp_audio_file, filename = file_service.download_from_url(url)
+    logger.info("File downloaded and saved temporarily: %s", temp_audio_file)
 
-        # Check for filename in Content-Disposition header
-        content_disposition = response.headers.get("Content-Disposition")
-        if content_disposition and "filename=" in content_disposition:
-            filename = content_disposition.split("filename=")[1].strip('"')
-        else:
-            # Fall back to extracting from the URL path
-            filename = os.path.basename(url)
-            filename = secure_filename(filename)  # Sanitize the filename
+    # Validate extension
+    file_service.validate_file_extension(temp_audio_file, ALLOWED_EXTENSIONS)
 
-        # Get the file extension
-        _, ext_candidate = os.path.splitext(filename)
-        ext_candidate = ext_candidate.lower().strip()  # Normalize and remove whitespace
-        # Only allow single extensions that perfectly match allowed values (start with . and followed by alphanum only)
-        # Defensive: reconstruct the extension from allowed set if possible
-        if not ext_candidate or not ext_candidate.startswith("."):
-            raise ValueError(f"Invalid file extension: {ext_candidate}")
-        ext_clean = ext_candidate[1:]  # remove leading dot for lookup
-        # Defensive: Only allow usage if clean is in allowed set
-        # Use a canonical extension from allowed set (lowercase)
-        extension_to_suffix = {
-            ext.lower().lstrip("."): ext for ext in ALLOWED_EXTENSIONS
-        }
-        if ext_clean not in extension_to_suffix:
-            raise ValueError(f"Invalid file extension: {ext_candidate}")
-        # Always use the canonical extension from allowed set, not reconstructed from user data
-        safe_suffix = extension_to_suffix[ext_clean]
-
-        # Save the file to a temporary location
-        temp_audio_file = NamedTemporaryFile(suffix=safe_suffix, delete=False)
-        for chunk in response.iter_content(chunk_size=8192):
-            temp_audio_file.write(chunk)
-
-    logger.info("File downloaded and saved temporarily: %s", temp_audio_file.name)
-    validate_extension(temp_audio_file.name, ALLOWED_EXTENSIONS)
-
-    audio = process_audio_file(temp_audio_file.name)
+    # Process audio
+    audio = process_audio_file(temp_audio_file)
     logger.info("Audio file processed: duration %s seconds", get_audio_duration(audio))
 
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
         status=TaskStatus.processing,
-        file_name=temp_audio_file.name,
+        file_name=filename,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
         task_type=TaskType.full_process,
