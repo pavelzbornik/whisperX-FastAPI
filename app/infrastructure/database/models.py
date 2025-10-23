@@ -47,17 +47,17 @@ class Task(Base):
     result: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, comment="JSON data representing the result of the task"
     )
-    file_name: Mapped[str] = mapped_column(
-        String, comment="Name of the file associated with the task"
+    file_name: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Name of the file associated with the task"
     )
-    url: Mapped[str] = mapped_column(
-        String, comment="URL of the file associated with the task"
+    url: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="URL of the file associated with the task"
     )
-    audio_duration: Mapped[float] = mapped_column(
-        Float, comment="Duration of the audio in seconds"
+    audio_duration: Mapped[float | None] = mapped_column(
+        Float, nullable=True, comment="Duration of the audio in seconds"
     )
-    language: Mapped[str] = mapped_column(
-        String, comment="Language of the file associated with the task"
+    language: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Language of the file associated with the task"
     )
     task_type: Mapped[str] = mapped_column(String, comment="Type/category of the task")
     task_params: Mapped[dict[str, Any]] = mapped_column(
