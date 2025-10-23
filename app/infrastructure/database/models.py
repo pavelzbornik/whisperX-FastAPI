@@ -44,7 +44,7 @@ class Task(Base):
         comment="Universally unique identifier for each task",
     )
     status: Mapped[str] = mapped_column(String, comment="Current status of the task")
-    result: Mapped[dict[str, Any]] = mapped_column(
+    result: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, comment="JSON data representing the result of the task"
     )
     file_name: Mapped[str] = mapped_column(
