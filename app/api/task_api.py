@@ -3,8 +3,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.dependencies import get_task_management_service
+from app.api.mappers.task_mapper import TaskMapper
+from app.api.schemas.task_schemas import TaskListResponse
 from app.core.logging import logger
-from app.schemas import Metadata, Response, Result, ResultTasks, TaskSimple
+from app.schemas import Metadata, Response, Result
 from app.services.task_management_service import TaskManagementService
 
 task_router = APIRouter()
@@ -13,7 +15,7 @@ task_router = APIRouter()
 @task_router.get("/task/all", tags=["Tasks Management"])
 async def get_all_tasks_status(
     service: TaskManagementService = Depends(get_task_management_service),
-) -> ResultTasks:
+) -> TaskListResponse:
     """
     Retrieve the status of all tasks.
 
@@ -21,15 +23,15 @@ async def get_all_tasks_status(
         service: Task management service dependency.
 
     Returns:
-        ResultTasks: The status of all tasks.
+        TaskListResponse: The status of all tasks.
     """
     logger.info("Retrieving status of all tasks")
     tasks = service.get_all_tasks()
 
-    # Convert domain tasks to TaskSimple schema using helper
-    task_simples = [TaskSimple.from_domain(task) for task in tasks]
+    # Convert domain tasks to API DTOs using mapper
+    task_summaries = [TaskMapper.to_summary(task) for task in tasks]
 
-    return ResultTasks(tasks=task_simples)
+    return TaskListResponse(tasks=task_summaries)
 
 
 @task_router.get("/task/{identifier}", tags=["Tasks Management"])
