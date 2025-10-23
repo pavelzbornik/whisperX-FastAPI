@@ -5,11 +5,10 @@ from datetime import datetime
 from typing import Any
 
 import whisperx
-from fastapi import Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import HTTPException
 
 from app.core.logging import logger
-from app.infrastructure.database import get_db_session, update_task_status_in_db
+from app.domain.repositories.task_repository import ITaskRepository
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -46,7 +45,7 @@ def process_audio_task(
     audio_processor: Callable[..., Any],
     identifier: str,
     task_type: str,
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository,
     *args: Any,
 ) -> None:
     """
@@ -56,7 +55,7 @@ def process_audio_task(
         audio_processor (callable): The function to process the audio.
         identifier (str): The task identifier.
         task_type (str): The type of the task.
-        session (Session): The database session.
+        repository (ITaskRepository): The task repository.
         *args: Additional arguments for the audio processor.
     """
     try:
@@ -74,7 +73,7 @@ def process_audio_task(
             f"Completed {task_type} task for identifier {identifier}. Duration: {duration}s"
         )
 
-        update_task_status_in_db(
+        repository.update(
             identifier=identifier,
             update_data={
                 "status": TaskStatus.completed,
@@ -83,26 +82,23 @@ def process_audio_task(
                 "start_time": start_time,
                 "end_time": end_time,
             },
-            session=session,
         )
 
     except (ValueError, TypeError, RuntimeError) as e:
         logger.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
-        update_task_status_in_db(
+        repository.update(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
-            session=session,
         )
     except MemoryError as e:
         logger.error(
             f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
         )
-        update_task_status_in_db(
+        repository.update(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
-            session=session,
         )
 
 
@@ -112,7 +108,7 @@ def process_transcribe(
     model_params: WhisperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository,
 ) -> None:
     """
     Process a transcription task.
@@ -123,13 +119,13 @@ def process_transcribe(
         model_params (WhisperModelParams): The model parameters.
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
-        session (Session): The database session.
+        repository (ITaskRepository): The task repository.
     """
     process_audio_task(
         transcribe_with_whisper,
         identifier,
         "transcription",
-        session,
+        repository,
         audio,
         model_params.task.value,
         asr_options_params.model_dump(),
@@ -150,7 +146,7 @@ def process_diarize(
     identifier: str,
     device: Device,
     diarize_params: DiarizationParams,
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository,
 ) -> None:
     """
     Process a diarization task.
@@ -160,13 +156,13 @@ def process_diarize(
         identifier (str): The task identifier.
         device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
-        session (Session): The database session.
+        repository (ITaskRepository): The task repository.
     """
     process_audio_task(
         diarize,
         identifier,
         "diarization",
-        session,
+        repository,
         audio,
         device,
         diarize_params.min_speakers,
@@ -180,7 +176,7 @@ def process_alignment(
     identifier: str,
     device: Device,
     align_params: AlignmentParams,
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository,
 ) -> None:
     """
     Process a transcription alignment task.
@@ -191,13 +187,13 @@ def process_alignment(
         identifier (str): The task identifier.
         device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
-        session (Session): The database session.
+        repository (ITaskRepository): The task repository.
     """
     process_audio_task(
         align_whisper_output,
         identifier,
         "transcription_alignment",
-        session,
+        repository,
         transcript["segments"],
         audio,
         transcript["language"],
@@ -212,7 +208,7 @@ def process_speaker_assignment(
     diarization_segments: Any,
     transcript: dict[str, Any],
     identifier: str,
-    session: Session = Depends(get_db_session),
+    repository: ITaskRepository,
 ) -> None:
     """
     Process a speaker assignment task.
@@ -221,13 +217,13 @@ def process_speaker_assignment(
         diarization_segments: The diarization segments.
         transcript: The transcript data.
         identifier (str): The task identifier.
-        session (Session): The database session.
+        repository (ITaskRepository): The task repository.
     """
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,
         "combine_transcript&diarization",
-        session,
+        repository,
         diarization_segments,
         transcript,
     )
