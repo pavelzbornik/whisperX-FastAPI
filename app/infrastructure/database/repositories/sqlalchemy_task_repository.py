@@ -137,9 +137,6 @@ class SQLAlchemyTaskRepository:
             self.session.commit()
             logger.info(f"Task updated successfully with UUID: {identifier}")
 
-        except ValueError:
-            # Re-raise ValueError as is
-            raise
         except SQLAlchemyError as e:
             self.session.rollback()
             logger.error(f"Failed to update task {identifier}: {str(e)}")
