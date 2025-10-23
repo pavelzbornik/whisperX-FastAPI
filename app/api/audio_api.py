@@ -57,7 +57,6 @@ def secure_filename(filename: str) -> str:
         )
     return filename
 
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
