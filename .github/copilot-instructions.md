@@ -514,6 +514,7 @@ Before committing changes, ALWAYS:
    - **Mappers**: Use mapper functions for domain ↔ ORM conversion
    - **Dependency Injection**: Inject repositories via `Depends()` in routers
    - **Layer Separation**: No direct SQLAlchemy queries outside infrastructure layer
+   - **Session Management**: Background tasks create their own sessions using `SessionLocal()` and close them in `finally` blocks; API endpoints receive repositories via dependency injection with automatic session cleanup.
 
 3. **Validate type checking with mypy:**
 
