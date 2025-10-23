@@ -15,9 +15,13 @@ from whisperx import (
     load_model,
 )
 
-from app.api.dependencies import get_task_repository_for_background
 from app.core.config import Config
 from app.core.logging import logger
+from app.domain.repositories.task_repository import ITaskRepository
+from app.infrastructure.database.connection import SessionLocal
+from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
+    SQLAlchemyTaskRepository,
+)
 from app.schemas import (
     AlignedTranscription,
     ComputeType,
@@ -256,7 +260,9 @@ def process_audio_common(params: SpeechToTextProcessingParams) -> None:
     Returns:
         None: The result is saved in the transcription requests dict.
     """
-    repository = get_task_repository_for_background()
+    # Create repository for this background task
+    session = SessionLocal()
+    repository: ITaskRepository = SQLAlchemyTaskRepository(session)
 
     try:
         start_time = datetime.now()
@@ -370,3 +376,5 @@ def process_audio_common(params: SpeechToTextProcessingParams) -> None:
             identifier=params.identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
+    finally:
+        session.close()
