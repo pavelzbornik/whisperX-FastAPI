@@ -39,21 +39,21 @@ loggers:
   uvicorn.access:
     handlers:
       - default
-    level: INFO
+    level: DEBUG
     propagate: false
   uvicorn.error:
     handlers:
       - default
-    level: INFO
+    level: DEBUG
     propagate: false
   whisperX:
     handlers:
       - colored
-    level: INFO
+    level: DEBUG
     propagate: false
 root:
   handlers:
     - default
-  level: INFO
+  level: DEBUG
   propagate: false
 version: 1

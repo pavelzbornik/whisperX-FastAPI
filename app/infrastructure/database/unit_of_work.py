@@ -101,7 +101,9 @@ class SQLAlchemyUnitOfWork:
         Exit the context manager and clean up resources.
 
         If an exception occurred during the context, the transaction will be
-        rolled back automatically.
+        rolled back automatically. If no exception occurred but commit was not
+        explicitly called, the transaction will also be rolled back to ensure
+        explicit commit semantics.
 
         Args:
             exc_type: Exception type if an exception occurred
@@ -110,6 +112,9 @@ class SQLAlchemyUnitOfWork:
         """
         if exc_type is not None:
             logger.error(f"Exception in Unit of Work: {exc_val}")
+            self.rollback()
+        else:
+            # Rollback if commit was not explicitly called
             self.rollback()
 
         if self._should_close_session and self._session:
