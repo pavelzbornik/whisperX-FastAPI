@@ -189,17 +189,19 @@ async def speech_to_text_url(
         ext_candidate = ext_candidate.lower().strip()  # Normalize and remove whitespace
         # Only allow single extensions that perfectly match allowed values (start with . and followed by alphanum only)
         # Defensive: reconstruct the extension from allowed set if possible
-        if not ext_candidate or not ext_candidate.startswith('.'):
+        if not ext_candidate or not ext_candidate.startswith("."):
             raise ValueError(f"Invalid file extension: {ext_candidate}")
         ext_clean = ext_candidate[1:]  # remove leading dot for lookup
         # Defensive: Only allow usage if clean is in allowed set
         # Use a canonical extension from allowed set (lowercase)
-        extension_to_suffix = {ext.lower().lstrip('.'): ext for ext in ALLOWED_EXTENSIONS}
+        extension_to_suffix = {
+            ext.lower().lstrip("."): ext for ext in ALLOWED_EXTENSIONS
+        }
         if ext_clean not in extension_to_suffix:
             raise ValueError(f"Invalid file extension: {ext_candidate}")
         # Always use the canonical extension from allowed set, not reconstructed from user data
         safe_suffix = extension_to_suffix[ext_clean]
-        
+
         # Save the file to a temporary location
         temp_audio_file = NamedTemporaryFile(suffix=safe_suffix, delete=False)
         for chunk in response.iter_content(chunk_size=8192):
