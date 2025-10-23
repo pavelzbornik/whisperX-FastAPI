@@ -7,9 +7,12 @@ from typing import Any
 import whisperx
 from fastapi import HTTPException
 
-from app.api.dependencies import get_task_repository_for_background
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
+from app.infrastructure.database.connection import SessionLocal
+from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
+    SQLAlchemyTaskRepository,
+)
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -46,7 +49,6 @@ def process_audio_task(
     audio_processor: Callable[..., Any],
     identifier: str,
     task_type: str,
-    repository: ITaskRepository,
     *args: Any,
 ) -> None:
     """
@@ -56,9 +58,12 @@ def process_audio_task(
         audio_processor (callable): The function to process the audio.
         identifier (str): The task identifier.
         task_type (str): The type of the task.
-        repository (ITaskRepository): The task repository.
         *args: Additional arguments for the audio processor.
     """
+    # Create repository for this background task
+    session = SessionLocal()
+    repository: ITaskRepository = SQLAlchemyTaskRepository(session)
+
     try:
         start_time = datetime.now()
         logger.info(f"Starting {task_type} task for identifier {identifier}")
@@ -101,6 +106,8 @@ def process_audio_task(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
+    finally:
+        session.close()
 
 
 def process_transcribe(
@@ -120,12 +127,10 @@ def process_transcribe(
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
     """
-    repository = get_task_repository_for_background()
     process_audio_task(
         transcribe_with_whisper,
         identifier,
         "transcription",
-        repository,
         audio,
         model_params.task.value,
         asr_options_params.model_dump(),
@@ -156,12 +161,10 @@ def process_diarize(
         device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
     """
-    repository = get_task_repository_for_background()
     process_audio_task(
         diarize,
         identifier,
         "diarization",
-        repository,
         audio,
         device,
         diarize_params.min_speakers,
@@ -186,12 +189,10 @@ def process_alignment(
         device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
     """
-    repository = get_task_repository_for_background()
     process_audio_task(
         align_whisper_output,
         identifier,
         "transcription_alignment",
-        repository,
         transcript["segments"],
         audio,
         transcript["language"],
@@ -215,12 +216,10 @@ def process_speaker_assignment(
         transcript: The transcript data.
         identifier (str): The task identifier.
     """
-    repository = get_task_repository_for_background()
     process_audio_task(
         whisperx.assign_word_speakers,
         identifier,
         "combine_transcript&diarization",
-        repository,
         diarization_segments,
         transcript,
     )
