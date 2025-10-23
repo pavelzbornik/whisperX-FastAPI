@@ -13,4 +13,3 @@ pytest-report.xml
 .ruff_cache
 .pytest_cache
 docs/stories/
-docs/stories/
