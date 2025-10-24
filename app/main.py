@@ -24,6 +24,7 @@ from app.api.exception_handlers import (  # noqa: E402
     validation_error_handler,
 )
 from app.core.config import Config  # noqa: E402
+from app.core.container import Container  # noqa: E402
 from app.core.exceptions import (  # noqa: E402
     DomainError,
     InfrastructureError,
@@ -38,6 +39,14 @@ load_dotenv()
 
 Base.metadata.create_all(bind=engine)
 
+# Create dependency injection container
+container = Container()
+
+# Set container in dependencies module
+from app.api import dependencies  # noqa: E402
+
+dependencies.set_container(container)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -50,9 +59,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Args:
         app (FastAPI): The FastAPI application instance.
     """
+    logging.info("Application lifespan started - dependency container initialized")
+
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
     yield
+
+    # Clean up container on shutdown
+    logging.info("Shutting down application")
 
 
 tags_metadata = [

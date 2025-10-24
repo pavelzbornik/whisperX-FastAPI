@@ -28,6 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "colorlog==6.10.1",
+    "dependency-injector>=4.41.0",
     "fastapi==0.124.4",
     "gunicorn==23.0.0",
     "httpx==0.28.1",
