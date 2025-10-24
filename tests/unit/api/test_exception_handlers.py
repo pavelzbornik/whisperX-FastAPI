@@ -1,5 +1,6 @@
 """Tests for exception handlers."""
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -79,6 +80,7 @@ async def raise_generic_error() -> None:
 client = TestClient(app, raise_server_exceptions=False)
 
 
+@pytest.mark.unit
 def test_task_not_found_handler() -> None:
     """Test TaskNotFoundError handler returns 404."""
     response = client.get("/test/task-not-found")
@@ -91,6 +93,7 @@ def test_task_not_found_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_validation_error_handler() -> None:
     """Test ValidationError handler returns 422."""
     response = client.get("/test/validation-error")
@@ -102,6 +105,7 @@ def test_validation_error_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_unsupported_file_extension_handler() -> None:
     """Test UnsupportedFileExtensionError (ValidationError subclass) returns 422."""
     response = client.get("/test/unsupported-file")
@@ -114,6 +118,7 @@ def test_unsupported_file_extension_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_domain_error_handler() -> None:
     """Test DomainError handler returns 400."""
     response = client.get("/test/domain-error")
@@ -125,6 +130,7 @@ def test_domain_error_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_transcription_failed_handler() -> None:
     """Test TranscriptionFailedError (DomainError subclass) returns 400."""
     response = client.get("/test/transcription-failed")
@@ -136,6 +142,7 @@ def test_transcription_failed_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_infrastructure_error_handler() -> None:
     """Test InfrastructureError handler returns 503."""
     response = client.get("/test/infrastructure-error")
@@ -151,6 +158,7 @@ def test_infrastructure_error_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_generic_error_handler() -> None:
     """Test generic exception handler returns 500."""
     response = client.get("/test/generic-error")
@@ -166,6 +174,7 @@ def test_generic_error_handler() -> None:
     assert "correlation_id" in data["error"]
 
 
+@pytest.mark.unit
 def test_error_response_format() -> None:
     """Test all errors follow consistent response format."""
     endpoints = [
