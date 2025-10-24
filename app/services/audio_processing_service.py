@@ -96,15 +96,11 @@ def process_audio_task(
             },
         )
 
-    except (ValueError, TypeError, RuntimeError, MemoryError) as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
-        )
-        repository.update(
-            identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
     except (
+        ValueError,
+        TypeError,
+        RuntimeError,
+        MemoryError,
         TranscriptionFailedError,
         DiarizationFailedError,
         AudioProcessingError,
