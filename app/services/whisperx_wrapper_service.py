@@ -7,20 +7,20 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import torch
-from whisperx.diarize import DiarizationPipeline
 from whisperx import (
     align,
     load_align_model,
     load_model,
 )
+from whisperx.diarize import DiarizationPipeline
 
 from app.core.config import Config
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
-from app.domain.services.transcription_service import ITranscriptionService
-from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
+from app.domain.services.transcription_service import ITranscriptionService
 from app.infrastructure.database.connection import SessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
@@ -275,10 +275,10 @@ def process_audio_common(
     """
     # Import here to avoid circular dependency
     from app.infrastructure.ml import (
-        WhisperXTranscriptionService,
         WhisperXAlignmentService,
         WhisperXDiarizationService,
         WhisperXSpeakerAssignmentService,
+        WhisperXTranscriptionService,
     )
 
     # Use provided services or create default WhisperX implementations

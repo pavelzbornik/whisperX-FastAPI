@@ -14,7 +14,7 @@ This document describes the custom exception hierarchy implemented for domain-dr
 
 ## Exception Hierarchy
 
-```
+```text
 ApplicationError (base)
 ├── DomainError (business logic violations)
 │   ├── ValidationError (input validation)
