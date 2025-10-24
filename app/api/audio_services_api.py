@@ -20,12 +20,23 @@ from fastapi import (
 )
 from pydantic import ValidationError
 
-from app.api.dependencies import get_file_service, get_task_repository
+from app.api.dependencies import (
+    get_file_service,
+    get_task_repository,
+    get_transcription_service,
+    get_diarization_service,
+    get_alignment_service,
+    get_speaker_assignment_service,
+)
 from app.audio import get_audio_duration, process_audio_file
 from app.core.config import Config
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
+from app.domain.services.transcription_service import ITranscriptionService
+from app.domain.services.diarization_service import IDiarizationService
+from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.files import ALLOWED_EXTENSIONS
 from app.schemas import (
     AlignedTranscription,
@@ -66,6 +77,7 @@ async def transcribe(
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
+    transcription_service: ITranscriptionService = Depends(get_transcription_service),
 ) -> Response:
     """
     Transcribe an uploaded audio file.
@@ -78,6 +90,7 @@ async def transcribe(
         file (UploadFile): Uploaded audio file.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
+        transcription_service (ITranscriptionService): Transcription service dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -118,6 +131,7 @@ async def transcribe(
         model_params,
         asr_options_params,
         vad_options_params,
+        transcription_service,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -144,6 +158,7 @@ def align(
     align_params: AlignmentParams = Depends(),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
+    alignment_service: IAlignmentService = Depends(get_alignment_service),
 ) -> Response:
     """
     Align a transcript with an audio file.
@@ -156,6 +171,7 @@ def align(
         align_params (AlignmentParams): Alignment parameters.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
+        alignment_service (IAlignmentService): Alignment service dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -212,6 +228,7 @@ def align(
         identifier,
         device,
         align_params,
+        alignment_service,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -231,6 +248,7 @@ async def diarize(
     ),
     diarize_params: DiarizationParams = Depends(),
     file_service: FileService = Depends(get_file_service),
+    diarization_service: IDiarizationService = Depends(get_diarization_service),
 ) -> Response:
     """
     Perform diarization on an uploaded audio file.
@@ -242,6 +260,7 @@ async def diarize(
         device (Device): Device for PyTorch inference.
         diarize_params (DiarizationParams): Diarization parameters.
         file_service (FileService): File service dependency.
+        diarization_service (IDiarizationService): Diarization service dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -279,6 +298,7 @@ async def diarize(
         identifier,
         device,
         diarize_params,
+        diarization_service,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)
@@ -296,6 +316,9 @@ async def combine(
     diarization_result: UploadFile = File(...),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
+    speaker_service: ISpeakerAssignmentService = Depends(
+        get_speaker_assignment_service
+    ),
 ) -> Response:
     """
     Combine a transcript with diarization results.
@@ -306,6 +329,7 @@ async def combine(
         diarization_result (UploadFile): Uploaded diarization result file.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
+        speaker_service (ISpeakerAssignmentService): Speaker assignment service dependency.
 
     Returns:
         Response: Confirmation message of task queuing.
@@ -362,6 +386,7 @@ async def combine(
         pd.json_normalize([segment.model_dump() for segment in diarization_segments]),
         transcript.model_dump(),
         identifier,
+        speaker_service,
     )
 
     logger.info("Background task scheduled for processing: ID %s", identifier)

@@ -4,11 +4,15 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-import whisperx
 from fastapi import HTTPException
+from whisperx import utils as whisperx_utils
 
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
+from app.domain.services.transcription_service import ITranscriptionService
+from app.domain.services.diarization_service import IDiarizationService
+from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.infrastructure.database.connection import SessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
@@ -22,11 +26,6 @@ from app.schemas import (
     VADOptions,
     WhisperModelParams,
 )
-from app.services.whisperx_wrapper_service import (
-    align_whisper_output,
-    diarize,
-    transcribe_with_whisper,
-)
 
 
 def validate_language_code(language_code: str) -> None:
@@ -39,26 +38,24 @@ def validate_language_code(language_code: str) -> None:
     Returns:
         str: The validated language code.
     """
-    if language_code not in whisperx.utils.LANGUAGES:
+    if language_code not in whisperx_utils.LANGUAGES:
         raise HTTPException(
             status_code=400, detail=f"Invalid language code: {language_code}"
         )
 
 
 def process_audio_task(
-    audio_processor: Callable[..., Any],
+    audio_processor: Callable[[], Any],
     identifier: str,
     task_type: str,
-    *args: Any,
 ) -> None:
     """
     Process an audio task.
 
     Args:
-        audio_processor (callable): The function to process the audio.
+        audio_processor (callable): The function to process the audio (no args).
         identifier (str): The task identifier.
         task_type (str): The type of the task.
-        *args: Additional arguments for the audio processor.
     """
     # Create repository for this background task
     session = SessionLocal()
@@ -68,7 +65,7 @@ def process_audio_task(
         start_time = datetime.now()
         logger.info(f"Starting {task_type} task for identifier {identifier}")
 
-        result = audio_processor(*args)
+        result = audio_processor()
 
         if task_type == "diarization":
             result = result.drop(columns=["segment"]).to_dict(orient="records")
@@ -116,9 +113,10 @@ def process_transcribe(
     model_params: WhisperModelParams,
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
+    transcription_service: ITranscriptionService,
 ) -> None:
     """
-    Process a transcription task.
+    Process a transcription task using the transcription service.
 
     Args:
         audio: The audio data.
@@ -126,23 +124,29 @@ def process_transcribe(
         model_params (WhisperModelParams): The model parameters.
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
+        transcription_service: The transcription service to use.
     """
+
+    def transcribe_task() -> Any:
+        return transcription_service.transcribe(
+            audio=audio,
+            task=model_params.task.value,
+            asr_options=asr_options_params.model_dump(),
+            vad_options=vad_options_params.model_dump(),
+            language=model_params.language,
+            batch_size=model_params.batch_size,
+            chunk_size=model_params.chunk_size,
+            model=model_params.model.value,
+            device=model_params.device.value,
+            device_index=model_params.device_index,
+            compute_type=model_params.compute_type.value,
+            threads=model_params.threads,
+        )
+
     process_audio_task(
-        transcribe_with_whisper,
+        transcribe_task,
         identifier,
         "transcription",
-        audio,
-        model_params.task.value,
-        asr_options_params.model_dump(),
-        vad_options_params.model_dump(),
-        model_params.language,
-        model_params.batch_size,
-        model_params.chunk_size,
-        model_params.model,
-        model_params.device,
-        model_params.device_index,
-        model_params.compute_type,
-        model_params.threads,
     )
 
 
@@ -151,24 +155,31 @@ def process_diarize(
     identifier: str,
     device: Device,
     diarize_params: DiarizationParams,
+    diarization_service: IDiarizationService,
 ) -> None:
     """
-    Process a diarization task.
+    Process a diarization task using the diarization service.
 
     Args:
         audio: The audio data.
         identifier (str): The task identifier.
         device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
+        diarization_service: The diarization service to use.
     """
+
+    def diarize_task() -> Any:
+        return diarization_service.diarize(
+            audio=audio,
+            device=device.value,
+            min_speakers=diarize_params.min_speakers,
+            max_speakers=diarize_params.max_speakers,
+        )
+
     process_audio_task(
-        diarize,
+        diarize_task,
         identifier,
         "diarization",
-        audio,
-        device,
-        diarize_params.min_speakers,
-        diarize_params.max_speakers,
     )
 
 
@@ -178,9 +189,10 @@ def process_alignment(
     identifier: str,
     device: Device,
     align_params: AlignmentParams,
+    alignment_service: IAlignmentService,
 ) -> None:
     """
-    Process a transcription alignment task.
+    Process a transcription alignment task using the alignment service.
 
     Args:
         audio: The audio data.
@@ -188,18 +200,24 @@ def process_alignment(
         identifier (str): The task identifier.
         device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
+        alignment_service: The alignment service to use.
     """
+
+    def align_task() -> Any:
+        return alignment_service.align(
+            transcript=transcript["segments"],
+            audio=audio,
+            language_code=transcript["language"],
+            device=device.value,
+            align_model=align_params.align_model,
+            interpolate_method=align_params.interpolate_method,
+            return_char_alignments=align_params.return_char_alignments,
+        )
+
     process_audio_task(
-        align_whisper_output,
+        align_task,
         identifier,
         "transcription_alignment",
-        transcript["segments"],
-        audio,
-        transcript["language"],
-        device,
-        align_params.align_model,
-        align_params.interpolate_method,
-        align_params.return_char_alignments,
     )
 
 
@@ -207,19 +225,26 @@ def process_speaker_assignment(
     diarization_segments: Any,
     transcript: dict[str, Any],
     identifier: str,
+    speaker_service: ISpeakerAssignmentService,
 ) -> None:
     """
-    Process a speaker assignment task.
+    Process a speaker assignment task using the speaker assignment service.
 
     Args:
         diarization_segments: The diarization segments.
         transcript: The transcript data.
         identifier (str): The task identifier.
+        speaker_service: The speaker assignment service to use.
     """
+
+    def assign_task() -> Any:
+        return speaker_service.assign_speakers(
+            diarization_segments=diarization_segments,
+            transcript=transcript,
+        )
+
     process_audio_task(
-        whisperx.assign_word_speakers,
+        assign_task,
         identifier,
         "combine_transcript&diarization",
-        diarization_segments,
-        transcript,
     )
