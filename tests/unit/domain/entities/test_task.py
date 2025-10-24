@@ -1,6 +1,6 @@
 """Unit tests for Task domain entity."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 
@@ -43,7 +43,7 @@ class TestTaskEntity:
         assert task.status == "processing"
         assert task.file_name == "audio.mp3"
         assert task.url == "https://example.com/audio.mp3"
-        assert task.audio_duration == pytest.approx(120.5)
+        assert task.audio_duration == 120.5
         assert task.language == "en"
         assert task.task_params == {"model": "tiny"}
 
@@ -51,13 +51,13 @@ class TestTaskEntity:
         """Test marking a task as completed updates status and result."""
         task = TaskFactory(status="processing")
         result = {"segments": [{"text": "hello world"}]}
-        end_time = datetime.now(timezone.utc)
+        end_time = datetime.utcnow()
 
         task.mark_as_completed(result, duration=10.5, end_time=end_time)
 
         assert task.status == "completed"
         assert task.result == result
-        assert task.duration == pytest.approx(10.5)
+        assert task.duration == 10.5
         assert task.end_time == end_time
         assert task.updated_at is not None
 
@@ -76,7 +76,7 @@ class TestTaskEntity:
     def test_mark_as_processing(self) -> None:
         """Test marking a task as processing updates status and start time."""
         task = TaskFactory(status="pending")
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.utcnow()
 
         task.mark_as_processing(start_time)
 
@@ -172,7 +172,7 @@ class TestTaskEntity:
         assert not task.is_failed()
 
         # Move to processing
-        task.mark_as_processing(datetime.now(timezone.utc))
+        task.mark_as_processing(datetime.utcnow())
         assert task.status == "processing"
         assert task.is_processing()
         assert not task.is_completed()
@@ -180,18 +180,17 @@ class TestTaskEntity:
 
         # Complete the task
         task.mark_as_completed(
-            {"result": "data"}, duration=5.5, end_time=datetime.now(timezone.utc)
+            {"result": "data"}, duration=5.5, end_time=datetime.utcnow()
         )
         assert task.status == "completed"
         assert not task.is_processing()
         assert task.is_completed()
         assert not task.is_failed()
-        assert task.duration == pytest.approx(5.5)
 
     def test_state_transitions_to_failed(self) -> None:
         """Test task transition from processing to failed."""
         # Start with processing task
-        task = TaskFactory(status="processing", start_time=datetime.now(timezone.utc))
+        task = TaskFactory(status="processing", start_time=datetime.utcnow())
         assert task.is_processing()
 
         # Fail the task

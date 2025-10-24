@@ -74,10 +74,9 @@ def test_get_task_by_id(client: TestClient) -> None:
     get_response = client.get(f"/task/{identifier}")
     assert get_response.status_code == 200
     task_data = get_response.json()
-    # Verify the response has expected fields
+    assert task_data["uuid"] == identifier
     assert "status" in task_data
     assert task_data["status"] in ["pending", "processing", "completed", "failed"]
-    assert "metadata" in task_data or "result" in task_data  # Has task data
 
 
 @pytest.mark.e2e

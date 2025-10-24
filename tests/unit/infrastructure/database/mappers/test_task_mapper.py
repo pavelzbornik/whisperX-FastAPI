@@ -1,6 +1,6 @@
 """Unit tests for database task mapper."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 
@@ -35,7 +35,7 @@ class TestTaskMapper:
 
     def test_to_orm_with_all_fields(self) -> None:
         """Test converting domain task with all fields populated."""
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         domain_task = TaskFactory(
             uuid="test-123",
             status="completed",
@@ -56,9 +56,9 @@ class TestTaskMapper:
 
         assert orm_task.result == {"segments": [{"text": "hello"}]}
         assert orm_task.url == "https://example.com/test.mp3"
-        assert orm_task.audio_duration == pytest.approx(120.5)
+        assert orm_task.audio_duration == 120.5
         assert orm_task.task_params == {"model": "tiny"}
-        assert orm_task.duration == pytest.approx(10.5)
+        assert orm_task.duration == 10.5
         assert orm_task.start_time == now
         assert orm_task.end_time == now
 
@@ -83,7 +83,7 @@ class TestTaskMapper:
 
     def test_to_domain_with_all_fields(self) -> None:
         """Test converting ORM task with all fields populated."""
-        now = datetime.now(timezone.utc)
+        now = datetime.utcnow()
         orm_task = ORMTask(
             uuid="test-456",
             status="failed",
@@ -106,7 +106,7 @@ class TestTaskMapper:
 
         assert domain_task.error == "Processing failed"
         assert domain_task.url == "https://example.com/audio.wav"
-        assert domain_task.audio_duration == pytest.approx(300.0)
+        assert domain_task.audio_duration == 300.0
         assert domain_task.task_params == {"speakers": 2}
         assert domain_task.start_time == now
         assert domain_task.end_time == now
