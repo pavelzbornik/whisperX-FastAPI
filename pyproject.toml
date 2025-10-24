@@ -150,7 +150,7 @@ markers = [
     "e2e: End-to-end tests through API",
     "slow: Slow tests (ML operations, large files)",
 ]
-addopts = "-v --strict-markers"
+addopts = "-v --strict-markers --strict-config"
 
 [[tool.mypy.overrides]]
 module = [

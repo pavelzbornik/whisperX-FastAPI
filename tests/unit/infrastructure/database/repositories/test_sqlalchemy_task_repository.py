@@ -185,7 +185,7 @@ class TestSQLAlchemyTaskRepository:
         # Verify update occurred
         assert orm_task.status == "completed"
         assert orm_task.result == {"text": "updated"}
-        assert orm_task.duration == 15.5
+        assert orm_task.duration == pytest.approx(15.5)
         mock_session.commit.assert_called_once()
 
     def test_update_returns_none_when_task_not_found(

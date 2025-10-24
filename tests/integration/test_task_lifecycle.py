@@ -64,7 +64,7 @@ class TestTaskLifecycle:
         assert retrieved is not None
         assert retrieved.status == "completed"
         assert retrieved.result == {"segments": [{"text": "hello"}]}
-        assert retrieved.duration == 10.5
+        assert retrieved.duration == pytest.approx(10.5)
 
     def test_complete_task_lifecycle(self, db_session: Session) -> None:
         """Test complete task lifecycle from creation to completion."""
@@ -103,7 +103,7 @@ class TestTaskLifecycle:
         assert completed_task is not None
         assert completed_task.status == "completed"
         assert completed_task.result is not None
-        assert completed_task.duration == 15.5
+        assert completed_task.duration == pytest.approx(15.5)
         assert completed_task.end_time is not None
 
     def test_fail_task_lifecycle(self, db_session: Session) -> None:
