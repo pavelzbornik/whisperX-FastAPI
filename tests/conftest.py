@@ -7,6 +7,7 @@ from typing import Generator
 import pytest
 
 from tests.fixtures import TestContainer
+from tests.fixtures.database import db_session, test_db_engine  # noqa: F401
 
 
 @pytest.fixture(scope="session", autouse=True)
