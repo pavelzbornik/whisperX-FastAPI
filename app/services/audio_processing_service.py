@@ -96,38 +96,13 @@ def process_audio_task(
             },
         )
 
-    except ValueError as e:
+    except (ValueError, TypeError, RuntimeError, MemoryError) as e:
         logger.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
         repository.update(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
-    except TypeError as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
-        )
-        repository.update(
-            identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
-    except RuntimeError as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
-        )
-        repository.update(
-            identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
-    except MemoryError as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
-        )
-        error_msg = f"Insufficient memory for {task_type}"
-        repository.update(
-            identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": error_msg},
         )
     except (
         TranscriptionFailedError,
@@ -140,7 +115,7 @@ def process_audio_task(
         )
         repository.update(
             identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e.message)},
+            update_data={"status": TaskStatus.failed, "error": str(e)},
         )
     except Exception as e:
         logger.error(

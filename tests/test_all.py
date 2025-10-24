@@ -444,4 +444,4 @@ def test_delete_task(client: TestClient) -> None:
     # Ensure the task is not found after deletion
     get_response = client.get(f"/task/{identifier}")
     assert get_response.status_code == 404
-    assert get_response.json()["detail"] == "Identifier not found"
+    assert get_response.json()["error"]["code"] == "TASK_NOT_FOUND"
