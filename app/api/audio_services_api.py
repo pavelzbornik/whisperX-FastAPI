@@ -14,29 +14,29 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
-    HTTPException,
     Query,
     UploadFile,
 )
-from pydantic import ValidationError
+from pydantic import ValidationError as PydanticValidationError
 
 from app.api.dependencies import (
+    get_alignment_service,
+    get_diarization_service,
     get_file_service,
+    get_speaker_assignment_service,
     get_task_repository,
     get_transcription_service,
-    get_diarization_service,
-    get_alignment_service,
-    get_speaker_assignment_service,
 )
 from app.audio import get_audio_duration, process_audio_file
 from app.core.config import Config
+from app.core.exceptions import FileValidationError, ValidationError
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
-from app.domain.services.transcription_service import ITranscriptionService
-from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
+from app.domain.services.transcription_service import ITranscriptionService
 from app.files import ALLOWED_EXTENSIONS
 from app.schemas import (
     AlignedTranscription,
@@ -99,7 +99,7 @@ async def transcribe(
 
     # Validate and save file using file service
     if file.filename is None:
-        raise HTTPException(status_code=400, detail="Filename is missing")
+        raise FileValidationError(filename="unknown", reason="Filename is missing")
 
     file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -184,20 +184,28 @@ def align(
 
     # Validate transcript file
     if transcript.filename is None:
-        raise HTTPException(status_code=400, detail="Transcript filename is missing")
+        raise FileValidationError(
+            filename="unknown", reason="Transcript filename is missing"
+        )
 
     file_service.validate_file_extension(transcript.filename, {".json"})
 
     try:
         # Read the content of the transcript file
         transcript_data = Transcript(**json.loads(transcript.file.read()))
-    except ValidationError as e:
+    except PydanticValidationError as e:
         logger.error("Invalid JSON content in transcript file: %s", str(e))
-        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
+        raise ValidationError(
+            message=f"Invalid JSON content in transcript file: {str(e)}",
+            code="INVALID_TRANSCRIPT_JSON",
+            user_message="The transcript file contains invalid JSON.",
+        )
 
     # Validate and save audio file
     if file.filename is None:
-        raise HTTPException(status_code=400, detail="Audio filename is missing")
+        raise FileValidationError(
+            filename="unknown", reason="Audio filename is missing"
+        )
 
     file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -269,7 +277,7 @@ async def diarize(
 
     # Validate and save file using file service
     if file.filename is None:
-        raise HTTPException(status_code=400, detail="Filename is missing")
+        raise FileValidationError(filename="unknown", reason="Filename is missing")
 
     file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
 
@@ -342,12 +350,12 @@ async def combine(
 
     # Validate files
     if aligned_transcript.filename is None:
-        raise HTTPException(
-            status_code=400, detail="Aligned transcript filename is missing"
+        raise FileValidationError(
+            filename="unknown", reason="Aligned transcript filename is missing"
         )
     if diarization_result.filename is None:
-        raise HTTPException(
-            status_code=400, detail="Diarization result filename is missing"
+        raise FileValidationError(
+            filename="unknown", reason="Diarization result filename is missing"
         )
 
     file_service.validate_file_extension(aligned_transcript.filename, {".json"})
@@ -358,17 +366,25 @@ async def combine(
         transcript = AlignedTranscription(**json.loads(aligned_transcript.file.read()))
         # removing words within each segment that have missing start, end, or score values
         transcript = filter_aligned_transcription(transcript)
-    except ValidationError as e:
+    except PydanticValidationError as e:
         logger.error("Invalid JSON content in aligned transcript file: %s", str(e))
-        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
+        raise ValidationError(
+            message=f"Invalid JSON content in aligned transcript file: {str(e)}",
+            code="INVALID_TRANSCRIPT_JSON",
+            user_message="The aligned transcript file contains invalid JSON.",
+        )
     try:
         # Map JSON to list of models
         diarization_segments = []
         for item in json.loads(diarization_result.file.read()):
             diarization_segments.append(DiarizationSegment(**item))
-    except ValidationError as e:
+    except PydanticValidationError as e:
         logger.error("Invalid JSON content in diarization result file: %s", str(e))
-        raise HTTPException(status_code=400, detail=f"Invalid JSON content. {str(e)}")
+        raise ValidationError(
+            message=f"Invalid JSON content in diarization result file: {str(e)}",
+            code="INVALID_DIARIZATION_JSON",
+            user_message="The diarization result file contains invalid JSON.",
+        )
 
     # Create domain task
     task = DomainTask(
