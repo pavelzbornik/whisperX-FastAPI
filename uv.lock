@@ -3015,6 +3015,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pydantic-settings"
+version = "2.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "typing-inspection" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/20/c5/dbbc27b814c71676593d1c3f718e6cd7d4f00652cefa24b75f7aa3efb25e/pydantic_settings-2.11.0.tar.gz", hash = "sha256:d0e87a1c7d33593beb7194adb8470fc426e95ba02af83a0f23474a04c9a08180", size = 188394, upload-time = "2025-09-24T14:19:11.764Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/d6/887a1ff844e64aa823fb4905978d882a633cfe295c32eacad582b78a7d8b/pydantic_settings-2.11.0-py3-none-any.whl", hash = "sha256:fe2cea3413b9530d10f3a5875adffb17ada5c1e1bab0b2885546d7310415207c", size = 48608, upload-time = "2025-09-24T14:19:10.015Z" },
+]
+
+[[package]]
 name = "pygments"
 version = "2.19.2"
 source = { registry = "https://pypi.org/simple" }
@@ -4498,6 +4512,7 @@ dependencies = [
     { name = "gunicorn" },
     { name = "httpx" },
     { name = "numba" },
+    { name = "pydantic-settings" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "setuptools" },
@@ -4537,6 +4552,7 @@ requires-dist = [
     { name = "numba", specifier = "==0.63.1" },
     { name = "pandas-stubs", marker = "extra == 'dev'", specifier = ">=2.1.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.5.0" },
+    { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==9.0.2" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.0.0" },
     { name = "python-dotenv", specifier = "==1.2.1" },
