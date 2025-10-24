@@ -3,7 +3,6 @@
 import os
 from unittest.mock import patch
 
-
 from app.core.config import (
     DatabaseSettings,
     LoggingSettings,
@@ -46,10 +45,17 @@ class TestWhisperSettings:
 
     def test_default_values(self) -> None:
         """Test that default values are set correctly."""
-        settings = WhisperSettings()
-        assert settings.WHISPER_MODEL == WhisperModel.tiny
-        assert settings.DEFAULT_LANG == "en"
-        assert settings.HF_TOKEN is None
+        # Save and remove HF_TOKEN from environment if set
+        hf_token_backup = os.environ.pop("HF_TOKEN", None)
+        try:
+            settings = WhisperSettings()
+            assert settings.WHISPER_MODEL == WhisperModel.tiny
+            assert settings.DEFAULT_LANG == "en"
+            assert settings.HF_TOKEN is None
+        finally:
+            # Restore HF_TOKEN if it was set
+            if hf_token_backup is not None:
+                os.environ["HF_TOKEN"] = hf_token_backup
 
     def test_device_auto_detection(self) -> None:
         """Test that device is auto-detected based on CUDA availability."""
@@ -116,12 +122,26 @@ class TestSettings:
 
     def test_default_values(self) -> None:
         """Test that default values are set correctly."""
-        settings = Settings()
-        assert settings.ENVIRONMENT == "production"
-        assert settings.DEV is False
-        assert isinstance(settings.database, DatabaseSettings)
-        assert isinstance(settings.whisper, WhisperSettings)
-        assert isinstance(settings.logging, LoggingSettings)
+        # Use patch.dict to ensure environment is clean for this test
+        with patch.dict(
+            os.environ,
+            {
+                "ENVIRONMENT": "production",
+                "DEV": "false",
+                "DB_URL": "sqlite:///records.db",
+                "DEVICE": "cpu",
+                "COMPUTE_TYPE": "int8",
+                "WHISPER_MODEL": "tiny",
+                "DEFAULT_LANG": "en",
+            },
+            clear=False,
+        ):
+            settings = Settings()
+            assert settings.ENVIRONMENT == "production"
+            assert settings.DEV is False
+            assert isinstance(settings.database, DatabaseSettings)
+            assert isinstance(settings.whisper, WhisperSettings)
+            assert isinstance(settings.logging, LoggingSettings)
 
     def test_environment_normalization(self) -> None:
         """Test that environment value is normalized to lowercase."""
