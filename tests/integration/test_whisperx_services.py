@@ -75,6 +75,8 @@ def mock_diarization_pipeline() -> Mock:
     return mock
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_transcribe_with_whisper_gpu(
     audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_whisper_model: Mock
@@ -101,6 +103,8 @@ def test_transcribe_with_whisper_gpu(
         assert "language" in result
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_transcribe_with_whisper_cpu(
     audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_whisper_model: Mock
 ) -> None:
@@ -126,6 +130,8 @@ def test_transcribe_with_whisper_cpu(
         assert "language" in result
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_diarize_gpu(
     audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_diarization_pipeline: Mock
@@ -145,6 +151,8 @@ def test_diarize_gpu(
         assert result["segment"].isna().all()  # Verify segment column is all None
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 def test_align_whisper_output(
     audio_data: np.ndarray[Any, np.dtype[np.float32]], mock_align_model: Mock
 ) -> None:
@@ -172,6 +180,8 @@ def test_align_whisper_output(
             assert isinstance(result["segments"], list)
 
 
+@pytest.mark.integration
+@pytest.mark.slow
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
 def test_process_audio_common_gpu(
     audio_data: np.ndarray[Any, np.dtype[np.float32]],
@@ -256,6 +266,8 @@ def test_process_audio_common_gpu(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+@pytest.mark.integration
+@pytest.mark.slow
 def test_gpu_memory_logging() -> None:
     """Test GPU memory logging when available."""
     if torch.cuda.is_available():
@@ -295,6 +307,7 @@ def test_gpu_memory_logging() -> None:
                 )
 
 
+@pytest.mark.integration
 def test_error_handling() -> None:
     """Test error handling in whisperx services."""
     with pytest.raises(ValueError):

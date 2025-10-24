@@ -2,6 +2,7 @@
 
 import uuid
 
+import pytest
 
 from app.core.exceptions import (
     AlignmentFailedError,
@@ -29,6 +30,7 @@ from app.core.exceptions import (
 )
 
 
+@pytest.mark.unit
 def test_application_error_base() -> None:
     """Test ApplicationError base class."""
     exc = ApplicationError(
@@ -53,6 +55,7 @@ def test_application_error_base() -> None:
     assert error_dict["error"]["detail"] == "Additional detail"
 
 
+@pytest.mark.unit
 def test_application_error_default_user_message() -> None:
     """Test ApplicationError defaults user_message to message."""
     exc = ApplicationError(message="Test error", code="TEST_ERROR")
@@ -60,6 +63,7 @@ def test_application_error_default_user_message() -> None:
     assert exc.user_message == "Test error"
 
 
+@pytest.mark.unit
 def test_application_error_custom_correlation_id() -> None:
     """Test ApplicationError with custom correlation_id."""
     custom_id = str(uuid.uuid4())
@@ -68,6 +72,7 @@ def test_application_error_custom_correlation_id() -> None:
     assert exc.correlation_id == custom_id
 
 
+@pytest.mark.unit
 def test_domain_error() -> None:
     """Test DomainError inherits from ApplicationError."""
     exc = DomainError(message="Domain error", code="DOMAIN_TEST")
@@ -77,6 +82,7 @@ def test_domain_error() -> None:
     assert exc.code == "DOMAIN_TEST"
 
 
+@pytest.mark.unit
 def test_validation_error() -> None:
     """Test ValidationError inherits from DomainError."""
     exc = ValidationError(
@@ -90,6 +96,7 @@ def test_validation_error() -> None:
     assert exc.details["field"] == "email"
 
 
+@pytest.mark.unit
 def test_infrastructure_error() -> None:
     """Test InfrastructureError inherits from ApplicationError."""
     exc = InfrastructureError(message="Infrastructure failure", code="INFRA_TEST")
@@ -99,6 +106,7 @@ def test_infrastructure_error() -> None:
     assert exc.code == "INFRA_TEST"
 
 
+@pytest.mark.unit
 def test_configuration_error() -> None:
     """Test ConfigurationError inherits from ApplicationError."""
     exc = ConfigurationError(message="Config error", code="CONFIG_TEST")
@@ -108,6 +116,7 @@ def test_configuration_error() -> None:
     assert exc.code == "CONFIG_TEST"
 
 
+@pytest.mark.unit
 def test_task_not_found_error() -> None:
     """Test TaskNotFoundError."""
     exc = TaskNotFoundError(identifier="test-uuid-123")
@@ -119,6 +128,7 @@ def test_task_not_found_error() -> None:
     assert "check the task ID" in exc.user_message
 
 
+@pytest.mark.unit
 def test_task_already_completed_error() -> None:
     """Test TaskAlreadyCompletedError."""
     exc = TaskAlreadyCompletedError(identifier="test-uuid-123")
@@ -129,6 +139,7 @@ def test_task_already_completed_error() -> None:
     assert exc.details["identifier"] == "test-uuid-123"
 
 
+@pytest.mark.unit
 def test_task_already_failed_error() -> None:
     """Test TaskAlreadyFailedError."""
     exc = TaskAlreadyFailedError(identifier="test-uuid-123")
@@ -138,6 +149,7 @@ def test_task_already_failed_error() -> None:
     assert "test-uuid-123" in exc.message
 
 
+@pytest.mark.unit
 def test_invalid_task_state_error() -> None:
     """Test InvalidTaskStateError."""
     exc = InvalidTaskStateError(
@@ -154,6 +166,7 @@ def test_invalid_task_state_error() -> None:
     assert exc.details["attempted_state"] == "processing"
 
 
+@pytest.mark.unit
 def test_invalid_audio_format_error() -> None:
     """Test InvalidAudioFormatError."""
     allowed = {".mp3", ".wav", ".m4a"}
@@ -170,6 +183,7 @@ def test_invalid_audio_format_error() -> None:
     assert set(exc.details["allowed_extensions"]) == allowed
 
 
+@pytest.mark.unit
 def test_audio_processing_error() -> None:
     """Test AudioProcessingError."""
     original = ValueError("Original error")
@@ -181,6 +195,7 @@ def test_audio_processing_error() -> None:
     assert exc.details["original_error"] == "Original error"
 
 
+@pytest.mark.unit
 def test_audio_too_large_error() -> None:
     """Test AudioTooLargeError."""
     exc = AudioTooLargeError(size=100_000_000, max_size=50_000_000)
@@ -191,6 +206,7 @@ def test_audio_too_large_error() -> None:
     assert exc.details["max_size"] == 50_000_000
 
 
+@pytest.mark.unit
 def test_audio_too_short_error() -> None:
     """Test AudioTooShortError."""
     exc = AudioTooShortError(duration=0.5, min_duration=1.0)
@@ -201,6 +217,7 @@ def test_audio_too_short_error() -> None:
     assert exc.details["min_duration"] == 1.0
 
 
+@pytest.mark.unit
 def test_transcription_failed_error() -> None:
     """Test TranscriptionFailedError."""
     original = RuntimeError("Model failed")
@@ -212,6 +229,7 @@ def test_transcription_failed_error() -> None:
     assert exc.details["original_error"] == "Model failed"
 
 
+@pytest.mark.unit
 def test_diarization_failed_error() -> None:
     """Test DiarizationFailedError."""
     exc = DiarizationFailedError(reason="No speakers found")
@@ -221,6 +239,7 @@ def test_diarization_failed_error() -> None:
     assert "No speakers found" in exc.message
 
 
+@pytest.mark.unit
 def test_alignment_failed_error() -> None:
     """Test AlignmentFailedError."""
     exc = AlignmentFailedError(reason="Timestamp mismatch")
@@ -230,6 +249,7 @@ def test_alignment_failed_error() -> None:
     assert "Timestamp mismatch" in exc.message
 
 
+@pytest.mark.unit
 def test_model_load_error() -> None:
     """Test ModelLoadError."""
     original = FileNotFoundError("Model not found")
@@ -242,6 +262,7 @@ def test_model_load_error() -> None:
     assert "Model not found" in str(exc.details["original_error"])
 
 
+@pytest.mark.unit
 def test_insufficient_memory_error() -> None:
     """Test InsufficientMemoryError."""
     original = MemoryError("Out of memory")
@@ -253,6 +274,7 @@ def test_insufficient_memory_error() -> None:
     assert exc.details["operation"] == "transcription"
 
 
+@pytest.mark.unit
 def test_file_download_error() -> None:
     """Test FileDownloadError."""
     exc = FileDownloadError(url="https://example.com/file.mp3")
@@ -263,6 +285,7 @@ def test_file_download_error() -> None:
     assert exc.details["url"] == "https://example.com/file.mp3"
 
 
+@pytest.mark.unit
 def test_file_validation_error() -> None:
     """Test FileValidationError."""
     exc = FileValidationError(filename="test.mp3", reason="Corrupted file")
@@ -275,6 +298,7 @@ def test_file_validation_error() -> None:
     assert exc.details["reason"] == "Corrupted file"
 
 
+@pytest.mark.unit
 def test_unsupported_file_extension_error() -> None:
     """Test UnsupportedFileExtensionError."""
     allowed = {".mp3", ".wav"}
@@ -289,6 +313,7 @@ def test_unsupported_file_extension_error() -> None:
     assert set(exc.details["allowed_extensions"]) == allowed
 
 
+@pytest.mark.unit
 def test_missing_configuration_error() -> None:
     """Test MissingConfigurationError."""
     exc = MissingConfigurationError(parameter="DATABASE_URL")

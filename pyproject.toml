@@ -48,6 +48,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "codespell==2.4.1",
+    "factory-boy==3.3.1",
     "mypy==1.19.0",
     "pandas-stubs>=2.1.0",
     "pre-commit==4.5.0",
@@ -137,6 +138,19 @@ follow_imports = "normal"
 show_error_codes = true
 show_column_numbers = true
 pretty = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Fast unit tests with all dependencies mocked",
+    "integration: Integration tests with real database or external services",
+    "e2e: End-to-end tests through API",
+    "slow: Slow tests (ML operations, large files)",
+]
+addopts = "-v --strict-markers"
 
 [[tool.mypy.overrides]]
 module = [
