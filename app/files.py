@@ -1,14 +1,12 @@
 """This module provides utility functions for file handling."""
 
 import os
-
-from app.core.logging import logger
 from tempfile import NamedTemporaryFile
 from typing import Any
 
-from fastapi import HTTPException
-
 from app.core.config import Config
+from app.core.exceptions import UnsupportedFileExtensionError
+from app.core.logging import logger
 
 
 AUDIO_EXTENSIONS = Config.AUDIO_EXTENSIONS
@@ -28,14 +26,13 @@ def validate_extension(filename: str, allowed_extensions: set[str]) -> str:
         str: The validated file extension in lowercase.
 
     Raises:
-        HTTPException: If the file extension is not in the allowed set.
+        UnsupportedFileExtensionError: If the file extension is not in the allowed set.
     """
     file_extension = os.path.splitext(filename)[1].lower()
     if file_extension not in allowed_extensions:
         logger.info("Received file upload request: %s", filename)
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file extension for file {filename} . Allowed: {allowed_extensions}",
+        raise UnsupportedFileExtensionError(
+            filename, file_extension, allowed_extensions
         )
     return file_extension
 
