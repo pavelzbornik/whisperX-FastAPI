@@ -57,7 +57,7 @@ class TestTaskEntity:
 
         assert task.status == "completed"
         assert task.result == result
-        assert task.duration == 10.5
+        assert task.duration == pytest.approx(10.5)
         assert task.end_time == end_time
         assert task.updated_at is not None
 
@@ -186,6 +186,7 @@ class TestTaskEntity:
         assert not task.is_processing()
         assert task.is_completed()
         assert not task.is_failed()
+        assert task.duration == pytest.approx(5.5)
 
     def test_state_transitions_to_failed(self) -> None:
         """Test task transition from processing to failed."""

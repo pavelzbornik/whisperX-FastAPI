@@ -4439,7 +4439,7 @@ wheels = [
 
 [[package]]
 name = "whisperx-fastapi"
-version = "0.3.1"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "colorlog" },

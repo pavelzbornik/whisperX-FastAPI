@@ -210,7 +210,7 @@ def diarize(client: TestClient) -> list[dict[str, Any]]:
 
 
 def combine(
-    client: TestClient, aligned_transcript_file: str, diarazition_file: str
+    client: TestClient, aligned_transcript_file: str, diarization_file: str
 ) -> dict[str, Any]:
     """
     Combine aligned transcript and diarization results and validate the result.
@@ -218,18 +218,18 @@ def combine(
     Args:
         client: The FastAPI test client
         aligned_transcript_file: The path to the aligned transcript file.
-        diarazition_file: The path to the diarization result file.
+        diarization_file: The path to the diarization result file.
 
     Returns:
         The combined result.
     """
     with (
         open(aligned_transcript_file, "rb") as transcript_file,
-        open(diarazition_file, "rb") as diarization_result,
+        open(diarization_file, "rb") as diarization_result,
     ):
         files = {
             "aligned_transcript": ("aligned_transcript.json", transcript_file),
-            "diarization_result": ("diarazition.json", diarization_result),
+            "diarization_result": ("diarization.json", diarization_result),
         }
         response = client.post(
             "/service/combine",
