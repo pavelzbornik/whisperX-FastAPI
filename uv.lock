@@ -4607,6 +4607,7 @@ requires-dist = [
     { name = "pandas-stubs", marker = "extra == 'dev'", specifier = ">=2.1.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.5.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
+    { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==9.0.2" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.0.0" },
     { name = "python-dotenv", specifier = "==1.2.1" },
