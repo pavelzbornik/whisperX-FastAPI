@@ -289,7 +289,7 @@ jobs:
       - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38
         id: release-please
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}
           release-type: python
       - name: Checkout release branch
         # release-please is unable to update uv.lock, so we do it ourselves
