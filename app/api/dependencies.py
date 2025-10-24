@@ -4,10 +4,21 @@ from collections.abc import Generator
 
 from fastapi import Depends
 
+from app.core.config import Config
 from app.domain.repositories.task_repository import ITaskRepository
+from app.domain.services.transcription_service import ITranscriptionService
+from app.domain.services.diarization_service import IDiarizationService
+from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.infrastructure.database.connection import SessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
+)
+from app.infrastructure.ml import (
+    WhisperXTranscriptionService,
+    WhisperXDiarizationService,
+    WhisperXAlignmentService,
+    WhisperXSpeakerAssignmentService,
 )
 from app.services.file_service import FileService
 from app.services.task_management_service import TaskManagementService
@@ -69,3 +80,88 @@ def get_task_management_service(
         TaskManagementService: A task management service instance
     """
     yield TaskManagementService(repository)
+
+
+def get_transcription_service() -> ITranscriptionService:
+    """
+    Provide a transcription service implementation for dependency injection.
+
+    Returns WhisperX implementation by default. Can be overridden for testing
+    by using app.dependency_overrides.
+
+    Returns:
+        ITranscriptionService: A transcription service implementation
+
+    Example:
+        >>> @router.post("/transcribe")
+        >>> async def transcribe(
+        ...     transcription: ITranscriptionService = Depends(get_transcription_service)
+        ... ):
+        ...     result = transcription.transcribe(audio, params)
+        ...     return result
+    """
+    return WhisperXTranscriptionService()
+
+
+def get_diarization_service() -> IDiarizationService:
+    """
+    Provide a diarization service implementation for dependency injection.
+
+    Returns WhisperX/PyAnnote implementation by default. Can be overridden
+    for testing by using app.dependency_overrides.
+
+    Returns:
+        IDiarizationService: A diarization service implementation
+
+    Example:
+        >>> @router.post("/diarize")
+        >>> async def diarize(
+        ...     diarization: IDiarizationService = Depends(get_diarization_service)
+        ... ):
+        ...     result = diarization.diarize(audio, device)
+        ...     return result
+    """
+    hf_token = Config.HF_TOKEN or ""
+    return WhisperXDiarizationService(hf_token=hf_token)
+
+
+def get_alignment_service() -> IAlignmentService:
+    """
+    Provide an alignment service implementation for dependency injection.
+
+    Returns WhisperX implementation by default. Can be overridden for testing
+    by using app.dependency_overrides.
+
+    Returns:
+        IAlignmentService: An alignment service implementation
+
+    Example:
+        >>> @router.post("/align")
+        >>> async def align(
+        ...     alignment: IAlignmentService = Depends(get_alignment_service)
+        ... ):
+        ...     result = alignment.align(transcript, audio, language)
+        ...     return result
+    """
+    return WhisperXAlignmentService()
+
+
+def get_speaker_assignment_service() -> ISpeakerAssignmentService:
+    """
+    Provide a speaker assignment service implementation for dependency injection.
+
+    Returns WhisperX implementation by default. Can be overridden for testing
+    by using app.dependency_overrides.
+
+    Returns:
+        ISpeakerAssignmentService: A speaker assignment service implementation
+
+    Example:
+        >>> @router.post("/assign-speakers")
+        >>> async def assign_speakers(
+        ...     speaker_service: ISpeakerAssignmentService = Depends(get_speaker_assignment_service)
+        ... ):
+        ...     result = speaker_service.assign_speakers(diarization, transcript)
+        ...     return result
+    """
+    return WhisperXSpeakerAssignmentService()
