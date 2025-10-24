@@ -10,7 +10,6 @@ import torch
 from whisperx.diarize import DiarizationPipeline
 from whisperx import (
     align,
-    assign_word_speakers,
     load_align_model,
     load_model,
 )
@@ -18,6 +17,10 @@ from whisperx import (
 from app.core.config import Config
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
+from app.domain.services.transcription_service import ITranscriptionService
+from app.domain.services.diarization_service import IDiarizationService
+from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.infrastructure.database.connection import SessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
@@ -250,16 +253,43 @@ def align_whisper_output(
     return result  # type: ignore[no-any-return]
 
 
-def process_audio_common(params: SpeechToTextProcessingParams) -> None:
+def process_audio_common(
+    params: SpeechToTextProcessingParams,
+    transcription_service: ITranscriptionService | None = None,
+    alignment_service: IAlignmentService | None = None,
+    diarization_service: IDiarizationService | None = None,
+    speaker_service: ISpeakerAssignmentService | None = None,
+) -> None:
     """
     Process an audio clip to generate a transcript with speaker labels.
 
     Args:
         params (SpeechToTextProcessingParams): The speech-to-text processing parameters
+        transcription_service: Transcription service (defaults to WhisperX if None)
+        alignment_service: Alignment service (defaults to WhisperX if None)
+        diarization_service: Diarization service (defaults to WhisperX if None)
+        speaker_service: Speaker assignment service (defaults to WhisperX if None)
 
     Returns:
         None: The result is saved in the transcription requests dict.
     """
+    # Import here to avoid circular dependency
+    from app.infrastructure.ml import (
+        WhisperXTranscriptionService,
+        WhisperXAlignmentService,
+        WhisperXDiarizationService,
+        WhisperXSpeakerAssignmentService,
+    )
+    from app.core.config import Config
+
+    # Use provided services or create default WhisperX implementations
+    transcription_svc = transcription_service or WhisperXTranscriptionService()
+    alignment_svc = alignment_service or WhisperXAlignmentService()
+    diarization_svc = diarization_service or WhisperXDiarizationService(
+        hf_token=Config.HF_TOKEN or ""
+    )
+    speaker_svc = speaker_service or WhisperXSpeakerAssignmentService()
+
     # Create repository for this background task
     session = SessionLocal()
     repository: ITaskRepository = SQLAlchemyTaskRepository(session)
@@ -284,7 +314,7 @@ def process_audio_common(params: SpeechToTextProcessingParams) -> None:
             params.whisper_model_params.threads,
         )
 
-        segments_before_alignment = transcribe_with_whisper(
+        segments_before_alignment = transcription_svc.transcribe(
             audio=params.audio,
             task=params.whisper_model_params.task.value,
             asr_options=params.asr_options.model_dump(),
@@ -292,10 +322,10 @@ def process_audio_common(params: SpeechToTextProcessingParams) -> None:
             language=params.whisper_model_params.language,
             batch_size=params.whisper_model_params.batch_size,
             chunk_size=params.whisper_model_params.chunk_size,
-            model=params.whisper_model_params.model,
-            device=params.whisper_model_params.device,
+            model=params.whisper_model_params.model.value,
+            device=params.whisper_model_params.device.value,
             device_index=params.whisper_model_params.device_index,
-            compute_type=params.whisper_model_params.compute_type,
+            compute_type=params.whisper_model_params.compute_type.value,
             threads=params.whisper_model_params.threads,
         )
 
@@ -306,10 +336,11 @@ def process_audio_common(params: SpeechToTextProcessingParams) -> None:
             params.alignment_params.return_char_alignments,
             segments_before_alignment["language"],
         )
-        segments_transcript = align_whisper_output(
+        segments_transcript = alignment_svc.align(
             transcript=segments_before_alignment["segments"],
             audio=params.audio,
             language_code=segments_before_alignment["language"],
+            device=params.whisper_model_params.device.value,
             align_model=params.alignment_params.align_model,
             interpolate_method=params.alignment_params.interpolate_method,
             return_char_alignments=params.alignment_params.return_char_alignments,
@@ -325,15 +356,15 @@ def process_audio_common(params: SpeechToTextProcessingParams) -> None:
             params.diarization_params.min_speakers,
             params.diarization_params.max_speakers,
         )
-        diarization_segments = diarize(
-            params.audio,
-            device=params.whisper_model_params.device,
+        diarization_segments = diarization_svc.diarize(
+            audio=params.audio,
+            device=params.whisper_model_params.device.value,
             min_speakers=params.diarization_params.min_speakers,
             max_speakers=params.diarization_params.max_speakers,
         )
 
         logger.debug("Starting to combine transcript with diarization results")
-        result = assign_word_speakers(diarization_segments, transcript_dict)
+        result = speaker_svc.assign_speakers(diarization_segments, transcript_dict)
 
         logger.debug("Completed combining transcript with diarization results")
 
