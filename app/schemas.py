@@ -1,6 +1,5 @@
 """This module contains the schema definitions for the WhisperX FastAPI application."""
 
-import os
 from datetime import datetime
 from enum import Enum
 from typing import Any
@@ -9,9 +8,6 @@ import numpy as np
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from whisperx import utils  # pyright: ignore[reportMissingTypeStubs]
-
-WHISPER_MODEL = os.getenv("WHISPER_MODEL")
-LANG = os.getenv("DEFAULT_LANG", "en")
 
 
 class Response(BaseModel):
@@ -309,7 +305,7 @@ class WhisperModelParams(BaseModel):
 
     language: str = Field(
         Query(
-            default=LANG,
+            default="en",  # Default language
             description="Language to transcribe",
             enum=list(utils.LANGUAGES.keys()),
         )
@@ -322,7 +318,7 @@ class WhisperModelParams(BaseModel):
     )
     model: WhisperModel = Field(
         Query(
-            default=WHISPER_MODEL,
+            default="tiny",  # Default model
             description="Name of the Whisper model to use",
         )
     )
