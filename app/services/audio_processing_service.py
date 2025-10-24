@@ -53,7 +53,7 @@ def process_audio_task(
     Process an audio task.
 
     Args:
-        audio_processor (callable): The function to process the audio (no args).
+        audio_processor: Parameterless callable that returns the processing result.
         identifier (str): The task identifier.
         task_type (str): The type of the task.
     """

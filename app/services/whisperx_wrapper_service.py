@@ -280,7 +280,6 @@ def process_audio_common(
         WhisperXDiarizationService,
         WhisperXSpeakerAssignmentService,
     )
-    from app.core.config import Config
 
     # Use provided services or create default WhisperX implementations
     transcription_svc = transcription_service or WhisperXTranscriptionService()
