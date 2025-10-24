@@ -91,12 +91,14 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        with:
+          fetch-depth: 0 # Needed for SonarQube analysis
       - name: Common setup
         uses: ./.github/actions/setup
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run tests with coverage
-        run: uv run pytest --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under=70
+        run: uv run pytest --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80
       - name: Upload test report
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
         with:
@@ -107,6 +109,11 @@ jobs:
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
+      - name: SonarQube Cloud Scan
+        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e
+        continue-on-error: true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       - name: Comment on PR if test job fails
         if: failure() && github.event_name == 'pull_request'
         uses: thollander/actions-comment-pull-request@e4a76dd2b0a3c2027c3fd84147a67c22ee4c90fa
