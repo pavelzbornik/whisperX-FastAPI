@@ -246,10 +246,6 @@ def test_process_audio_common_gpu(
             "app.services.whisperx_wrapper_service.align",
             return_value={"segments": [], "word_segments": []},
         ),
-        patch(
-            "app.services.whisperx_wrapper_service.assign_word_speakers",
-            return_value={"segments": [], "word_segments": []},
-        ),
     ):
         process_audio_common(params)
 
