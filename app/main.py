@@ -16,7 +16,20 @@ from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 from app.api import service_router, stt_router, task_router  # noqa: E402
+from app.api.exception_handlers import (  # noqa: E402
+    domain_error_handler,
+    generic_error_handler,
+    infrastructure_error_handler,
+    task_not_found_handler,
+    validation_error_handler,
+)
 from app.core.config import Config  # noqa: E402
+from app.core.exceptions import (  # noqa: E402
+    DomainError,
+    InfrastructureError,
+    TaskNotFoundError,
+    ValidationError,
+)
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, engine  # noqa: E402
 
@@ -92,6 +105,13 @@ app = FastAPI(
     openapi_tags=tags_metadata,
     lifespan=lifespan,
 )
+
+# Register exception handlers
+app.add_exception_handler(TaskNotFoundError, task_not_found_handler)
+app.add_exception_handler(ValidationError, validation_error_handler)
+app.add_exception_handler(DomainError, domain_error_handler)
+app.add_exception_handler(InfrastructureError, infrastructure_error_handler)
+app.add_exception_handler(Exception, generic_error_handler)
 
 # Include routers
 app.include_router(stt_router)

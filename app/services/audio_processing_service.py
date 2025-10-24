@@ -4,15 +4,21 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from fastapi import HTTPException
 from whisperx import utils as whisperx_utils
 
+from app.core.exceptions import (
+    AudioProcessingError,
+    DiarizationFailedError,
+    InsufficientMemoryError,
+    TranscriptionFailedError,
+    ValidationError,
+)
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
-from app.domain.services.transcription_service import ITranscriptionService
-from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.alignment_service import IAlignmentService
+from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
+from app.domain.services.transcription_service import ITranscriptionService
 from app.infrastructure.database.connection import SessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
@@ -35,12 +41,15 @@ def validate_language_code(language_code: str) -> None:
     Args:
         language_code (str): The language code to validate.
 
-    Returns:
-        str: The validated language code.
+    Raises:
+        ValidationError: If the language code is invalid.
     """
     if language_code not in whisperx_utils.LANGUAGES:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid language code: {language_code}"
+        raise ValidationError(
+            message=f"Invalid language code: {language_code}",
+            code="INVALID_LANGUAGE_CODE",
+            user_message=f"Language code '{language_code}' is not supported.",
+            language_code=language_code,
         )
 
 
@@ -87,7 +96,16 @@ def process_audio_task(
             },
         )
 
-    except (ValueError, TypeError, RuntimeError) as e:
+    except (
+        ValueError,
+        TypeError,
+        RuntimeError,
+        MemoryError,
+        TranscriptionFailedError,
+        DiarizationFailedError,
+        AudioProcessingError,
+        InsufficientMemoryError,
+    ) as e:
         logger.error(
             f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
         )
@@ -95,9 +113,9 @@ def process_audio_task(
             identifier=identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
-    except MemoryError as e:
+    except Exception as e:
         logger.error(
-            f"Task {task_type} failed for identifier {identifier} due to out of memory. Error: {str(e)}"
+            f"Task {task_type} failed for identifier {identifier} with unexpected error. Error: {str(e)}"
         )
         repository.update(
             identifier=identifier,

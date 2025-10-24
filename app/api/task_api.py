@@ -1,10 +1,11 @@
 """This module contains the task management routes for the FastAPI application."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from app.api.dependencies import get_task_management_service
 from app.api.mappers.task_mapper import TaskMapper
 from app.api.schemas.task_schemas import TaskListResponse
+from app.core.exceptions import TaskNotFoundError
 from app.core.logging import logger
 from app.schemas import Metadata, Response, Result
 from app.services.task_management_service import TaskManagementService
@@ -50,32 +51,32 @@ async def get_transcription_status(
         Result: The status of the task.
 
     Raises:
-        HTTPException: If the identifier is not found.
+        TaskNotFoundError: If the identifier is not found.
     """
     logger.info("Retrieving status for task ID: %s", identifier)
     task = service.get_task(identifier)
 
-    if task is not None:
-        logger.info("Status retrieved for task ID: %s", identifier)
-        return Result(
-            status=task.status,
-            result=task.result,
-            metadata=Metadata(
-                task_type=task.task_type,
-                task_params=task.task_params,
-                language=task.language,
-                file_name=task.file_name,
-                url=task.url,
-                duration=task.duration,
-                audio_duration=task.audio_duration,
-                start_time=task.start_time,
-                end_time=task.end_time,
-            ),
-            error=task.error,
-        )
-    else:
+    if task is None:
         logger.error("Task ID not found: %s", identifier)
-        raise HTTPException(status_code=404, detail="Identifier not found")
+        raise TaskNotFoundError(identifier)
+
+    logger.info("Status retrieved for task ID: %s", identifier)
+    return Result(
+        status=task.status,
+        result=task.result,
+        metadata=Metadata(
+            task_type=task.task_type,
+            task_params=task.task_params,
+            language=task.language,
+            file_name=task.file_name,
+            url=task.url,
+            duration=task.duration,
+            audio_duration=task.audio_duration,
+            start_time=task.start_time,
+            end_time=task.end_time,
+        ),
+        error=task.error,
+    )
 
 
 @task_router.delete("/task/{identifier}/delete", tags=["Tasks Management"])
@@ -94,7 +95,7 @@ async def delete_task(
         Response: Confirmation message of task deletion.
 
     Raises:
-        HTTPException: If the task is not found.
+        TaskNotFoundError: If the task is not found.
     """
     logger.info("Deleting task ID: %s", identifier)
     if service.delete_task(identifier):
@@ -102,4 +103,4 @@ async def delete_task(
         return Response(identifier=identifier, message="Task deleted")
     else:
         logger.error("Task not found: ID %s", identifier)
-        raise HTTPException(status_code=404, detail="Task not found")
+        raise TaskNotFoundError(identifier)

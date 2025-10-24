@@ -14,12 +14,12 @@ from fastapi import (
     Depends,
     File,
     Form,
-    HTTPException,
     UploadFile,
 )
 
 from app.api.dependencies import get_file_service, get_task_repository
 from app.audio import get_audio_duration, process_audio_file
+from app.core.exceptions import FileValidationError
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
@@ -78,7 +78,7 @@ async def speech_to_text(
 
     # Validate file using file service
     if file.filename is None:
-        raise HTTPException(status_code=400, detail="Filename is missing")
+        raise FileValidationError(filename="unknown", reason="Filename is missing")
 
     file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
 
