@@ -6,6 +6,8 @@ from typing import Generator
 
 import pytest
 
+from tests.fixtures import TestContainer
+
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db(
@@ -41,3 +43,27 @@ def setup_test_db(
 
     yield
     # No manual cleanup needed; tmp_path_factory handles it
+
+
+@pytest.fixture(scope="function")
+def test_container() -> Generator[TestContainer, None, None]:
+    """
+    Provide a test container with mock implementations for testing.
+
+    This fixture creates a TestContainer that overrides production services
+    with fast, deterministic mocks. The container is automatically cleaned up
+    after each test.
+
+    Yields:
+        TestContainer: Container with mock services
+
+    Example:
+        >>> def test_with_container(test_container):
+        ...     # Use test_container.transcription_service() to get mock
+        ...     service = test_container.transcription_service()
+        ...     result = service.transcribe(audio, params)
+        ...     assert result["text"] == "Mock transcription"
+    """
+    container = TestContainer()
+    yield container
+    # Container cleanup happens automatically
