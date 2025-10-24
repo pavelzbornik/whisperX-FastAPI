@@ -4,13 +4,14 @@ from typing import Generator
 
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.infrastructure.database.models import Base
 
 
 @pytest.fixture(scope="function")
-def test_db_engine() -> Generator:
+def test_db_engine() -> Generator[Engine, None, None]:
     """Create an in-memory SQLite database engine for testing."""
     engine = create_engine(
         "sqlite:///:memory:",
@@ -24,7 +25,7 @@ def test_db_engine() -> Generator:
 
 
 @pytest.fixture(scope="function")
-def db_session(test_db_engine: Generator) -> Generator[Session, None, None]:
+def db_session(test_db_engine: Engine) -> Generator[Session, None, None]:
     """
     Create a database session for testing.
 
