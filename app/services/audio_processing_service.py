@@ -57,6 +57,7 @@ def process_audio_task(
     audio_processor: Callable[[], Any],
     identifier: str,
     task_type: str,
+    request_id: str = "",
 ) -> None:
     """
     Process an audio task.
@@ -65,7 +66,15 @@ def process_audio_task(
         audio_processor: Parameterless callable that returns the processing result.
         identifier (str): The task identifier.
         task_type (str): The type of the task.
+        request_id (str): Request ID for correlation tracking.
     """
+    # Import here to avoid circular dependency
+    from app.api.middleware.request_id import request_id_var
+
+    # Set request ID in context for logging
+    if request_id:
+        request_id_var.set(request_id)
+
     # Create repository for this background task
     session = SessionLocal()
     repository: ITaskRepository = SQLAlchemyTaskRepository(session)
@@ -123,6 +132,9 @@ def process_audio_task(
         )
     finally:
         session.close()
+        # Clear request ID context after processing
+        if request_id:
+            request_id_var.set("")
 
 
 def process_transcribe(
@@ -132,6 +144,7 @@ def process_transcribe(
     asr_options_params: ASROptions,
     vad_options_params: VADOptions,
     transcription_service: ITranscriptionService,
+    request_id: str = "",
 ) -> None:
     """
     Process a transcription task using the transcription service.
@@ -143,6 +156,7 @@ def process_transcribe(
         asr_options_params (ASROptions): The ASR options.
         vad_options_params (VADOptions): The VAD options.
         transcription_service: The transcription service to use.
+        request_id (str): Request ID for correlation tracking.
     """
 
     def transcribe_task() -> Any:
@@ -165,6 +179,7 @@ def process_transcribe(
         transcribe_task,
         identifier,
         "transcription",
+        request_id,
     )
 
 
@@ -174,6 +189,7 @@ def process_diarize(
     device: Device,
     diarize_params: DiarizationParams,
     diarization_service: IDiarizationService,
+    request_id: str = "",
 ) -> None:
     """
     Process a diarization task using the diarization service.
@@ -184,6 +200,7 @@ def process_diarize(
         device (Device): The device to use.
         diarize_params (DiarizationParams): The diarization parameters.
         diarization_service: The diarization service to use.
+        request_id (str): Request ID for correlation tracking.
     """
 
     def diarize_task() -> Any:
@@ -198,6 +215,7 @@ def process_diarize(
         diarize_task,
         identifier,
         "diarization",
+        request_id,
     )
 
 
@@ -208,6 +226,7 @@ def process_alignment(
     device: Device,
     align_params: AlignmentParams,
     alignment_service: IAlignmentService,
+    request_id: str = "",
 ) -> None:
     """
     Process a transcription alignment task using the alignment service.
@@ -219,6 +238,7 @@ def process_alignment(
         device (Device): The device to use.
         align_params (AlignmentParams): The alignment parameters.
         alignment_service: The alignment service to use.
+        request_id (str): Request ID for correlation tracking.
     """
 
     def align_task() -> Any:
@@ -236,6 +256,7 @@ def process_alignment(
         align_task,
         identifier,
         "transcription_alignment",
+        request_id,
     )
 
 
@@ -244,6 +265,7 @@ def process_speaker_assignment(
     transcript: dict[str, Any],
     identifier: str,
     speaker_service: ISpeakerAssignmentService,
+    request_id: str = "",
 ) -> None:
     """
     Process a speaker assignment task using the speaker assignment service.
@@ -253,6 +275,7 @@ def process_speaker_assignment(
         transcript: The transcript data.
         identifier (str): The task identifier.
         speaker_service: The speaker assignment service to use.
+        request_id (str): Request ID for correlation tracking.
     """
 
     def assign_task() -> Any:
@@ -265,4 +288,5 @@ def process_speaker_assignment(
         assign_task,
         identifier,
         "combine_transcript&diarization",
+        request_id,
     )
