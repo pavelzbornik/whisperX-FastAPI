@@ -64,7 +64,7 @@ def get_task_status(client: TestClient, identifier: str) -> str | None:
     Returns:
         The status of the task or None if not found.
     """
-    response = client.get(f"/task/{identifier}")
+    response = client.get(f"/api/v1/task/{identifier}")
     if response.status_code == 200:
         return response.json()["status"]
     return None
@@ -93,7 +93,7 @@ def wait_for_task_completion(
         if status == TaskStatus.completed:
             return True
         if status == TaskStatus.failed:
-            response = client.get(f"/task/{identifier}")
+            response = client.get(f"/api/v1/task/{identifier}")
             error_message = response.json().get("error", "Unknown error")
             raise ValueError(f"Task failed with error: {error_message}")
         time.sleep(delay)
@@ -129,7 +129,7 @@ def generic_transcription(client: TestClient, client_url: str) -> dict[str, Any]
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
-    task_result = client.get(f"/task/{identifier}")
+    task_result = client.get(f"/api/v1/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
     assert seg_0_text.lower().startswith(
         TRANSCRIPT_RESULT_1.lower()
@@ -154,7 +154,7 @@ def align(client: TestClient, transcript_file: str) -> dict[str, Any]:
         open(AUDIO_FILE, "rb") as audio_file,
     ):
         response = client.post(
-            f"/service/align?device={os.getenv('DEVICE')}",
+            f"/api/v1/service/align?device={os.getenv('DEVICE')}",
             files={
                 "transcript": ("transcript.json", transcript_fp),
                 "file": ("audio_file.mp3", audio_file),
@@ -172,7 +172,7 @@ def align(client: TestClient, transcript_file: str) -> dict[str, Any]:
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
-    task_result = client.get(f"/task/{identifier}")
+    task_result = client.get(f"/api/v1/task/{identifier}")
 
     return task_result.json()["result"]
 
@@ -190,7 +190,7 @@ def diarize(client: TestClient) -> list[dict[str, Any]]:
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            f"/service/diarize?device={os.getenv('DEVICE')}",
+            f"/api/v1/service/diarize?device={os.getenv('DEVICE')}",
             files=files,
         )
     assert response.status_code == 200
@@ -204,7 +204,7 @@ def diarize(client: TestClient) -> list[dict[str, Any]]:
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
-    task_result = client.get(f"/task/{identifier}")
+    task_result = client.get(f"/api/v1/task/{identifier}")
 
     return task_result.json()["result"]
 
@@ -232,7 +232,7 @@ def combine(
             "diarization_result": ("diarization.json", diarization_result),
         }
         response = client.post(
-            "/service/combine",
+            "/api/v1/service/combine",
             files=files,
         )
     assert response.status_code == 200
@@ -246,7 +246,7 @@ def combine(
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
-    task_result = client.get(f"/task/{identifier}")
+    task_result = client.get(f"/api/v1/task/{identifier}")
 
     return task_result.json()["result"]
 
@@ -255,7 +255,7 @@ def combine(
 @pytest.mark.slow
 def test_speech_to_text(client: TestClient) -> None:
     """Test the speech-to-text service end-to-end."""
-    result = generic_transcription(client, "/speech-to-text")
+    result = generic_transcription(client, "/api/v1/speech-to-text")
     assert result is not None
     assert "segments" in result
     assert len(result["segments"]) > 0
@@ -265,7 +265,7 @@ def test_speech_to_text(client: TestClient) -> None:
 @pytest.mark.slow
 def test_transcribe_service(client: TestClient) -> None:
     """Test the transcription service endpoint."""
-    result = generic_transcription(client, "/service/transcribe")
+    result = generic_transcription(client, "/api/v1/service/transcribe")
     assert result is not None
     assert "segments" in result
     assert len(result["segments"]) > 0
@@ -311,7 +311,7 @@ def test_combine_service(client: TestClient) -> None:
 def test_speech_to_text_url(client: TestClient) -> None:
     """Test the speech-to-text service with a URL input."""
     response = client.post(
-        f"/speech-to-text-url?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
+        f"/api/v1/speech-to-text-url?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
         data={
             "url": "https://github.com/tijszwinkels/whisperX-api/raw/main/audio_en.mp3"
         },
@@ -327,7 +327,7 @@ def test_speech_to_text_url(client: TestClient) -> None:
         f"Task with identifier {identifier} did not complete within the expected time."
     )
 
-    task_result = client.get(f"/task/{identifier}")
+    task_result = client.get(f"/api/v1/task/{identifier}")
     seg_0_text = task_result.json()["result"]["segments"][0]["text"]
     assert seg_0_text.lower().startswith(
         TRANSCRIPT_RESULT_1.lower()
@@ -345,7 +345,9 @@ def test_complete_audio_processing_flow(client: TestClient) -> None:
         tempfile.NamedTemporaryFile(mode="w", delete=False) as diarization_file,
     ):
         # Step 1: Transcribe audio
-        transcription_result = generic_transcription(client, "/service/transcribe")
+        transcription_result = generic_transcription(
+            client, "/api/v1/service/transcribe"
+        )
         json.dump(transcription_result, transcript_file)
         transcript_file.flush()
 

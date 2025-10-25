@@ -14,9 +14,20 @@ The whisperX API is a tool for enhancing and analyzing audio content. This API p
 
 ## Documentation
 
-Swagger UI is available at `/docs` for all the services, dump of OpenAPI definition is available in folder `app/docs` as well. You can explore it directly in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
+Swagger UI is available at `/api/v1/docs` for all the services, dump of OpenAPI definition is available in folder `app/docs` as well. You can explore it directly in [Swagger Editor](https://editor.swagger.io/?url=https://raw.githubusercontent.com/pavelzbornik/whisperX-FastAPI/main/app/docs/openapi.yaml)
 
 See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details on whisperX functions.
+
+### API Versioning
+
+This API uses URL path-based versioning. All endpoints (except health checks) are prefixed with `/api/v1/`.
+
+**Current Version:** v1.0.0
+
+For detailed information about API versioning, see:
+
+- [Versioning Strategy](docs/api/versioning-strategy.md)
+- [Migration Guide](docs/api/migration-guide.md)
 
 ### Language and Whisper model settings
 
@@ -39,29 +50,30 @@ See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details
 
 ### Available Services
 
-1. Speech-to-Text (`/speech-to-text`)
+1. Speech-to-Text (`/api/v1/speech-to-text`)
 
    - Upload audio/video files for transcription
    - Supports multiple languages and Whisper models
 
-2. Speech-to-Text URL (`/speech-to-text-url`)
+2. Speech-to-Text URL (`/api/v1/speech-to-text-url`)
 
    - Transcribe audio/video from URLs
    - Same features as direct upload
 
 3. Individual Services:
 
-   - Transcribe (`/service/transcribe`): Convert speech to text
-   - Align (`/service/align`): Align transcript with audio
-   - Diarize (`/service/diarize`): Speaker diarization
-   - Combine (`/service/combine`): Merge transcript with diarization
+   - Transcribe (`/api/v1/service/transcribe`): Convert speech to text
+   - Align (`/api/v1/service/align`): Align transcript with audio
+   - Diarize (`/api/v1/service/diarize`): Speaker diarization
+   - Combine (`/api/v1/service/combine`): Merge transcript with diarization
 
 4. Task Management:
 
-   - Get all tasks (`/task/all`)
-   - Get task status (`/task/{identifier}`)
+   - Get all tasks (`/api/v1/task/all`)
+   - Get task status (`/api/v1/task/{identifier}`)
+   - Delete task (`/api/v1/task/{identifier}/delete`)
 
-5. Health Check Endpoints:
+5. Health Check Endpoints (Unversioned - Stable Contract):
    - Basic health check (`/health`): Simple service status check
    - Liveness probe (`/health/live`): Verifies if application is running
    - Readiness probe (`/health/ready`): Checks if application is ready to accept requests (includes database connectivity check)
