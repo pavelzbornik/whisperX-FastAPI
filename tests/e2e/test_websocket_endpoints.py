@@ -121,6 +121,18 @@ def test_websocket_audio_processing(client: TestClient) -> None:
 
 
 @pytest.mark.e2e
+def test_websocket_sessions_endpoint_basic(client: TestClient) -> None:
+    """Test the active sessions endpoint without connecting."""
+    response = client.get("/audio/sessions")
+    assert response.status_code == 200
+    data = response.json()
+    assert "active_sessions" in data
+    assert isinstance(data["active_sessions"], int)
+    assert data["active_sessions"] >= 0
+
+
+@pytest.mark.e2e
+@pytest.mark.slow
 def test_websocket_active_sessions_endpoint(client: TestClient) -> None:
     """Test the active sessions monitoring endpoint."""
     # Initially should have 0 active sessions

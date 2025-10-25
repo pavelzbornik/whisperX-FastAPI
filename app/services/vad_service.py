@@ -34,7 +34,7 @@ class SileroVADService:
         self._silence_duration = 0.0
 
         logger.info("Initializing Silero VAD service with sample rate %d", sample_rate)
-        self._load_model()
+        # Model will be loaded lazily on first use
 
     def _calculate_pre_roll_buffer_size(self) -> int:
         """
@@ -49,6 +49,9 @@ class SileroVADService:
 
     def _load_model(self) -> None:
         """Load the Silero VAD model from torch.hub."""
+        if self.model is not None:
+            return  # Already loaded
+
         try:
             logger.info("Loading Silero VAD model from torch.hub")
             self.model, self.utils = torch.hub.load(
@@ -77,6 +80,10 @@ class SileroVADService:
             - speech_ended: Whether speech segment has ended
             - accumulated_audio: Complete audio segment if speech ended, None otherwise
         """
+        # Load model on first use
+        if self.model is None:
+            self._load_model()
+
         # Convert to torch tensor
         audio_tensor = torch.from_numpy(audio_chunk)
 
