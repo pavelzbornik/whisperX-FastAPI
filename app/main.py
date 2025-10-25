@@ -7,6 +7,7 @@ from app.core.warnings_filter import filter_warnings
 filter_warnings()
 
 import logging  # noqa: E402
+import os  # noqa: E402
 import time  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
@@ -14,6 +15,17 @@ from dotenv import load_dotenv  # noqa: E402
 from fastapi import FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
+
+# Load environment variables from .env early
+load_dotenv()
+
+# Initialize logging configuration as early as possible
+from app.core.logging import configure_logging  # noqa: E402
+
+configure_logging()
+
+# Get logger for application startup
+logger = logging.getLogger("app")
 
 from app.api import service_router, stt_router, task_router  # noqa: E402
 from app.api.exception_handlers import (  # noqa: E402
@@ -34,8 +46,15 @@ from app.core.exceptions import (  # noqa: E402
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, engine  # noqa: E402
 
-# Load environment variables from .env
-load_dotenv()
+# Log application startup information
+environment = os.getenv("ENVIRONMENT", "production").lower()
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logger.info("Starting whisperX FastAPI application")
+logger.info("Environment: %s", environment)
+logger.info("Log level: %s", log_level)
+logger.info("Device: %s", Config.DEVICE)
+logger.info("Compute type: %s", Config.COMPUTE_TYPE)
+logger.info("Whisper model: %s", Config.WHISPER_MODEL)
 
 Base.metadata.create_all(bind=engine)
 
@@ -59,14 +78,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Args:
         app (FastAPI): The FastAPI application instance.
     """
-    logging.info("Application lifespan started - dependency container initialized")
+    logger.info("Application lifespan started - dependency container initialized")
+    logger.info("Database connection established")
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
+    logger.info("OpenAPI schema and database schema documentation generated")
+
     yield
 
     # Clean up container on shutdown
-    logging.info("Shutting down application")
+    logger.info("Shutting down application")
+    logger.info("Cleaning up resources and closing connections")
 
 
 tags_metadata = [
@@ -191,7 +214,7 @@ async def readiness_check() -> JSONResponse:
             },
         )
     except Exception:
-        logging.exception("Readiness check failed:")
+        logger.exception("Readiness check failed:")
 
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -3,12 +3,14 @@
 import os
 import re
 from tempfile import NamedTemporaryFile
+from typing import Optional
 
 import requests
 from fastapi import HTTPException, UploadFile
 
 from app.core.config import Config
 from app.core.logging import logger
+from app.core.logging.audit_logger import AuditLogger
 
 
 class FileService:
@@ -76,12 +78,20 @@ class FileService:
         return file_extension
 
     @staticmethod
-    def save_upload(file: UploadFile) -> str:
+    def save_upload(
+        file: UploadFile,
+        user_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ) -> str:
         """
         Save an uploaded file to a temporary location.
 
         Args:
             file: The uploaded file to save
+            user_id: User identifier (optional)
+            ip_address: Client IP address (optional)
+            request_id: Request correlation ID (optional)
 
         Returns:
             Path to the temporary file
@@ -97,7 +107,8 @@ class FileService:
 
         # Create a temporary file with the original extension
         temp_file = NamedTemporaryFile(suffix=original_extension, delete=False)
-        temp_file.write(file.file.read())
+        content = file.file.read()
+        temp_file.write(content)
         temp_file.close()
 
         logger.debug(
@@ -106,15 +117,33 @@ class FileService:
             temp_file.name,
         )
 
+        # Audit log the file upload
+        AuditLogger.log_file_uploaded(
+            file_name=file.filename,
+            file_size=len(content),
+            content_type=file.content_type,
+            user_id=user_id,
+            ip_address=ip_address,
+            request_id=request_id,
+        )
+
         return temp_file.name
 
     @staticmethod
-    def download_from_url(url: str) -> tuple[str, str]:
+    def download_from_url(
+        url: str,
+        user_id: Optional[str] = None,
+        ip_address: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ) -> tuple[str, str]:
         """
         Download a file from a URL to a temporary location.
 
         Args:
             url: URL of the file to download
+            user_id: User identifier (optional)
+            ip_address: Client IP address (optional)
+            request_id: Request correlation ID (optional)
 
         Returns:
             Tuple of (temp_file_path, original_filename)
@@ -160,14 +189,26 @@ class FileService:
 
                 # Save the file to a temporary location
                 temp_audio_file = NamedTemporaryFile(suffix=safe_suffix, delete=False)
+                file_size = 0
                 for chunk in response.iter_content(chunk_size=8192):
                     temp_audio_file.write(chunk)
+                    file_size += len(chunk)
                 temp_audio_file.close()
 
                 logger.info(
                     "File downloaded successfully: %s -> %s",
                     url,
                     temp_audio_file.name,
+                )
+
+                # Audit log the file download
+                AuditLogger.log_file_uploaded(
+                    file_name=filename,
+                    file_size=file_size,
+                    content_type=response.headers.get("Content-Type"),
+                    user_id=user_id,
+                    ip_address=ip_address,
+                    request_id=request_id,
                 )
 
                 return temp_audio_file.name, filename
