@@ -38,6 +38,7 @@ dependencies = [
     "python-multipart==0.0.20",
     "tqdm==4.67.1",
     "uvicorn==0.38.0",
+    "websockets==14.1",
     "whisperx==3.7.2",
     "torch<=2.8.0",
     "torchaudio<=2.8.0",
@@ -95,7 +96,7 @@ skip_glob = ["migrations/*"]
 [tool.codespell]
 skip = ["*.json","*.yaml","*.lock"]
 builtin = "clear,rare,informal,usage,code,names"
-ignore-words-list = "dne,iam,IAM,ro,jupyter,rouge,ba,thead,master,implementors,UIs,aNULL"
+ignore-words-list = "dne,iam,IAM,ro,jupyter,rouge,ba,thead,master,implementors,UIs,aNULL,deque"
 
 [tool.coverage.run]
 source = ["app"]

@@ -15,7 +15,7 @@ from fastapi import FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-from app.api import service_router, stt_router, task_router  # noqa: E402
+from app.api import service_router, stt_router, task_router, ws_router  # noqa: E402
 from app.api.exception_handlers import (  # noqa: E402
     domain_error_handler,
     generic_error_handler,
@@ -83,6 +83,10 @@ tags_metadata = [
         "description": "Manage tasks.",
     },
     {
+        "name": "Real-Time Transcription",
+        "description": "WebSocket endpoints for real-time audio transcription using WhisperX and Silero-VAD",
+    },
+    {
         "name": "Health",
         "description": "Health check endpoints to monitor application status",
     },
@@ -131,6 +135,7 @@ app.add_exception_handler(Exception, generic_error_handler)
 app.include_router(stt_router)
 app.include_router(task_router)
 app.include_router(service_router)
+app.include_router(ws_router, tags=["Real-Time Transcription"])
 
 
 @app.get("/", include_in_schema=False)
