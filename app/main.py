@@ -55,11 +55,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     This function is used to perform startup and shutdown tasks for the FastAPI application.
     It saves the OpenAPI JSON and generates the database schema.
+    It also initializes the task registry with audio processing handlers.
 
     Args:
         app (FastAPI): The FastAPI application instance.
     """
     logging.info("Application lifespan started - dependency container initialized")
+
+    # Initialize task registry with audio processing handlers
+    task_registry = container.task_registry()
+    audio_handlers = container.audio_handlers()
+
+    for task_type, handler in audio_handlers.items():
+        task_registry.register(task_type, handler)
+        logging.info(f"Registered handler for task type: {task_type}")
+
+    logging.info(f"Task registry initialized with {len(audio_handlers)} handlers")
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())

@@ -13,6 +13,12 @@ from app.infrastructure.ml import (
     WhisperXSpeakerAssignmentService,
     WhisperXTranscriptionService,
 )
+from app.infrastructure.tasks.fastapi_task_queue import FastAPITaskQueue
+from app.infrastructure.tasks.handlers.audio_processing_handler import (
+    create_audio_processing_handler,
+)
+from app.infrastructure.tasks.task_executor import TaskExecutor
+from app.infrastructure.tasks.task_registry import TaskRegistry
 from app.services.file_service import FileService
 from app.services.task_management_service import TaskManagementService
 
@@ -84,4 +90,35 @@ class Container(containers.DeclarativeContainer):
 
     speaker_assignment_service = providers.Singleton(
         WhisperXSpeakerAssignmentService,
+    )
+
+    # Task Queue Infrastructure - For background task processing
+    # Task registry - Singleton for centralized handler management
+    task_registry = providers.Singleton(TaskRegistry)
+
+    # Task executor - Factory pattern with dependencies
+    task_executor = providers.Factory(
+        TaskExecutor,
+        task_registry=task_registry,
+        task_repository=task_repository,
+    )
+
+    # Audio processing handlers - Factory that creates handler dictionary
+    audio_handlers = providers.Factory(
+        create_audio_processing_handler,
+        transcription_service=transcription_service,
+        diarization_service=diarization_service,
+        alignment_service=alignment_service,
+        speaker_service=speaker_assignment_service,
+    )
+
+    # Task queue - Factory pattern (requires BackgroundTasks from FastAPI)
+    # Note: The actual FastAPITaskQueue will be created in dependencies with BackgroundTasks
+    # This is a callable factory that will be invoked with background_tasks parameter
+    task_queue_factory = providers.Callable(
+        lambda background_tasks, task_executor, task_repository: FastAPITaskQueue(
+            background_tasks=background_tasks,
+            task_executor=task_executor,
+            task_repository=task_repository,
+        )
     )
