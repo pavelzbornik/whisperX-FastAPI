@@ -30,17 +30,20 @@ def setup_test_db(
     os.environ["WHISPER_MODEL"] = "tiny"
     os.environ["DEFAULT_LANG"] = "en"
 
-    # Now import the app modules to create tables
+    # Now import the app modules
     from app.core.logging import logger  # noqa: E402
-    from app.infrastructure.database import Base, engine  # noqa: E402
 
     logger.debug(f"conftest.py: Setting DB_URL to {os.environ['DB_URL']}")
-    logger.debug(f"conftest.py: Engine URL is {engine.url}")
 
-    # Create all tables in the test database
-    Base.metadata.create_all(bind=engine)
+    # Run Alembic migrations instead of create_all
+    from alembic import command  # noqa: E402
+    from alembic.config import Config  # noqa: E402
 
-    logger.debug("conftest.py: Tables created")
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", os.environ["DB_URL"])
+    command.upgrade(alembic_cfg, "head")
+
+    logger.debug("conftest.py: Migrations applied")
 
     yield
     # No manual cleanup needed; tmp_path_factory handles it
