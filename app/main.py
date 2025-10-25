@@ -37,6 +37,15 @@ from app.infrastructure.database import Base, engine  # noqa: E402
 # Load environment variables from .env
 load_dotenv()
 
+# Configure OpenTelemetry observability
+from app.observability.tracing import configure_tracing  # noqa: E402
+from app.observability.metrics import configure_metrics  # noqa: E402
+from app.observability.logging_trace import configure_logging_with_traces  # noqa: E402
+
+configure_tracing()
+configure_metrics()
+configure_logging_with_traces()
+
 Base.metadata.create_all(bind=engine)
 
 # Create dependency injection container
@@ -118,6 +127,19 @@ app = FastAPI(
     version="0.0.1",
     openapi_tags=tags_metadata,
     lifespan=lifespan,
+)
+
+# Instrument FastAPI automatically with OpenTelemetry
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor  # noqa: E402
+
+FastAPIInstrumentor.instrument_app(app)
+
+# Instrument SQLAlchemy automatically with OpenTelemetry
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor  # noqa: E402
+
+SQLAlchemyInstrumentor().instrument(
+    engine=engine,
+    enable_commenter=True,  # Add trace context to SQL comments
 )
 
 # Register exception handlers

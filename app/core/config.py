@@ -96,6 +96,43 @@ class LoggingSettings(BaseSettings):
     )
 
 
+class ObservabilitySettings(BaseSettings):
+    """OpenTelemetry observability configuration settings."""
+
+    OTEL_ENABLED: bool = Field(
+        default=True,
+        description="Enable OpenTelemetry instrumentation",
+    )
+    OTEL_SERVICE_NAME: str = Field(
+        default="whisperx-api",
+        description="Service name for OpenTelemetry",
+    )
+    OTEL_SERVICE_VERSION: str = Field(
+        default="0.4.1",
+        description="Service version for OpenTelemetry",
+    )
+    OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = Field(
+        default=None,
+        description="OTLP exporter endpoint (e.g., http://localhost:4317)",
+    )
+    OTEL_EXPORTER_OTLP_INSECURE: bool = Field(
+        default=True,
+        description="Use insecure connection for OTLP exporter",
+    )
+    OTEL_TRACE_SAMPLE_RATE: float = Field(
+        default=1.0,
+        description="Trace sampling rate (0.0-1.0, 1.0 = 100%)",
+    )
+    OTEL_METRICS_ENABLED: bool = Field(
+        default=True,
+        description="Enable metrics collection",
+    )
+    OTEL_METRICS_PORT: int = Field(
+        default=9090,
+        description="Port for Prometheus metrics endpoint",
+    )
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -120,12 +157,25 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     whisper: WhisperSettings = Field(default_factory=WhisperSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod
     def normalize_environment(cls, v: str) -> str:
         """Normalize environment to lowercase."""
         return str(v).lower() if v else "production"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def otel_trace_sample_rate_computed(self) -> float:
+        """Compute trace sample rate based on environment."""
+        if self.ENVIRONMENT == "development":
+            return 1.0  # 100% sampling in development
+        elif self.ENVIRONMENT == "testing":
+            return 1.0  # 100% sampling in testing
+        else:
+            # Use configured rate for production (default 10%)
+            return self.observability.OTEL_TRACE_SAMPLE_RATE
 
 
 @lru_cache
