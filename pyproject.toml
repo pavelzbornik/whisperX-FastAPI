@@ -47,6 +47,7 @@ dependencies = [
     "setuptools>=78.1.1",
     # whisperx 3.8.2 uses deprecated use_auth_token parameter removed in 0.36.0
     "huggingface-hub<0.36.0",
+    "python-json-logger>=4.0.0",
 ]
 
 [project.optional-dependencies]
