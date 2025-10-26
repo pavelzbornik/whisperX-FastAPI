@@ -43,7 +43,7 @@ class TestTaskEntity:
         assert task.status == "processing"
         assert task.file_name == "audio.mp3"
         assert task.url == "https://example.com/audio.mp3"
-        assert task.audio_duration == 120.5
+        assert task.audio_duration == pytest.approx(120.5)
         assert task.language == "en"
         assert task.task_params == {"model": "tiny"}
 
