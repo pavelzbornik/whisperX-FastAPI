@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.core.exceptions import DatabaseOperationError
 from app.infrastructure.database.models import Task as ORMTask
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
@@ -78,9 +79,11 @@ class TestSQLAlchemyTaskRepository:
         mock_to_orm.return_value = MagicMock(spec=ORMTask)
         mock_session.commit.side_effect = SQLAlchemyError("Database error")
 
-        with pytest.raises(Exception, match="Failed to add task"):
+        with pytest.raises(DatabaseOperationError) as exc_info:
             repository.add(task)
 
+        assert exc_info.value.details["operation"] == "add"
+        assert "Database error" in exc_info.value.details["reason"]
         mock_session.rollback.assert_called_once()
 
     @patch(
@@ -198,6 +201,24 @@ class TestSQLAlchemyTaskRepository:
             repository.update("non-existent", {"status": "completed"})
 
         mock_session.commit.assert_not_called()
+
+    def test_update_rolls_back_on_error(
+        self, repository: SQLAlchemyTaskRepository, mock_session: MagicMock
+    ) -> None:
+        """Test update rolls back transaction on database error."""
+        orm_task = MagicMock(spec=ORMTask)
+        mock_session.query.return_value.filter.return_value.first.return_value = (
+            orm_task
+        )
+        mock_session.commit.side_effect = SQLAlchemyError("Database error")
+
+        with pytest.raises(DatabaseOperationError) as exc_info:
+            repository.update("test-123", {"status": "completed"})
+
+        assert exc_info.value.details["operation"] == "update"
+        assert "Database error" in exc_info.value.details["reason"]
+        assert exc_info.value.details["identifier"] == "test-123"
+        mock_session.rollback.assert_called_once()
 
     def test_delete_removes_task_successfully(
         self, repository: SQLAlchemyTaskRepository, mock_session: MagicMock
