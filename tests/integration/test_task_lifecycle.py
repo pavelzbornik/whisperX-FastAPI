@@ -1,6 +1,6 @@
 """Integration tests for task lifecycle with real database."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy.orm import Session
@@ -81,7 +81,7 @@ class TestTaskLifecycle:
         assert task_id == "lifecycle-test-789"
 
         # 2. Mark as processing
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         repository.update(task_id, {"status": "processing", "start_time": start_time})
         processing_task = repository.get_by_id(task_id)
         assert processing_task is not None
@@ -89,7 +89,7 @@ class TestTaskLifecycle:
         assert processing_task.start_time is not None
 
         # 3. Complete the task
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
         repository.update(
             task_id,
             {
@@ -120,7 +120,7 @@ class TestTaskLifecycle:
             {
                 "status": "failed",
                 "error": "Processing timeout",
-                "end_time": datetime.utcnow(),
+                "end_time": datetime.now(timezone.utc),
             },
         )
 

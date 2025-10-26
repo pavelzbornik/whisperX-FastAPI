@@ -3,7 +3,7 @@
 Tests the conversion between API DTOs and domain entities.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.api.mappers.task_mapper import TaskMapper
 from app.api.schemas.task_schemas import (
@@ -60,7 +60,7 @@ class TestTaskMapper:
 
     def test_to_response(self) -> None:
         """Test converting domain Task entity to TaskResponse DTO."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         domain_task = Task(
             uuid="task-456",
             status="completed",
@@ -100,7 +100,7 @@ class TestTaskMapper:
 
     def test_to_summary(self) -> None:
         """Test converting domain Task entity to TaskSummaryResponse DTO."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         domain_task = Task(
             uuid="task-789",
             status="failed",

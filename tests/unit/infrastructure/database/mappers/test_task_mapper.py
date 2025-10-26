@@ -1,6 +1,6 @@
 """Unit tests for database task mapper."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -35,7 +35,7 @@ class TestTaskMapper:
 
     def test_to_orm_with_all_fields(self) -> None:
         """Test converting domain task with all fields populated."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         domain_task = TaskFactory(
             uuid="test-123",
             status="completed",
@@ -83,7 +83,7 @@ class TestTaskMapper:
 
     def test_to_domain_with_all_fields(self) -> None:
         """Test converting ORM task with all fields populated."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         orm_task = ORMTask(
             uuid="test-456",
             status="failed",
