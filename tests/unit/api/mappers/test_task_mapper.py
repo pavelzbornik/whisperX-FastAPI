@@ -3,7 +3,9 @@
 Tests the conversion between API DTOs and domain entities.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
+
+import pytest
 
 from app.api.mappers.task_mapper import TaskMapper
 from app.api.schemas.task_schemas import (
@@ -36,7 +38,7 @@ class TestTaskMapper:
         assert domain_task.task_type == "transcription"
         assert domain_task.file_name == "test.mp3"
         assert domain_task.url is None
-        assert domain_task.audio_duration == 120.5
+        assert domain_task.audio_duration == pytest.approx(120.5)
         assert domain_task.language == "en"
         assert domain_task.task_params == {"model": "tiny"}
 
@@ -60,7 +62,7 @@ class TestTaskMapper:
 
     def test_to_response(self) -> None:
         """Test converting domain Task entity to TaskResponse DTO."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         domain_task = Task(
             uuid="task-456",
             status="completed",
@@ -87,12 +89,12 @@ class TestTaskMapper:
         assert response.task_type == "transcription"
         assert response.file_name == "audio.mp3"
         assert response.url == "http://example.com/audio.mp3"
-        assert response.audio_duration == 180.0
+        assert response.audio_duration == pytest.approx(180.0)
         assert response.language == "es"
         assert response.task_params == {"beam_size": 5}
         assert response.result == {"text": "transcribed text"}
         assert response.error is None
-        assert response.duration == 15.5
+        assert response.duration == pytest.approx(15.5)
         assert response.start_time == now
         assert response.end_time == now
         assert response.created_at == now
@@ -100,7 +102,7 @@ class TestTaskMapper:
 
     def test_to_summary(self) -> None:
         """Test converting domain Task entity to TaskSummaryResponse DTO."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         domain_task = Task(
             uuid="task-789",
             status="failed",
@@ -127,10 +129,10 @@ class TestTaskMapper:
         assert summary.task_type == "alignment"
         assert summary.file_name == "speech.wav"
         assert summary.url is None
-        assert summary.audio_duration == 90.0
+        assert summary.audio_duration == pytest.approx(90.0)
         assert summary.language == "de"
         assert summary.error == "Processing failed"
-        assert summary.duration == 5.0
+        assert summary.duration == pytest.approx(5.0)
         assert summary.start_time == now
         assert summary.end_time == now
 
