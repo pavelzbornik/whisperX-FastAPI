@@ -5,6 +5,7 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
+import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -16,6 +17,7 @@ from fastapi import (
     Form,
     UploadFile,
 )
+from opentelemetry import context, trace
 
 from app.api.dependencies import get_file_service, get_task_repository
 from app.audio import get_audio_duration, process_audio_file
@@ -24,6 +26,8 @@ from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
 from app.files import ALLOWED_EXTENSIONS
+from app.observability.metrics import get_metrics
+from app.observability.tracing import get_tracer
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -41,6 +45,10 @@ from app.services.file_service import FileService
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+
+# Get tracer and metrics
+tracer = get_tracer(__name__)
+metrics = get_metrics()
 
 stt_router = APIRouter()
 
@@ -80,16 +88,44 @@ async def speech_to_text(
     if file.filename is None:
         raise FileValidationError(filename="unknown", reason="Filename is missing")
 
-    file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
+    with tracer.start_as_current_span(
+        "audio.validate_and_save",
+        attributes={"file.name": file.filename},
+    ) as span:
+        file_service.validate_file_extension(file.filename, ALLOWED_EXTENSIONS)
 
-    # Save file using file service
-    temp_file = file_service.save_upload(file)
-    logger.info("%s saved as temporary file: %s", file.filename, temp_file)
+        # Save file using file service
+        temp_file = file_service.save_upload(file)
+        logger.info("%s saved as temporary file: %s", file.filename, temp_file)
+
+        # Get file size
+        file_size = os.path.getsize(temp_file)
+        span.set_attributes(
+            {
+                "file.size_bytes": file_size,
+                "file.path": temp_file,
+            }
+        )
+        span.add_event("file_uploaded", {"filename": file.filename})
+
+        # Record file size metric
+        metrics.audio_file_size_bytes.record(file_size)
 
     # Process audio
-    audio = process_audio_file(temp_file)
-    audio_duration = get_audio_duration(audio)
-    logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
+    with tracer.start_as_current_span("audio.load_and_validate") as span:
+        audio = process_audio_file(temp_file)
+        audio_duration = get_audio_duration(audio)
+        logger.info("Audio file %s length: %s seconds", file.filename, audio_duration)
+
+        span.set_attributes(
+            {
+                "audio.duration_seconds": audio_duration,
+                "audio.filename": file.filename,
+            }
+        )
+
+        # Record audio duration metric
+        metrics.audio_duration_seconds.record(audio_duration)
 
     # Create domain task
     task = DomainTask(
@@ -112,6 +148,9 @@ async def speech_to_text(
     identifier = repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
+    # Get current trace context to propagate to background task
+    trace_context = context.get_current()
+
     audio_params = SpeechToTextProcessingParams(
         audio=audio,
         identifier=identifier,
@@ -122,8 +161,21 @@ async def speech_to_text(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params)
+    # Add trace context to background task
+    background_tasks.add_task(process_audio_common, audio_params, trace_context)
     logger.info("Background task scheduled for processing: ID %s", identifier)
+
+    # Add event to span
+    current_span = trace.get_current_span()
+    if current_span.is_recording():
+        current_span.add_event(
+            "task_queued",
+            {
+                "task_id": identifier,
+                "task_type": TaskType.full_process.value,
+                "audio_duration_seconds": audio_duration,
+            },
+        )
 
     return Response(identifier=identifier, message="Task queued")
 

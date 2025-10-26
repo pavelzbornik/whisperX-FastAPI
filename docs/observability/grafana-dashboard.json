@@ -1,0 +1,254 @@
+{
+  "dashboard": {
+    "title": "WhisperX API Monitoring",
+    "tags": ["whisperx", "opentelemetry"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(audio_processing_requests_total[5m]))",
+            "legendFormat": "Total Requests/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "sum by (status) (rate(audio_processing_requests_total[5m]))",
+            "legendFormat": "{{ status }}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Success Rate",
+        "type": "singlestat",
+        "gridPos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(rate(audio_processing_requests_total{status=\"success\"}[5m])) / sum(rate(audio_processing_requests_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "percentunit",
+        "gauge": {
+          "show": true,
+          "minValue": 0,
+          "maxValue": 1,
+          "thresholdMarkers": true
+        },
+        "thresholds": "0.90,0.95"
+      },
+      {
+        "id": 3,
+        "title": "Active Tasks",
+        "type": "singlestat",
+        "gridPos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 4
+        },
+        "targets": [
+          {
+            "expr": "sum(active_tasks)",
+            "refId": "A"
+          }
+        ],
+        "valueName": "current",
+        "format": "none",
+        "sparkline": {
+          "show": true,
+          "lineColor": "rgb(31, 120, 193)"
+        }
+      },
+      {
+        "id": 4,
+        "title": "Processing Latency (Percentiles)",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(audio_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(audio_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(audio_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "ML Inference Duration",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 8,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by (operation, le) (rate(ml_inference_duration_seconds_bucket[5m])))",
+            "legendFormat": "{{ operation }} (P95)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Error Rate by Type",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (error_type) (rate(audio_processing_requests_total{status=\"error\"}[5m]))",
+            "legendFormat": "{{ error_type }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "reqps",
+            "label": "Errors/sec"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "File Sizes",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 16,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(audio_file_size_bytes_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(audio_file_size_bytes_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "File Size"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Audio Duration",
+        "type": "graph",
+        "gridPos": {
+          "x": 0,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(audio_duration_seconds_bucket[5m]))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(audio_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "s",
+            "label": "Duration"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Model Load Count",
+        "type": "graph",
+        "gridPos": {
+          "x": 12,
+          "y": 24,
+          "w": 12,
+          "h": 8
+        },
+        "targets": [
+          {
+            "expr": "sum by (model_name) (rate(ml_model_loads_total[5m]))",
+            "legendFormat": "{{ model_name }}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "ops",
+            "label": "Loads/sec"
+          }
+        ]
+      }
+    ]
+  }
+}

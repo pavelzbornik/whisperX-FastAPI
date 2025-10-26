@@ -1,13 +1,21 @@
 """WhisperX implementation of transcription service."""
 
 import gc
+import time
 from typing import Any
 
 import numpy as np
 import torch
+from opentelemetry.trace import Status, StatusCode
 from whisperx import load_model
 
 from app.core.logging import logger
+from app.observability.metrics import get_metrics
+from app.observability.tracing import get_tracer
+
+# Get tracer and metrics
+tracer = get_tracer(__name__)
+metrics = get_metrics()
 
 
 class WhisperXTranscriptionService:
@@ -39,7 +47,7 @@ class WhisperXTranscriptionService:
         threads: int,
     ) -> dict[str, Any]:
         """
-        Transcribe audio using WhisperX model.
+        Transcribe audio using WhisperX model with OpenTelemetry tracing.
 
         Args:
             audio: Audio data as numpy array (float32)
@@ -58,77 +66,146 @@ class WhisperXTranscriptionService:
         Returns:
             Dictionary containing transcription results
         """
-        self.logger.debug(
-            "Starting transcription with Whisper model: %s on device: %s",
-            model,
-            device,
-        )
+        with tracer.start_as_current_span(
+            "ml.transcribe",
+            attributes={
+                "ml.model": model,
+                "ml.language": language,
+                "ml.device": device,
+                "ml.compute_type": compute_type,
+                "ml.batch_size": batch_size,
+                "ml.task": task,
+            },
+        ) as span:
+            try:
+                start_time = time.time()
 
-        # Log GPU memory before loading model
-        if torch.cuda.is_available():
-            self.logger.debug(
-                f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, "
-                f"available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
-            )
+                self.logger.debug(
+                    "Starting transcription with Whisper model: %s on device: %s",
+                    model,
+                    device,
+                )
 
-        # Set thread count
-        faster_whisper_threads = 4
-        if threads > 0:
-            torch.set_num_threads(threads)
-            faster_whisper_threads = threads
+                # Log GPU memory before loading model
+                if torch.cuda.is_available():
+                    gpu_mem_before = torch.cuda.memory_allocated() / 1024**2
+                    self.logger.debug(
+                        f"GPU memory before loading model - used: {gpu_mem_before:.2f} MB, "
+                        f"available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
+                    )
+                    span.set_attribute("gpu.memory_before_mb", gpu_mem_before)
 
-        self.logger.debug(
-            "Loading model with config - model: %s, device: %s, compute_type: %s, "
-            "threads: %d, task: %s, language: %s",
-            model,
-            device,
-            compute_type,
-            faster_whisper_threads,
-            task,
-            language,
-        )
+                # Set thread count
+                faster_whisper_threads = 4
+                if threads > 0:
+                    torch.set_num_threads(threads)
+                    faster_whisper_threads = threads
 
-        # Load model
-        loaded_model = load_model(
-            model,
-            device,
-            device_index=device_index,
-            compute_type=compute_type,
-            asr_options=asr_options,
-            vad_options=vad_options,
-            language=language,
-            task=task,
-            threads=faster_whisper_threads,
-        )
+                self.logger.debug(
+                    "Loading model with config - model: %s, device: %s, compute_type: %s, "
+                    "threads: %d, task: %s, language: %s",
+                    model,
+                    device,
+                    compute_type,
+                    faster_whisper_threads,
+                    task,
+                    language,
+                )
 
-        self.logger.debug("Transcription model loaded successfully")
+                # Load model
+                model_load_start = time.time()
+                span.add_event("model_loading_started", {"model_name": model})
 
-        # Transcribe
-        result = loaded_model.transcribe(
-            audio=audio, batch_size=batch_size, chunk_size=chunk_size, language=language
-        )
+                loaded_model = load_model(
+                    model,
+                    device,
+                    device_index=device_index,
+                    compute_type=compute_type,
+                    asr_options=asr_options,
+                    vad_options=vad_options,
+                    language=language,
+                    task=task,
+                    threads=faster_whisper_threads,
+                )
 
-        # Log GPU memory before cleanup
-        if torch.cuda.is_available():
-            self.logger.debug(
-                f"GPU memory before cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, "
-                f"available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
-            )
+                model_load_duration = time.time() - model_load_start
+                span.add_event(
+                    "model_loaded",
+                    {
+                        "model_name": model,
+                        "load_duration_seconds": model_load_duration,
+                    },
+                )
+                span.set_attribute(
+                    "ml.model_load_duration_seconds", model_load_duration
+                )
 
-        # Clean up model
-        gc.collect()
-        torch.cuda.empty_cache()
-        del loaded_model
+                # Record model load metric
+                metrics.ml_model_loads_total.add(1, {"model_name": model})
 
-        # Log GPU memory after cleanup
-        if torch.cuda.is_available():
-            self.logger.debug(
-                f"GPU memory after cleanup: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, "
-                f"available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
-            )
+                self.logger.debug("Transcription model loaded successfully")
 
-        self.logger.debug("Completed transcription")
-        return result  # type: ignore[no-any-return]
+                # Transcribe
+                inference_start = time.time()
+                span.add_event("transcription_started")
+
+                result = loaded_model.transcribe(
+                    audio=audio,
+                    batch_size=batch_size,
+                    chunk_size=chunk_size,
+                    language=language,
+                )
+
+                inference_duration = time.time() - inference_start
+                span.add_event(
+                    "transcription_completed",
+                    {"inference_duration_seconds": inference_duration},
+                )
+                span.set_attribute("ml.inference_duration_seconds", inference_duration)
+
+                # Record inference metric
+                metrics.ml_inference_duration_seconds.record(
+                    inference_duration, {"operation": "transcribe", "model": model}
+                )
+
+                # Add result attributes
+                if isinstance(result, dict) and "segments" in result:
+                    segment_count = len(result.get("segments", []))
+                    span.set_attribute("ml.segments_count", segment_count)
+
+                # Log GPU memory before cleanup
+                if torch.cuda.is_available():
+                    gpu_mem_after = torch.cuda.memory_allocated() / 1024**2
+                    self.logger.debug(
+                        f"GPU memory before cleanup: {gpu_mem_after:.2f} MB, "
+                        f"available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
+                    )
+                    span.set_attribute("gpu.memory_after_mb", gpu_mem_after)
+
+                # Clean up model
+                gc.collect()
+                torch.cuda.empty_cache()
+                del loaded_model
+
+                # Log GPU memory after cleanup
+                if torch.cuda.is_available():
+                    gpu_mem_cleaned = torch.cuda.memory_allocated() / 1024**2
+                    self.logger.debug(
+                        f"GPU memory after cleanup: {gpu_mem_cleaned:.2f} MB, "
+                        f"available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
+                    )
+
+                total_duration = time.time() - start_time
+                span.set_attribute("ml.total_duration_seconds", total_duration)
+                span.set_status(Status(StatusCode.OK))
+
+                self.logger.debug("Completed transcription")
+                return result  # type: ignore[no-any-return]
+
+            except Exception as e:
+                span.record_exception(e)
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                raise
 
     def load_model(
         self,
