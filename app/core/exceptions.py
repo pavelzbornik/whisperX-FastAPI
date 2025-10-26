@@ -262,7 +262,7 @@ class InvalidAudioFormatError(ValidationError):
             user_message=f"Audio format '{extension}' is not supported. Allowed: {', '.join(sorted(allowed))}",
             filename=filename,
             extension=extension,
-            allowed_extensions=sorted(list(allowed)),
+            allowed_extensions=sorted(allowed),
         )
 
 
@@ -494,7 +494,7 @@ class UnsupportedFileExtensionError(ValidationError):
             user_message=f"File extension '{extension}' is not supported. Allowed: {', '.join(sorted(allowed))}",
             filename=filename,
             extension=extension,
-            allowed_extensions=sorted(list(allowed)),
+            allowed_extensions=sorted(allowed),
         )
 
 
