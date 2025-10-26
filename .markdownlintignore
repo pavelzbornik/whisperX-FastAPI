@@ -1,0 +1,5 @@
+# Files to ignore for markdownlint
+# Ignore the changelog file which contains long lines and release notes
+
+# added to ignore MD024/no-duplicate-heading Multiple headings with the same content [Context: "Bug Fixes"]
+CHANGELOG.md
