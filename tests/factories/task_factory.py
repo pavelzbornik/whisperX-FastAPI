@@ -1,6 +1,6 @@
 """Factory for creating test Task entities."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import factory
@@ -40,13 +40,13 @@ class TaskFactory(factory.Factory):
     start_time = None
     end_time = None
     error = None
-    created_at = factory.LazyFunction(datetime.utcnow)
-    updated_at = factory.LazyFunction(datetime.utcnow)
+    created_at = factory.LazyFunction(lambda: datetime.now(timezone.utc))
+    updated_at = factory.LazyFunction(lambda: datetime.now(timezone.utc))
 
     @classmethod
     def processing(cls, **kwargs: Any) -> Task:
         """Create a task in processing status with start time."""
-        return cls(status="processing", start_time=datetime.utcnow(), **kwargs)
+        return cls(status="processing", start_time=datetime.now(timezone.utc), **kwargs)
 
     @classmethod
     def completed(cls, **kwargs: Any) -> Task:
@@ -56,8 +56,8 @@ class TaskFactory(factory.Factory):
             status="completed",
             result=result,
             duration=10.5,
-            start_time=datetime.utcnow(),
-            end_time=datetime.utcnow(),
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc),
             **kwargs,
         )
 
@@ -68,6 +68,6 @@ class TaskFactory(factory.Factory):
         return cls(
             status="failed",
             error=error,
-            end_time=datetime.utcnow(),
+            end_time=datetime.now(timezone.utc),
             **kwargs,
         )

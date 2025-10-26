@@ -1,6 +1,6 @@
 """Unit tests for Task domain entity."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -51,7 +51,7 @@ class TestTaskEntity:
         """Test marking a task as completed updates status and result."""
         task = TaskFactory(status="processing")
         result = {"segments": [{"text": "hello world"}]}
-        end_time = datetime.utcnow()
+        end_time = datetime.now(timezone.utc)
 
         task.mark_as_completed(result, duration=10.5, end_time=end_time)
 
@@ -76,7 +76,7 @@ class TestTaskEntity:
     def test_mark_as_processing(self) -> None:
         """Test marking a task as processing updates status and start time."""
         task = TaskFactory(status="pending")
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
 
         task.mark_as_processing(start_time)
 
@@ -172,7 +172,7 @@ class TestTaskEntity:
         assert not task.is_failed()
 
         # Move to processing
-        task.mark_as_processing(datetime.utcnow())
+        task.mark_as_processing(datetime.now(timezone.utc))
         assert task.status == "processing"
         assert task.is_processing()
         assert not task.is_completed()
@@ -180,7 +180,7 @@ class TestTaskEntity:
 
         # Complete the task
         task.mark_as_completed(
-            {"result": "data"}, duration=5.5, end_time=datetime.utcnow()
+            {"result": "data"}, duration=5.5, end_time=datetime.now(timezone.utc)
         )
         assert task.status == "completed"
         assert not task.is_processing()
@@ -191,7 +191,7 @@ class TestTaskEntity:
     def test_state_transitions_to_failed(self) -> None:
         """Test task transition from processing to failed."""
         # Start with processing task
-        task = TaskFactory(status="processing", start_time=datetime.utcnow())
+        task = TaskFactory(status="processing", start_time=datetime.now(timezone.utc))
         assert task.is_processing()
 
         # Fail the task
