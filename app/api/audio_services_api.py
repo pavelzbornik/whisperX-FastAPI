@@ -19,6 +19,11 @@ from fastapi import (
 )
 from pydantic import ValidationError as PydanticValidationError
 
+from app.api.constants import (
+    JSON_EXTENSION,
+    TASK_QUEUED_MESSAGE,
+    TASK_SCHEDULED_LOG_FORMAT,
+)
 from app.api.dependencies import (
     get_alignment_service,
     get_diarization_service,
@@ -134,8 +139,8 @@ async def transcribe(
         transcription_service,
     )
 
-    logger.info("Background task scheduled for processing: ID %s", identifier)
-    return Response(identifier=identifier, message="Task queued")
+    logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
+    return Response(identifier=identifier, message=TASK_QUEUED_MESSAGE)
 
 
 @service_router.post(
@@ -188,7 +193,7 @@ def align(
             filename="unknown", reason="Transcript filename is missing"
         )
 
-    file_service.validate_file_extension(transcript.filename, {".json"})
+    file_service.validate_file_extension(transcript.filename, {JSON_EXTENSION})
 
     try:
         # Read the content of the transcript file
@@ -239,8 +244,8 @@ def align(
         alignment_service,
     )
 
-    logger.info("Background task scheduled for processing: ID %s", identifier)
-    return Response(identifier=identifier, message="Task queued")
+    logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
+    return Response(identifier=identifier, message=TASK_QUEUED_MESSAGE)
 
 
 @service_router.post(
@@ -309,8 +314,8 @@ async def diarize(
         diarization_service,
     )
 
-    logger.info("Background task scheduled for processing: ID %s", identifier)
-    return Response(identifier=identifier, message="Task queued")
+    logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
+    return Response(identifier=identifier, message=TASK_QUEUED_MESSAGE)
 
 
 @service_router.post(
@@ -358,8 +363,8 @@ async def combine(
             filename="unknown", reason="Diarization result filename is missing"
         )
 
-    file_service.validate_file_extension(aligned_transcript.filename, {".json"})
-    file_service.validate_file_extension(diarization_result.filename, {".json"})
+    file_service.validate_file_extension(aligned_transcript.filename, {JSON_EXTENSION})
+    file_service.validate_file_extension(diarization_result.filename, {JSON_EXTENSION})
 
     try:
         # Read the content of the transcript file
@@ -405,5 +410,5 @@ async def combine(
         speaker_service,
     )
 
-    logger.info("Background task scheduled for processing: ID %s", identifier)
-    return Response(identifier=identifier, message="Task queued")
+    logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
+    return Response(identifier=identifier, message=TASK_QUEUED_MESSAGE)
