@@ -6,7 +6,6 @@ ensuring consistent error formatting and proper separation of concerns.
 
 import logging
 import uuid
-from typing import Union
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 async def domain_error_handler(
-    request: Request, exc: Union[DomainError, Exception]
+    request: Request, exc: DomainError | Exception
 ) -> JSONResponse:
     """Handle domain errors (business logic violations).
 
@@ -55,7 +54,7 @@ async def domain_error_handler(
 
 
 async def validation_error_handler(
-    request: Request, exc: Union[ValidationError, Exception]
+    request: Request, exc: ValidationError | Exception
 ) -> JSONResponse:
     """Handle validation errors.
 
@@ -84,7 +83,7 @@ async def validation_error_handler(
 
 
 async def task_not_found_handler(
-    request: Request, exc: Union[TaskNotFoundError, Exception]
+    request: Request, exc: TaskNotFoundError | Exception
 ) -> JSONResponse:
     """Handle task not found errors.
 
@@ -115,7 +114,7 @@ async def task_not_found_handler(
 
 
 async def infrastructure_error_handler(
-    request: Request, exc: Union[InfrastructureError, Exception]
+    request: Request, exc: InfrastructureError | Exception
 ) -> JSONResponse:
     """Handle infrastructure errors (external system failures).
 
