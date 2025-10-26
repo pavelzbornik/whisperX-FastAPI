@@ -37,7 +37,9 @@ from app.infrastructure.database import Base, engine  # noqa: E402
 # Load environment variables from .env
 load_dotenv()
 
-Base.metadata.create_all(bind=engine)
+# Note: Database schema is now managed by Alembic migrations.
+# To initialize the database, run: alembic upgrade head
+# Or use: python scripts/init_db.py
 
 # Create dependency injection container
 container = Container()

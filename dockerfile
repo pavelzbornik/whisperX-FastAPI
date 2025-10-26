@@ -29,6 +29,9 @@ COPY uv.lock .
 COPY app app/
 COPY tests tests/
 COPY app/gunicorn_logging.conf .
+COPY alembic alembic/
+COPY alembic.ini .
+COPY docker-entrypoint.sh .
 
 # Install Python dependencies using UV with pyproject.toml
 # UV automatically selects CUDA 12.8 wheels on Linux
@@ -41,4 +44,4 @@ RUN uv sync --frozen --no-dev \
 
 EXPOSE 8000
 
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "--log-config", "gunicorn_logging.conf", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
