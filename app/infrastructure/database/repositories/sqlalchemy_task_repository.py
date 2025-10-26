@@ -66,6 +66,7 @@ class SQLAlchemyTaskRepository:
                 operation="add",
                 reason=str(e),
                 original_error=e,
+                identifier=task.uuid,
             )
 
     def get_by_id(self, identifier: str) -> DomainTask | None:
