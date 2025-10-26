@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.2...v0.4.3) (2025-10-26)
+
+
+### Documentation
+
+* **issue-templates:** add Copilot Story issue template with TDD and testing standards ([f7af931](https://github.com/pavelzbornik/whisperX-FastAPI/commit/f7af93121a2b8badb5cbf80ac65227ad8430842c))
+
 ## [0.4.2](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.1...v0.4.2) (2025-10-26)
 
 
