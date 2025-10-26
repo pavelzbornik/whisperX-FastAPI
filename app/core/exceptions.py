@@ -148,6 +148,41 @@ class ConfigurationError(ApplicationError):
         super().__init__(message, code=code, **kwargs)
 
 
+class DatabaseOperationError(InfrastructureError):
+    """Database operation failure error.
+
+    Raised when database operations (add, update, delete) fail due to underlying
+    database issues. This is an infrastructure-level error that typically maps to
+    HTTP 503 Service Unavailable.
+    """
+
+    def __init__(
+        self,
+        operation: str,
+        reason: str,
+        original_error: Optional[Exception] = None,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Initialize the database operation error.
+
+        Args:
+            operation: The database operation that failed (e.g., 'add', 'update', 'delete')
+            reason: Detailed reason for the failure
+            original_error: Optional original exception that caused this error
+            **kwargs: Additional error context
+        """
+        super().__init__(
+            message=f"Database operation '{operation}' failed: {reason}",
+            code="DATABASE_OPERATION_ERROR",
+            user_message="A database error occurred. Please try again later.",
+            operation=operation,
+            reason=reason,
+            original_error=str(original_error) if original_error else None,
+            **kwargs,
+        )
+
+
 # Task-related exceptions
 
 
