@@ -71,7 +71,7 @@ def transcribe_with_whisper(
             f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
     faster_whisper_threads = 4
-    if (threads := threads) > 0:
+    if threads > 0:
         torch.set_num_threads(threads)
         faster_whisper_threads = threads
 
