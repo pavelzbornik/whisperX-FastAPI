@@ -11,6 +11,7 @@ from app.core.exceptions import (
     AudioTooLargeError,
     AudioTooShortError,
     ConfigurationError,
+    DatabaseOperationError,
     DiarizationFailedError,
     DomainError,
     FileDownloadError,
@@ -114,6 +115,27 @@ def test_configuration_error() -> None:
     assert isinstance(exc, ApplicationError)
     assert exc.message == "Config error"
     assert exc.code == "CONFIG_TEST"
+
+
+@pytest.mark.unit
+def test_database_operation_error() -> None:
+    """Test DatabaseOperationError."""
+    original_error = Exception("Connection timeout")
+    exc = DatabaseOperationError(
+        operation="add",
+        reason="Connection timeout",
+        original_error=original_error,
+        identifier="test-123",
+    )
+
+    assert isinstance(exc, InfrastructureError)
+    assert exc.code == "DATABASE_OPERATION_ERROR"
+    assert "add" in exc.message
+    assert "Connection timeout" in exc.message
+    assert exc.details["operation"] == "add"
+    assert exc.details["reason"] == "Connection timeout"
+    assert exc.details["identifier"] == "test-123"
+    assert "Connection timeout" in exc.details["original_error"]
 
 
 @pytest.mark.unit
