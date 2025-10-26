@@ -29,13 +29,21 @@ config["root"]["level"] = log_level
 # Apply the updated logging configuration
 logging.config.dictConfig(config)
 
-# Save the updated config back to the YAML file
-with open(config_path, "w") as f:
-    yaml.dump(config, f)
+# Add RequestIDFilter to all handlers programmatically
+# This avoids circular import issues
+from app.core.logging_filters import RequestIDFilter  # noqa: E402
+
+request_id_filter = RequestIDFilter()
+for handler in logging.root.handlers:
+    handler.addFilter(request_id_filter)
 
 # Configure whisperX logger
 logger = logging.getLogger("whisperX")
 logger.setLevel(log_level)
+
+# Add filter to whisperX logger handlers
+for handler in logger.handlers:
+    handler.addFilter(request_id_filter)
 
 # Log environment variables
 logger.info(f"Environment: {env}")
