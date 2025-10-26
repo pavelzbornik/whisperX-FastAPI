@@ -76,6 +76,7 @@ def test_readiness_check_with_db_failure(
                 raise TimeoutError("Database connection failed")
 
             def __exit__(self, *args: Any) -> None:
+                """Exit the context manager - no cleanup needed for mock."""
                 pass
 
         return MockConnection()
