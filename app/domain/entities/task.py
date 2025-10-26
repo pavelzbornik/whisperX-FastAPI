@@ -27,6 +27,10 @@ class Task:
         start_time: Start time of the task execution
         end_time: End time of the task execution
         error: Error message, if any, associated with the task
+        retry_count: Number of retry attempts made
+        max_retries: Maximum number of retry attempts allowed
+        last_error: Most recent error message from retry attempts
+        scheduled_at: When the task was scheduled for execution
         created_at: Date and time of creation
         updated_at: Date and time of last update
     """
@@ -44,6 +48,10 @@ class Task:
     start_time: datetime | None = None
     end_time: datetime | None = None
     error: str | None = None
+    retry_count: int = 0
+    max_retries: int = 3
+    last_error: str | None = None
+    scheduled_at: datetime | None = None
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
 
@@ -135,6 +143,10 @@ class Task:
             "start_time": self.start_time,
             "end_time": self.end_time,
             "error": self.error,
+            "retry_count": self.retry_count,
+            "max_retries": self.max_retries,
+            "last_error": self.last_error,
+            "scheduled_at": self.scheduled_at,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }

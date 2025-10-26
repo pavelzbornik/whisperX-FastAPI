@@ -27,6 +27,10 @@ class Task(Base):
     - task_type: Type/category of the task.
     - duration: Duration of the task execution.
     - error: Error message, if any, associated with the task.
+    - retry_count: Number of retry attempts made.
+    - max_retries: Maximum number of retry attempts allowed.
+    - last_error: Most recent error message.
+    - scheduled_at: When the task was scheduled for execution.
     - created_at: Date and time of creation.
     - updated_at: Date and time of last update.
     """
@@ -74,6 +78,18 @@ class Task(Base):
     )
     error: Mapped[str | None] = mapped_column(
         String, nullable=True, comment="Error message, if any, associated with the task"
+    )
+    retry_count: Mapped[int] = mapped_column(
+        Integer, default=0, comment="Number of retry attempts made"
+    )
+    max_retries: Mapped[int] = mapped_column(
+        Integer, default=3, comment="Maximum number of retry attempts allowed"
+    )
+    last_error: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Most recent error message from retry attempts"
+    )
+    scheduled_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="When the task was scheduled for execution"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

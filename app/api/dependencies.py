@@ -2,12 +2,16 @@
 
 from collections.abc import Generator
 
+from fastapi import BackgroundTasks
+
 from app.core.container import Container
 from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
 from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.domain.services.transcription_service import ITranscriptionService
+from app.infrastructure.tasks.fastapi_task_queue import FastAPITaskQueue
+from app.infrastructure.tasks.task_registry import TaskRegistry
 from app.services.file_service import FileService
 from app.services.task_management_service import TaskManagementService
 
@@ -172,3 +176,70 @@ def get_speaker_assignment_service() -> Generator[
     if _container is None:
         raise RuntimeError("Container not initialized. Call set_container() first.")
     yield _container.speaker_assignment_service()
+
+
+def get_task_registry() -> Generator[TaskRegistry, None, None]:
+    """
+    Provide the task registry for dependency injection.
+
+    The task registry is a singleton that maintains the mapping of task types
+    to handler functions. It should be initialized once during application
+    startup with all available handlers.
+
+    Yields:
+        TaskRegistry: The task registry singleton
+
+    Example:
+        >>> @router.get("/task-types")
+        >>> async def list_task_types(
+        ...     registry: TaskRegistry = Depends(get_task_registry)
+        ... ):
+        ...     return {"task_types": registry.list_task_types()}
+    """
+    if _container is None:
+        raise RuntimeError("Container not initialized. Call set_container() first.")
+    yield _container.task_registry()
+
+
+def get_task_queue(
+    background_tasks: BackgroundTasks,
+) -> Generator[FastAPITaskQueue, None, None]:
+    """
+    Provide a task queue implementation for dependency injection.
+
+    This creates a FastAPITaskQueue instance that wraps the provided
+    BackgroundTasks from FastAPI. The task queue provides a consistent
+    interface for background task processing that can be swapped with
+    distributed queue implementations (Celery, RQ) in the future.
+
+    Args:
+        background_tasks: FastAPI BackgroundTasks from the request context
+
+    Yields:
+        FastAPITaskQueue: Task queue implementation
+
+    Example:
+        >>> @router.post("/process")
+        >>> async def process_task(
+        ...     background_tasks: BackgroundTasks,
+        ...     task_queue: FastAPITaskQueue = Depends(get_task_queue)
+        ... ):
+        ...     task_id = task_queue.enqueue(
+        ...         task_type="audio_processing",
+        ...         parameters={"file_path": "/tmp/audio.mp3"}
+        ...     )
+        ...     return {"task_id": task_id}
+    """
+    if _container is None:
+        raise RuntimeError("Container not initialized. Call set_container() first.")
+
+    # Create task executor and repository from container
+    task_executor = _container.task_executor()
+    task_repository = _container.task_repository()
+
+    # Create and yield the task queue
+    yield FastAPITaskQueue(
+        background_tasks=background_tasks,
+        task_executor=task_executor,
+        task_repository=task_repository,
+    )
