@@ -235,8 +235,8 @@ def test_audio_too_short_error() -> None:
 
     assert isinstance(exc, ValidationError)
     assert exc.code == "AUDIO_TOO_SHORT"
-    assert exc.details["duration"] == 0.5
-    assert exc.details["min_duration"] == 1.0
+    assert exc.details["duration"] == pytest.approx(0.5)
+    assert exc.details["min_duration"] == pytest.approx(1.0)
 
 
 @pytest.mark.unit
