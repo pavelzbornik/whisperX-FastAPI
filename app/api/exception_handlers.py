@@ -21,7 +21,7 @@ from app.core.exceptions import (
 logger = logging.getLogger(__name__)
 
 
-async def domain_error_handler(
+def domain_error_handler(
     request: Request, exc: Union[DomainError, Exception]
 ) -> JSONResponse:
     """Handle domain errors (business logic violations).
@@ -54,7 +54,7 @@ async def domain_error_handler(
     )
 
 
-async def validation_error_handler(
+def validation_error_handler(
     request: Request, exc: Union[ValidationError, Exception]
 ) -> JSONResponse:
     """Handle validation errors.
@@ -83,7 +83,7 @@ async def validation_error_handler(
     )
 
 
-async def task_not_found_handler(
+def task_not_found_handler(
     request: Request, exc: Union[TaskNotFoundError, Exception]
 ) -> JSONResponse:
     """Handle task not found errors.
@@ -114,7 +114,7 @@ async def task_not_found_handler(
     )
 
 
-async def infrastructure_error_handler(
+def infrastructure_error_handler(
     request: Request, exc: Union[InfrastructureError, Exception]
 ) -> JSONResponse:
     """Handle infrastructure errors (external system failures).
@@ -159,7 +159,7 @@ async def infrastructure_error_handler(
     )
 
 
-async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
+def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected errors.
 
     This is a catch-all handler for exceptions that don't match other handlers.
