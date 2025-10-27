@@ -32,7 +32,7 @@ dependencies = [
     "gunicorn==23.0.0",
     "httpx==0.28.1",
     "numba==0.61.0",
-    "python-dotenv==1.1.1",
+    "python-dotenv==1.2.1",
     "python-multipart==0.0.20",
     "tqdm==4.67.1",
     "uvicorn==0.38.0",
