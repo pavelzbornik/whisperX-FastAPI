@@ -3,5 +3,6 @@
 from app.api.audio_api import stt_router
 from app.api.audio_services_api import service_router
 from app.api.task_api import task_router
+from app.api.websocket_api import ws_router
 
-__all__ = ["stt_router", "service_router", "task_router"]
+__all__ = ["stt_router", "service_router", "task_router", "ws_router"]
