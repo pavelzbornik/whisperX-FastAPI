@@ -54,6 +54,7 @@ async def speech_to_text(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(...),
+    callback_url: str | None = Form(None),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
 ) -> Response:
@@ -68,6 +69,7 @@ async def speech_to_text(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
+        callback_url (str | None): Optional URL to call back when processing is complete.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
 
@@ -120,6 +122,7 @@ async def speech_to_text(
         whisper_model_params=model_params,
         alignment_params=align_params,
         diarization_params=diarize_params,
+        callback_url=callback_url,
     )
 
     background_tasks.add_task(process_audio_common, audio_params)
@@ -137,6 +140,7 @@ async def speech_to_text_url(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     url: str = Form(...),
+    callback_url: str | None = Form(None),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
 ) -> Response:
@@ -151,6 +155,7 @@ async def speech_to_text_url(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         url (str): URL of the audio file.
+        callback_url (str | None): Optional URL to call back when processing is complete.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
 
@@ -200,6 +205,7 @@ async def speech_to_text_url(
         whisper_model_params=model_params,
         alignment_params=align_params,
         diarization_params=diarize_params,
+        callback_url=callback_url,
     )
 
     background_tasks.add_task(process_audio_common, audio_params)

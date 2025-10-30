@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import requests
 import torch
 from whisperx import (
     align,
@@ -253,6 +254,18 @@ def align_whisper_output(
     return result  # type: ignore[no-any-return]
 
 
+def _post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
+    try:
+        requests.post(callback_url, json=payload, timeout=5)
+    except Exception as e:
+        logger.warning(
+            "Failed to POST callback to %s for identifier %s: %s",
+            callback_url,
+            payload.get("identifier"),
+            str(e),
+        )
+
+
 def process_audio_common(
     params: SpeechToTextProcessingParams,
     transcription_service: ITranscriptionService | None = None,
@@ -385,6 +398,20 @@ def process_audio_common(
                 "end_time": end_time,
             },
         )
+
+        if params.callback_url:
+            _post_task_callback(
+                params.callback_url,
+                {
+                    "identifier": params.identifier,
+                    "status": "completed",
+                    "result": result,
+                    "duration": duration,
+                    "start_time": start_time.isoformat(),
+                    "end_time": end_time.isoformat(),
+                },
+            )
+
     except (RuntimeError, ValueError, KeyError) as e:
         logger.error(
             "Speech-to-text processing failed for identifier: %s. Error: %s",
@@ -398,6 +425,17 @@ def process_audio_common(
                 "error": str(e),
             },
         )
+
+        if params.callback_url:
+            _post_task_callback(
+                params.callback_url,
+                {
+                    "identifier": params.identifier,
+                    "status": "failed",
+                    "error": str(e),
+                },
+            )
+
     except MemoryError as e:
         logger.error(
             f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
@@ -406,5 +444,15 @@ def process_audio_common(
             identifier=params.identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
+
+        if params.callback_url:
+            _post_task_callback(
+                params.callback_url,
+                {
+                    "identifier": params.identifier,
+                    "status": "failed",
+                    "error": str(e),
+                },
+            )
     finally:
         session.close()

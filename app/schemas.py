@@ -394,6 +394,7 @@ class SpeechToTextProcessingParams(BaseModel):
     whisper_model_params: WhisperModelParams
     alignment_params: AlignmentParams
     diarization_params: DiarizationParams
+    callback_url: str | None = None
 
 
 class TaskType(str, Enum):
@@ -404,6 +405,14 @@ class TaskType(str, Enum):
     diarization = "diarization"
     combine_transcript_diarization = "combine_transcript&diarization"
     full_process = "full_process"
+
+
+class TaskStatus(str, Enum):
+    """Enum for task status."""
+
+    processing = "processing"
+    completed = "completed"
+    failed = "failed"
 
 
 class TaskStatus(str, Enum):
