@@ -47,7 +47,7 @@ def validate_callback_url_dependency(
     callback_url: Optional[HttpUrl] = None,
 ) -> Optional[str]:
     """
-    FastAPI dependency to validate callback URL during request validation.
+    Fastapi dependency to validate callback URL during request validation.
 
     Args:
         callback_url: Optional callback URL from request

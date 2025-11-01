@@ -79,6 +79,8 @@ class ResultTasks(BaseModel):
 
 
 class TaskEventReceived(BaseModel):
+    """Confirmation that the callback was received."""
+
     ok: bool
 
 
