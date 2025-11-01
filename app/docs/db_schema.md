@@ -1,4 +1,4 @@
-# Database schema
+# Database schema 
 
 ## Table: tasks
 
@@ -10,6 +10,7 @@
 | `result` | JSON data representing the result of the task | JSON | True | None | False |
 | `file_name` | Name of the file associated with the task | VARCHAR | True | None | False |
 | `url` | URL of the file associated with the task | VARCHAR | True | None | False |
+| `callback_url` | Callback URL to POST results to | VARCHAR | True | None | False |
 | `audio_duration` | Duration of the audio in seconds | FLOAT | True | None | False |
 | `language` | Language of the file associated with the task | VARCHAR | True | None | False |
 | `task_type` | Type/category of the task | VARCHAR | True | None | False |

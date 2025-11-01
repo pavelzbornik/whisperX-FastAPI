@@ -6,7 +6,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import requests
 import torch
 from whisperx import (
     align,
@@ -15,6 +14,7 @@ from whisperx import (
 )
 from whisperx.diarize import DiarizationPipeline
 
+from app.callbacks import post_task_callback
 from app.core.config import Config
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
@@ -30,6 +30,8 @@ from app.schemas import (
     AlignedTranscription,
     ComputeType,
     Device,
+    Metadata,
+    Result,
     SpeechToTextProcessingParams,
     TaskStatus,
     WhisperModel,
@@ -254,18 +256,6 @@ def align_whisper_output(
     return result  # type: ignore[no-any-return]
 
 
-def _post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
-    try:
-        requests.post(callback_url, json=payload, timeout=5)
-    except Exception as e:
-        logger.warning(
-            "Failed to POST callback to %s for identifier %s: %s",
-            callback_url,
-            payload.get("identifier"),
-            str(e),
-        )
-
-
 def process_audio_common(
     params: SpeechToTextProcessingParams,
     transcription_service: ITranscriptionService | None = None,
@@ -399,19 +389,6 @@ def process_audio_common(
             },
         )
 
-        if params.callback_url:
-            _post_task_callback(
-                params.callback_url,
-                {
-                    "identifier": params.identifier,
-                    "status": "completed",
-                    "result": result,
-                    "duration": duration,
-                    "start_time": start_time.isoformat(),
-                    "end_time": end_time.isoformat(),
-                },
-            )
-
     except (RuntimeError, ValueError, KeyError) as e:
         logger.error(
             "Speech-to-text processing failed for identifier: %s. Error: %s",
@@ -426,16 +403,6 @@ def process_audio_common(
             },
         )
 
-        if params.callback_url:
-            _post_task_callback(
-                params.callback_url,
-                {
-                    "identifier": params.identifier,
-                    "status": "failed",
-                    "error": str(e),
-                },
-            )
-
     except MemoryError as e:
         logger.error(
             f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
@@ -445,14 +412,35 @@ def process_audio_common(
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
 
-        if params.callback_url:
-            _post_task_callback(
-                params.callback_url,
-                {
-                    "identifier": params.identifier,
-                    "status": "failed",
-                    "error": str(e),
-                },
-            )
     finally:
+        try:
+            if params.callback_url:
+                task = repository.get(params.identifier)
+                if task:
+                    metadata = Metadata(
+                        task_type=task.task_type,
+                        task_params=task.task_params,
+                        language=task.language,
+                        file_name=task.file_name,
+                        url=task.url,
+                        callback_url=task.callback_url,
+                        duration=task.duration,
+                        audio_duration=task.audio_duration,
+                        start_time=task.start_time,
+                        end_time=task.end_time,
+                    )
+                    result_payload = Result(
+                        status=task.status,
+                        result=task.result,
+                        metadata=metadata,
+                        error=task.error,
+                    )
+                    post_task_callback(params.callback_url, result_payload.model_dump())
+        except Exception as e:
+            logger.error(
+                "Failed to send callback for identifier %s: %s",
+                params.identifier,
+                str(e),
+            )
+
         session.close()
