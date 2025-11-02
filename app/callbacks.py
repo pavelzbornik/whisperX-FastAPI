@@ -120,7 +120,7 @@ def post_task_callback(callback_url: str, payload: Dict[str, Any]) -> None:
             )
         except httpx.HTTPStatusError as e:
             logger.warning(
-                "HTTP error posting callback to %s for identifier %s (attempt %d/%d): %s - %s",
+                "HTTP error posting callback to %s (attempt %d/%d): %s - %s",
                 callback_url,
                 attempt + 1,
                 max_retries,
