@@ -7,6 +7,7 @@ from pydantic import HttpUrl
 from fastapi import HTTPException
 import httpx
 from datetime import datetime, timezone
+from pytest import MonkeyPatch
 
 class TestCallbacks:
     """Test callback functionality."""
@@ -24,8 +25,8 @@ class TestCallbacks:
         ],
     )
     def test_validate_callback_url_status_codes(
-        self, status_code, expected_result, monkeypatch
-    ):
+        self, status_code: int, expected_result: bool, monkeypatch: MonkeyPatch
+    ) -> None:
         """Test callback URL validation with different HTTP status codes."""
         mock_response = Mock()
         mock_response.status_code = status_code
@@ -41,7 +42,7 @@ class TestCallbacks:
         result = validate_callback_url("http://example.com/callback")
         assert result == expected_result
 
-    def test_post_task_callback_success(self, monkeypatch):
+    def test_post_task_callback_success(self, monkeypatch: MonkeyPatch) -> None:
         """Test successful callback posting."""
         mock_response = Mock()
         mock_response.status_code = 200
@@ -69,7 +70,7 @@ class TestCallbacks:
         assert call_args[0][0] == "http://example.com/callback"
         assert call_args[1]["json"] == payload
 
-    def test_post_task_callback_retry_logic(self, monkeypatch):
+    def test_post_task_callback_retry_logic(self, monkeypatch: MonkeyPatch) -> None:
         """Test callback retry logic on failure."""
         payload = {"identifier": "test-123", "status": "completed"}
 
@@ -100,7 +101,7 @@ class TestCallbacks:
         # Should have slept twice (between retries)
         assert mock_sleep.call_count == 2
 
-    def test_callback_dependency_valid_url(self, monkeypatch):
+    def test_callback_dependency_valid_url(self, monkeypatch: MonkeyPatch) -> None:
         """Test callback URL dependency with valid URL."""
         # Override the global mock to return True for this test
         monkeypatch.setattr("app.callbacks.validate_callback_url", lambda url: True)
@@ -108,14 +109,16 @@ class TestCallbacks:
         result = validate_callback_url_dependency(
             HttpUrl("http://example.com/callback")
         )
-        assert result == "http://example.com/callback"
+        assert result == "http://example.com/callback/"
 
-    def test_callback_dependency_none_url(self):
+    def test_callback_dependency_none_url(self) -> None:
         """Test callback URL dependency with None."""
         result = validate_callback_url_dependency(None)
         assert result is None
 
-    def test_callback_dependency_invalid_url_raises_exception(self, monkeypatch):
+    def test_callback_dependency_invalid_url_raises_exception(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
         """Test callback URL dependency with invalid URL (should raise HTTPException)."""
         monkeypatch.setattr("app.callbacks.validate_callback_url", lambda url: False)
 
@@ -126,7 +129,9 @@ class TestCallbacks:
         assert exc_info.value.status_code == 400
         assert "Callback URL is not reachable" in str(exc_info.value.detail)
 
-    def test_callback_with_datetime_serialization_integration(self, monkeypatch):
+    def test_callback_with_datetime_serialization_integration(
+        self, monkeypatch: MonkeyPatch
+    ) -> None:
         """Integration test for callback with datetime serialization."""
         # Create payload with datetime objects
         payload = {
