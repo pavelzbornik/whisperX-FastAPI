@@ -36,7 +36,7 @@ dependencies = [
     "python-multipart==0.0.20",
     "tqdm==4.67.1",
     "uvicorn==0.38.0",
-    "whisperx==3.7.2",
+    "whisperx==3.7.4",
     "torch<=2.8.0",
     "torchaudio<=2.9.0",
     "torchvision<=0.24.0",
