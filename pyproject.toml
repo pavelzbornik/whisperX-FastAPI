@@ -28,7 +28,7 @@ classifiers = [
 ]
 dependencies = [
     "colorlog==6.9.0",
-    "fastapi==0.117.1",
+    "fastapi==0.121.1",
     "gunicorn==23.0.0",
     "httpx==0.28.1",
     "numba==0.62.1",
