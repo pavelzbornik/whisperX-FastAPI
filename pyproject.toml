@@ -39,7 +39,7 @@ dependencies = [
     "whisperx==3.7.4",
     "torch<=2.9.0",
     "torchaudio<=2.9.1",
-    "torchvision<=0.24.0",
+    "torchvision<=0.24.1",
     "setuptools>=78.1.1",  # CVE-2025-47273 fix
 ]
 
