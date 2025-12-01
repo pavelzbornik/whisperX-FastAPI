@@ -4596,7 +4596,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.19.0" },
     { name = "numba", specifier = "==0.63.1" },
     { name = "pandas-stubs", marker = "extra == 'dev'", specifier = ">=2.1.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.3.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = "==4.5.0" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==9.0.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==7.0.0" },
