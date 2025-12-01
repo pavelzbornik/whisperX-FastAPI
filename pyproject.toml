@@ -27,7 +27,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
-    "colorlog==6.9.0",
+    "colorlog==6.10.1",
     "fastapi==0.123.0",
     "gunicorn==23.0.0",
     "httpx==0.28.1",
