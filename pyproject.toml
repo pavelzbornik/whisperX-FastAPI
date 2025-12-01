@@ -48,7 +48,7 @@ dev = [
     "codespell==2.4.1",
     "mypy==1.18.2",
     "pandas-stubs>=2.1.0",
-    "pre-commit==4.3.0",
+    "pre-commit==4.5.0",
     "pytest==9.0.1",
     "pytest-cov==7.0.0",
     "ruff==0.14.6",
