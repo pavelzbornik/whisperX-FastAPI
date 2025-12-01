@@ -46,7 +46,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "codespell==2.4.1",
-    "mypy==1.18.2",
+    "mypy==1.19.0",
     "pandas-stubs>=2.1.0",
     "pre-commit==4.5.0",
     "pytest==9.0.1",
