@@ -98,12 +98,12 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80
       - name: Upload test report
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: test-report-${{ matrix.python-version }}
           path: pytest-report.xml
       - name: Upload coverage report
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
@@ -217,7 +217,7 @@ jobs:
           chmod +x sarif-to-markdown-table-linux
           cat trivy-results.sarif | ./sarif-to-markdown-table-linux > trivy-results.txt 2>/dev/null || cat trivy-results.sarif > trivy-results.txt
       - name: Upload Trivy scan results as artifact
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         if: always()
         with:
           name: trivy-results
