@@ -175,6 +175,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test]
     timeout-minutes: 30
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      WHISPER_MODEL: tiny
+      DEFAULT_LANG: en
+      DEVICE: cpu
+      COMPUTE_TYPE: int8
     permissions:
       contents: read
       pull-requests: write # Needed for PR failure comment
@@ -203,6 +209,51 @@ jobs:
           tags: whisperx-fastapi:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Validate container starts successfully
+        run: |
+          # Create a temporary .env file for the validation
+          cat > .env <<EOF
+          HF_TOKEN=${{ secrets.HF_TOKEN }}
+          WHISPER_MODEL=tiny
+          DEFAULT_LANG=en
+          DEVICE=cpu
+          COMPUTE_TYPE=int8
+          LOG_LEVEL=INFO
+          ENVIRONMENT=test
+          DEV=false
+          FILTER_WARNING=true
+          DB_URL=sqlite:////tmp/test.db
+          EOF
+
+          # Start services using docker-compose
+          docker compose up -d
+          echo "Started services via docker-compose"
+
+          # Wait for startup
+          sleep 3
+
+          # Check if the container is running
+          CONTAINER_NAME="whisperx-container"
+          if docker inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+            STATE=$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")
+            if [ "$STATE" = "true" ]; then
+              echo "✓ Container is running successfully"
+            else
+              echo "✗ Container crashed after startup"
+              docker logs "$CONTAINER_NAME"
+              docker compose down
+              exit 1
+            fi
+          else
+            echo "✗ Container failed to start"
+            docker compose logs
+            docker compose down
+            exit 1
+          fi
+
+          # Clean up
+          docker compose down
+          rm -f .env
       - name: Clean up Docker build cache
         run: |
           docker builder prune -f --filter "until=1h"
