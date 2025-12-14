@@ -22,7 +22,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
       - name: Install pre-commit
-        run: uv pip install pre-commit
+        run: uv pip install pre-commit --system
       - name: Run pre-commit autoupdate
         run: pre-commit autoupdate
       - name: Create Pull Request
