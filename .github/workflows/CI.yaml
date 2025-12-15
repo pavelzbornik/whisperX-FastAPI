@@ -228,22 +228,29 @@ jobs:
 
           echo "Started container: $CONTAINER_ID"
 
-          # Wait for application to be ready (max 30 seconds)
+          # Wait for application to be ready (max 60 seconds)
           echo "Waiting for application to be ready..."
           RETRY_COUNT=0
-          MAX_RETRIES=30
+          MAX_RETRIES=60
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if docker exec "$CONTAINER_ID" curl -sf http://localhost:8000/health > /dev/null 2>&1; then
-              echo "✓ Application is healthy and responding"
+            HTTP_CODE=$(docker exec "$CONTAINER_ID" curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health 2>&1 || echo "000")
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✓ Application is healthy and responding (HTTP $HTTP_CODE)"
               break
             fi
             RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -eq 10 ] || [ $RETRY_COUNT -eq 20 ] || [ $RETRY_COUNT -eq 30 ]; then
+              echo "  (Retry $RETRY_COUNT: HTTP response $HTTP_CODE - still waiting...)"
+            fi
             if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-              echo "✗ Application failed to become ready after $MAX_RETRIES seconds"
-              echo "Container logs:"
-              docker logs "$CONTAINER_ID"
-              docker stop "$CONTAINER_ID"
-              docker rm "$CONTAINER_ID"
+              echo "✗ Application failed to become ready after $MAX_RETRIES seconds (Last HTTP: $HTTP_CODE)"
+              echo "Container logs (last 50 lines):"
+              docker logs "$CONTAINER_ID" | tail -50
+              echo ""
+              echo "Debugging information:"
+              docker exec "$CONTAINER_ID" which curl || echo "  ✗ curl not found in PATH"
+              docker stop "$CONTAINER_ID" 2>/dev/null || true
+              docker rm "$CONTAINER_ID" 2>/dev/null || true
               exit 1
             fi
             sleep 1
@@ -253,9 +260,14 @@ jobs:
           HEALTH_RESPONSE=$(docker exec "$CONTAINER_ID" curl -s http://localhost:8000/health)
           echo "Health endpoint response: $HEALTH_RESPONSE"
 
+          # Test other health endpoints
+          echo "Testing /health/live endpoint..."
+          LIVE_RESPONSE=$(docker exec "$CONTAINER_ID" curl -s http://localhost:8000/health/live)
+          echo "Live endpoint response: $LIVE_RESPONSE"
+
           # Clean up
-          docker stop "$CONTAINER_ID"
-          docker rm "$CONTAINER_ID"
+          docker stop "$CONTAINER_ID" 2>/dev/null || true
+          docker rm "$CONTAINER_ID" 2>/dev/null || true
           echo "✓ Container validation completed successfully"
       - name: Clean up Docker build cache
         run: |

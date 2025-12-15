@@ -13,6 +13,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     ffmpeg=7:4.4.2-0ubuntu0.22.04.1 \
     libcudnn9-cuda-12=9.8.0.87-1 \
     libatomic1 \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 \
