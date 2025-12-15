@@ -2,7 +2,7 @@
 
 ## Table: tasks
 
-| Field | Description | Type | Nullable |  Unique | Primary Key |
+| Field | Description | Type | Nullable | Unique | Primary Key |
 | --- | --- | --- | --- | --- | --- |
 | `id` | Unique identifier for each task (Primary Key) | INTEGER | False | None | True |
 | `uuid` | Universally unique identifier for each task | VARCHAR | True | None | False |
