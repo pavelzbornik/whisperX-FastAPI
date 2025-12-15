@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.4](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.3...v0.4.4) (2025-12-15)
+
+
+### Bug Fixes
+
+* correct table header formatting in db_schema.md and exception-handling.md ([e346fc2](https://github.com/pavelzbornik/whisperX-FastAPI/commit/e346fc298c58262b166b82abd481485cc1a6191c))
+* increase health check wait time and improve error logging in CI workflow; add curl to Dockerfile ([fd11d0c](https://github.com/pavelzbornik/whisperX-FastAPI/commit/fd11d0cb04ead1ce06b07018c53905c1471656ca))
+
 ## [0.4.3](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.2...v0.4.3) (2025-10-26)
 
 
