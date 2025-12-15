@@ -31,7 +31,7 @@ dependencies = [
     "fastapi==0.124.4",
     "gunicorn==23.0.0",
     "httpx==0.28.1",
-    "numba==0.62.1",
+    "numba==0.63.1",
     "python-dotenv==1.2.1",
     "python-multipart==0.0.20",
     "tqdm==4.67.1",
