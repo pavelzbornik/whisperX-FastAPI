@@ -53,8 +53,8 @@
       }
     }
   },
-  "postCreateCommand": "chmod +x .devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
-  "postAttachCommand": "chmod +x .devcontainer/post-attach.sh && ./.devcontainer/post-attach.sh",
+  "postCreateCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh",
+  "postAttachCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-attach.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-attach.sh",
   "remoteUser": "root",
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
@@ -62,5 +62,10 @@
     "UV_LINK_MODE": "copy",
     "PRE_COMMIT_HOME": "/workspaces/whisperX-FastAPI/.cache/pre-commit",
     "PRE_COMMIT_USE_UV": "0"
-  }
+  },
+  "mounts": [
+    "source=${env:USERPROFILE}\\.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/.uv_cache,target=/workspaces/whisperX-FastAPI/.uv_cache,type=bind,consistency=cached",
+    "source=${localWorkspaceFolder}/.cache/pre-commit,target=/workspaces/whisperX-FastAPI/.cache/pre-commit,type=bind,consistency=cached"
+  ]
 }

@@ -211,49 +211,52 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Validate container starts successfully
         run: |
-          # Create a temporary .env file for the validation
-          cat > .env <<EOF
-          HF_TOKEN=${{ secrets.HF_TOKEN }}
-          WHISPER_MODEL=tiny
-          DEFAULT_LANG=en
-          DEVICE=cpu
-          COMPUTE_TYPE=int8
-          LOG_LEVEL=INFO
-          ENVIRONMENT=test
-          DEV=false
-          FILTER_WARNING=true
-          DB_URL=sqlite:////tmp/test.db
-          EOF
+          # Run container directly without docker-compose (no GPU support required)
+          CONTAINER_ID=$(docker run -d \
+            -e HF_TOKEN=${{ secrets.HF_TOKEN }} \
+            -e WHISPER_MODEL=tiny \
+            -e DEFAULT_LANG=en \
+            -e DEVICE=cpu \
+            -e COMPUTE_TYPE=int8 \
+            -e LOG_LEVEL=INFO \
+            -e ENVIRONMENT=test \
+            -e DEV=false \
+            -e FILTER_WARNING=true \
+            -e DB_URL=sqlite:////tmp/test.db \
+            -p 8000:8000 \
+            whisperx-fastapi:latest)
 
-          # Start services using docker-compose
-          docker compose up -d
-          echo "Started services via docker-compose"
+          echo "Started container: $CONTAINER_ID"
 
-          # Wait for startup
-          sleep 3
-
-          # Check if the container is running
-          CONTAINER_NAME="whisperx-container"
-          if docker inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
-            STATE=$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")
-            if [ "$STATE" = "true" ]; then
-              echo "✓ Container is running successfully"
-            else
-              echo "✗ Container crashed after startup"
-              docker logs "$CONTAINER_NAME"
-              docker compose down
+          # Wait for application to be ready (max 30 seconds)
+          echo "Waiting for application to be ready..."
+          RETRY_COUNT=0
+          MAX_RETRIES=30
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if docker exec "$CONTAINER_ID" curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "✓ Application is healthy and responding"
+              break
+            fi
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+              echo "✗ Application failed to become ready after $MAX_RETRIES seconds"
+              echo "Container logs:"
+              docker logs "$CONTAINER_ID"
+              docker stop "$CONTAINER_ID"
+              docker rm "$CONTAINER_ID"
               exit 1
             fi
-          else
-            echo "✗ Container failed to start"
-            docker compose logs
-            docker compose down
-            exit 1
-          fi
+            sleep 1
+          done
+
+          # Verify health endpoint returns expected response
+          HEALTH_RESPONSE=$(docker exec "$CONTAINER_ID" curl -s http://localhost:8000/health)
+          echo "Health endpoint response: $HEALTH_RESPONSE"
 
           # Clean up
-          docker compose down
-          rm -f .env
+          docker stop "$CONTAINER_ID"
+          docker rm "$CONTAINER_ID"
+          echo "✓ Container validation completed successfully"
       - name: Clean up Docker build cache
         run: |
           docker builder prune -f --filter "until=1h"
