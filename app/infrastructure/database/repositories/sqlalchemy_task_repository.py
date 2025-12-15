@@ -6,7 +6,6 @@ from uuid import uuid4
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import DatabaseOperationError
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
 from app.infrastructure.database.mappers.task_mapper import to_domain, to_orm
@@ -62,12 +61,7 @@ class SQLAlchemyTaskRepository:
         except SQLAlchemyError as e:
             self.session.rollback()
             logger.error(f"Failed to add task: {str(e)}")
-            raise DatabaseOperationError(
-                operation="add",
-                reason=str(e),
-                original_error=e,
-                identifier=task.uuid,
-            )
+            raise Exception(f"Failed to add task: {str(e)}")
 
     def get_by_id(self, identifier: str) -> DomainTask | None:
         """
@@ -146,12 +140,7 @@ class SQLAlchemyTaskRepository:
         except SQLAlchemyError as e:
             self.session.rollback()
             logger.error(f"Failed to update task {identifier}: {str(e)}")
-            raise DatabaseOperationError(
-                operation="update",
-                reason=str(e),
-                original_error=e,
-                identifier=identifier,
-            )
+            raise Exception(f"Failed to update task: {str(e)}")
 
     def delete(self, identifier: str) -> bool:
         """

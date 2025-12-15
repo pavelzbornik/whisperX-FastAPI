@@ -4,8 +4,6 @@ from typing import Any
 
 import pandas as pd
 
-from tests.mocks.constants import TRANSCRIPTION_TEXT
-
 
 class MockSpeakerAssignmentService:
     """
@@ -109,11 +107,11 @@ class MockSpeakerAssignmentService:
                 {
                     "start": 2.0,
                     "end": 4.0,
-                    "text": TRANSCRIPTION_TEXT,
+                    "text": "transcription.",
                     "speaker": "SPEAKER_01",
                     "words": [
                         {
-                            "word": TRANSCRIPTION_TEXT,
+                            "word": "transcription.",
                             "start": 2.0,
                             "end": 4.0,
                             "score": 0.99,
@@ -152,7 +150,7 @@ class MockSpeakerAssignmentService:
                     "speaker": "SPEAKER_00",
                 },
                 {
-                    "word": TRANSCRIPTION_TEXT,
+                    "word": "transcription.",
                     "start": 2.0,
                     "end": 4.0,
                     "score": 0.99,

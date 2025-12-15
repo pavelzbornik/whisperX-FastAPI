@@ -11,7 +11,6 @@ from app.core.exceptions import (
     AudioTooLargeError,
     AudioTooShortError,
     ConfigurationError,
-    DatabaseOperationError,
     DiarizationFailedError,
     DomainError,
     FileDownloadError,
@@ -118,30 +117,6 @@ def test_configuration_error() -> None:
 
 
 @pytest.mark.unit
-<<<<<<< HEAD
-def test_database_operation_error() -> None:
-    """Test DatabaseOperationError."""
-    original_error = Exception("Connection timeout")
-    exc = DatabaseOperationError(
-        operation="add",
-        reason="Connection timeout",
-        original_error=original_error,
-        identifier="test-123",
-    )
-
-    assert isinstance(exc, InfrastructureError)
-    assert exc.code == "DATABASE_OPERATION_ERROR"
-    assert "add" in exc.message
-    assert "Connection timeout" in exc.message
-    assert exc.details["operation"] == "add"
-    assert exc.details["reason"] == "Connection timeout"
-    assert exc.details["identifier"] == "test-123"
-    assert "Connection timeout" in exc.details["original_error"]
-
-
-@pytest.mark.unit
-=======
->>>>>>> 25e4030 (Implement test restructuring with unit, integration, and e2e tests)
 def test_task_not_found_error() -> None:
     """Test TaskNotFoundError."""
     exc = TaskNotFoundError(identifier="test-uuid-123")
@@ -238,8 +213,8 @@ def test_audio_too_short_error() -> None:
 
     assert isinstance(exc, ValidationError)
     assert exc.code == "AUDIO_TOO_SHORT"
-    assert exc.details["duration"] == pytest.approx(0.5)
-    assert exc.details["min_duration"] == pytest.approx(1.0)
+    assert exc.details["duration"] == 0.5
+    assert exc.details["min_duration"] == 1.0
 
 
 @pytest.mark.unit

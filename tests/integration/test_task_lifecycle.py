@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import pytest
+from sqlalchemy.orm import Session
 
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SQLAlchemyTaskRepository,
@@ -16,7 +17,7 @@ from tests.factories import TaskFactory
 class TestTaskLifecycle:
     """Integration tests for complete task lifecycle with real database."""
 
-    def test_create_and_retrieve_task(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_create_and_retrieve_task(self, db_session: Session) -> None:
         """Test creating a task and retrieving it from database."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -40,7 +41,7 @@ class TestTaskLifecycle:
         assert retrieved.file_name == "audio.mp3"
         assert retrieved.language == "en"
 
-    def test_update_task_status(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_update_task_status(self, db_session: Session) -> None:
         """Test updating task status persists to database."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -63,9 +64,9 @@ class TestTaskLifecycle:
         assert retrieved is not None
         assert retrieved.status == "completed"
         assert retrieved.result == {"segments": [{"text": "hello"}]}
-        assert retrieved.duration == 10.5
+        assert retrieved.duration == pytest.approx(10.5)
 
-    def test_complete_task_lifecycle(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_complete_task_lifecycle(self, db_session: Session) -> None:
         """Test complete task lifecycle from creation to completion."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -102,10 +103,10 @@ class TestTaskLifecycle:
         assert completed_task is not None
         assert completed_task.status == "completed"
         assert completed_task.result is not None
-        assert completed_task.duration == 15.5
+        assert completed_task.duration == pytest.approx(15.5)
         assert completed_task.end_time is not None
 
-    def test_fail_task_lifecycle(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_fail_task_lifecycle(self, db_session: Session) -> None:
         """Test task lifecycle ending in failure."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -129,7 +130,7 @@ class TestTaskLifecycle:
         assert failed_task.error == "Processing timeout"
         assert failed_task.end_time is not None
 
-    def test_get_all_tasks(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_get_all_tasks(self, db_session: Session) -> None:
         """Test retrieving all tasks from database."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -151,7 +152,7 @@ class TestTaskLifecycle:
         assert "all-test-002" in uuids
         assert "all-test-003" in uuids
 
-    def test_delete_task(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_delete_task(self, db_session: Session) -> None:
         """Test deleting a task from database."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -169,14 +170,14 @@ class TestTaskLifecycle:
         # Verify it's gone
         assert repository.get_by_id(task_id) is None
 
-    def test_update_nonexistent_task_returns_none(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_update_nonexistent_task_returns_none(self, db_session: Session) -> None:
         """Test updating non-existent task raises ValueError."""
         repository = SQLAlchemyTaskRepository(db_session)
 
         with pytest.raises(ValueError, match="Task not found"):
             repository.update("non-existent-uuid", {"status": "completed"})
 
-    def test_delete_nonexistent_task_returns_false(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_delete_nonexistent_task_returns_false(self, db_session: Session) -> None:
         """Test deleting non-existent task returns False."""
         repository = SQLAlchemyTaskRepository(db_session)
 
@@ -184,7 +185,7 @@ class TestTaskLifecycle:
 
         assert result is False
 
-    def test_task_with_complex_result_data(self, db_session) -> None:  # type: ignore[no-untyped-def]
+    def test_task_with_complex_result_data(self, db_session: Session) -> None:
         """Test task with complex nested result data."""
         repository = SQLAlchemyTaskRepository(db_session)
 

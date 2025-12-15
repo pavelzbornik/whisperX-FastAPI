@@ -4,8 +4,6 @@ from typing import Any
 
 import numpy as np
 
-from tests.mocks.constants import TRANSCRIPTION_TEXT
-
 
 class MockAlignmentService:
     """
@@ -117,10 +115,10 @@ class MockAlignmentService:
                 {
                     "start": 2.0,
                     "end": 4.0,
-                    "text": TRANSCRIPTION_TEXT,
+                    "text": "transcription.",
                     "words": [
                         {
-                            "word": TRANSCRIPTION_TEXT,
+                            "word": "transcription.",
                             "start": 2.0,
                             "end": 4.0,
                             "score": 0.99,
@@ -133,6 +131,6 @@ class MockAlignmentService:
                 {"word": "is", "start": 0.5, "end": 0.8, "score": 0.98},
                 {"word": "a", "start": 0.8, "end": 1.0, "score": 0.97},
                 {"word": "test", "start": 1.0, "end": 2.0, "score": 0.99},
-                {"word": TRANSCRIPTION_TEXT, "start": 2.0, "end": 4.0, "score": 0.99},
+                {"word": "transcription.", "start": 2.0, "end": 4.0, "score": 0.99},
             ],
         }

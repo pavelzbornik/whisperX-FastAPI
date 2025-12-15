@@ -28,32 +28,32 @@ handlers:
 loggers:
   pytorch_lightning.utilities.migration:
     handlers:
-    - default
+      - default
     level: WARNING
     propagate: false
   speechbrain.utils.quirks:
     handlers:
-    - default
+      - default
     level: WARNING
     propagate: false
   uvicorn.access:
     handlers:
-    - default
-    level: DEBUG
+      - default
+    level: INFO
     propagate: false
   uvicorn.error:
     handlers:
-    - default
-    level: DEBUG
+      - default
+    level: INFO
     propagate: false
   whisperX:
     handlers:
-    - colored
-    level: DEBUG
+      - colored
+    level: INFO
     propagate: false
 root:
   handlers:
-  - default
-  level: DEBUG
+    - default
+  level: INFO
   propagate: false
 version: 1

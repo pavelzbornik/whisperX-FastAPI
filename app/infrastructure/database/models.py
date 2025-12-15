@@ -1,8 +1,8 @@
 """This module defines the database models for the application."""
 
 from datetime import datetime, timezone
-from typing import Any
 from uuid import uuid4
+from typing import Any
 
 from sqlalchemy import JSON, DateTime, Float, Integer, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -44,36 +44,36 @@ class Task(Base):
         comment="Universally unique identifier for each task",
     )
     status: Mapped[str] = mapped_column(String, comment="Current status of the task")
-    result: Mapped[dict[str, Any]] = mapped_column(
+    result: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, comment="JSON data representing the result of the task"
     )
-    file_name: Mapped[str] = mapped_column(
-        String, comment="Name of the file associated with the task"
+    file_name: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Name of the file associated with the task"
     )
-    url: Mapped[str] = mapped_column(
-        String, comment="URL of the file associated with the task"
+    url: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="URL of the file associated with the task"
     )
-    audio_duration: Mapped[float] = mapped_column(
-        Float, comment="Duration of the audio in seconds"
+    audio_duration: Mapped[float | None] = mapped_column(
+        Float, nullable=True, comment="Duration of the audio in seconds"
     )
-    language: Mapped[str] = mapped_column(
-        String, comment="Language of the file associated with the task"
+    language: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Language of the file associated with the task"
     )
     task_type: Mapped[str] = mapped_column(String, comment="Type/category of the task")
-    task_params: Mapped[dict[str, Any]] = mapped_column(
-        JSON, comment="Parameters of the task"
+    task_params: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True, comment="Parameters of the task"
     )
-    duration: Mapped[float] = mapped_column(
-        Float, comment="Duration of the task execution"
+    duration: Mapped[float | None] = mapped_column(
+        Float, nullable=True, comment="Duration of the task execution"
     )
-    start_time: Mapped[datetime] = mapped_column(
-        DateTime, comment="Start time of the task execution"
+    start_time: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="Start time of the task execution"
     )
-    end_time: Mapped[datetime] = mapped_column(
-        DateTime, comment="End time of the task execution"
+    end_time: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, comment="End time of the task execution"
     )
-    error: Mapped[str] = mapped_column(
-        String, comment="Error message, if any, associated with the task"
+    error: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Error message, if any, associated with the task"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,

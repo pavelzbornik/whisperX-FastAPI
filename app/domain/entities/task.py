@@ -1,7 +1,7 @@
 """Domain entity for Task - Pure Python class representing business entity."""
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any
 
 
@@ -44,8 +44,8 @@ class Task:
     start_time: datetime | None = None
     end_time: datetime | None = None
     error: str | None = None
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = field(default_factory=datetime.utcnow)
+    updated_at: datetime = field(default_factory=datetime.utcnow)
 
     def mark_as_completed(
         self, result: dict[str, Any], duration: float, end_time: datetime
@@ -62,7 +62,7 @@ class Task:
         self.result = result
         self.duration = duration
         self.end_time = end_time
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.utcnow()
 
     def mark_as_failed(self, error: str) -> None:
         """
@@ -73,8 +73,8 @@ class Task:
         """
         self.status = "failed"
         self.error = error
-        self.end_time = datetime.now(timezone.utc)
-        self.updated_at = datetime.now(timezone.utc)
+        self.end_time = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
 
     def mark_as_processing(self, start_time: datetime) -> None:
         """
@@ -85,7 +85,7 @@ class Task:
         """
         self.status = "processing"
         self.start_time = start_time
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.utcnow()
 
     def is_processing(self) -> bool:
         """
