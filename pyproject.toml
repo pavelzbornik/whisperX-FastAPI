@@ -29,28 +29,25 @@ classifiers = [
 dependencies = [
     "colorlog==6.10.1",
     "dependency-injector>=4.41.0",
-    "dependency-injector>=4.41.0",
     "fastapi==0.124.4",
     "gunicorn==23.0.0",
     "httpx==0.28.1",
-    "numba==0.63.1",
-    "pydantic-settings>=2.0.0",
+    "numba==0.61.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.1",
     "python-multipart==0.0.20",
     "tqdm==4.67.1",
     "uvicorn==0.38.0",
     "whisperx==3.7.4",
-    "torch<=2.9.1",
-    "torchaudio<=2.9.1",
-    "torchvision<=0.24.1",
+    "torch<=2.8.0",
+    "torchaudio<=2.8.0",
+    "torchvision<=0.23.0",
     "setuptools>=78.1.1",  # CVE-2025-47273 fix
 ]
 
 [project.optional-dependencies]
 dev = [
     "codespell==2.4.1",
-    "factory-boy==3.3.1",
     "factory-boy==3.3.1",
     "mypy==1.19.0",
     "pandas-stubs>=2.1.0",
