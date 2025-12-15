@@ -132,7 +132,7 @@ app.add_exception_handler(Exception, generic_error_handler)
 ### Handler Behavior
 
 | Handler | Status Code | User Message | Internal Details Exposed |
-|---------|-------------|--------------|-------------------------|
+| --- | --- | --- | --- |
 | `task_not_found_handler` | 404 | User-friendly | No |
 | `validation_error_handler` | 422 | Validation details | Yes (safe) |
 | `domain_error_handler` | 400 | User-friendly | No |

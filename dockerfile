@@ -13,6 +13,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     ffmpeg=7:4.4.2-0ubuntu0.22.04.1 \
     libcudnn9-cuda-12=9.8.0.87-1 \
     libatomic1 \
+    curl \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python3 \
@@ -41,4 +42,8 @@ RUN uv sync --frozen --no-dev \
 
 EXPOSE 8000
 
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "--log-config", "gunicorn_logging.conf", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
+# Health check to verify the application is responsive
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl --fail http://localhost:8000/health || exit 1
+
+ENTRYPOINT ["uv", "run", "--no-sync", "gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "--log-config", "gunicorn_logging.conf", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
