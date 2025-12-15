@@ -9,6 +9,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.api.constants import AUDIO_LANGUAGE_DESCRIPTION
+
 
 class CreateTaskRequest(BaseModel):
     """DTO for creating a new task via API.
@@ -23,7 +25,7 @@ class CreateTaskRequest(BaseModel):
     audio_duration: float | None = Field(
         None, description="Duration of the audio in seconds"
     )
-    language: str | None = Field(None, description="Language of the audio")
+    language: str | None = Field(None, description=AUDIO_LANGUAGE_DESCRIPTION)
     task_params: dict[str, Any] | None = Field(
         None, description="Additional task parameters"
     )
@@ -41,7 +43,7 @@ class TaskResponse(BaseModel):
     file_name: str | None = Field(None, description="Name of the file")
     url: str | None = Field(None, description="URL of the file")
     audio_duration: float | None = Field(None, description="Duration of the audio")
-    language: str | None = Field(None, description="Language of the audio")
+    language: str | None = Field(None, description=AUDIO_LANGUAGE_DESCRIPTION)
     task_params: dict[str, Any] | None = Field(None, description="Task parameters")
     result: dict[str, Any] | None = Field(None, description="Task result data")
     error: str | None = Field(None, description="Error message if task failed")
@@ -66,7 +68,7 @@ class TaskSummaryResponse(BaseModel):
     file_name: str | None = Field(None, description="Name of the file")
     url: str | None = Field(None, description="URL of the file")
     audio_duration: float | None = Field(None, description="Duration of the audio")
-    language: str | None = Field(None, description="Language of the audio")
+    language: str | None = Field(None, description=AUDIO_LANGUAGE_DESCRIPTION)
     error: str | None = Field(None, description="Error message if task failed")
     duration: float | None = Field(None, description="Execution duration in seconds")
     start_time: datetime | None = Field(None, description="Task start time")

@@ -2,6 +2,7 @@
 
 from collections.abc import Generator
 
+from app.api.constants import CONTAINER_NOT_INITIALIZED_ERROR
 from app.core.container import Container
 from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
@@ -42,7 +43,7 @@ def get_task_repository() -> Generator[ITaskRepository, None, None]:
         ...     return {"id": task_id}
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.task_repository()
 
 
@@ -57,7 +58,7 @@ def get_file_service() -> Generator[FileService, None, None]:
         FileService: A file service instance
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.file_service()
 
 
@@ -72,7 +73,7 @@ def get_task_management_service() -> Generator[TaskManagementService, None, None
         TaskManagementService: A task management service instance
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.task_management_service()
 
 
@@ -96,7 +97,7 @@ def get_transcription_service() -> Generator[ITranscriptionService, None, None]:
         ...     return result
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.transcription_service()
 
 
@@ -120,7 +121,7 @@ def get_diarization_service() -> Generator[IDiarizationService, None, None]:
         ...     return result
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.diarization_service()
 
 
@@ -144,7 +145,7 @@ def get_alignment_service() -> Generator[IAlignmentService, None, None]:
         ...     return result
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.alignment_service()
 
 
@@ -170,5 +171,5 @@ def get_speaker_assignment_service() -> Generator[
         ...     return result
     """
     if _container is None:
-        raise RuntimeError("Container not initialized. Call set_container() first.")
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.speaker_assignment_service()
