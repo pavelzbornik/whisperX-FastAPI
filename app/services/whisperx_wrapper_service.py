@@ -415,7 +415,7 @@ def process_audio_common(
     finally:
         try:
             if params.callback_url:
-                task = repository.get(params.identifier)
+                task = repository.get_by_id(params.identifier)
                 if task:
                     metadata = Metadata(
                         task_type=task.task_type,

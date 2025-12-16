@@ -1,3 +1,5 @@
+"""Callback functionality."""
+
 from datetime import datetime
 from typing import Any, Optional, Dict
 import time
@@ -7,7 +9,7 @@ from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
 from app.core.config import get_settings
-from .logger import logger
+from app.core.logging import logger
 
 
 def validate_callback_url(callback_url: str) -> bool:
@@ -125,7 +127,7 @@ def post_task_callback(callback_url: str, payload: Dict[str, Any]) -> None:
                 attempt + 1,
                 max_retries,
                 e.response.status_code,
-                e.response.text,
+                e.response.text[:200],
             )
         except Exception as e:
             logger.warning(

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from ..schemas import Result, TaskEventReceived
+from app.schemas import Result, TaskEventReceived
 
 
 task_callback_router = APIRouter()

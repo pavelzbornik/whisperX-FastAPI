@@ -38,13 +38,8 @@ from app.schemas import (
 from app.services import process_audio_common
 from app.services.file_service import FileService
 
-from .callbacks import task_callback_router
+from app.api.callbacks import task_callback_router
 from app.callbacks import validate_callback_url_dependency
-
-
-# Custom secure_filename implementation (no Werkzeug dependency)
-
-from .callbacks import task_callback_router
 
 
 # Configure logging

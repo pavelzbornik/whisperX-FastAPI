@@ -422,11 +422,3 @@ class TaskStatus(str, Enum):
     processing = "processing"
     completed = "completed"
     failed = "failed"
-
-
-class TaskStatus(str, Enum):
-    """Enum for task status."""
-
-    processing = "processing"
-    completed = "completed"
-    failed = "failed"
