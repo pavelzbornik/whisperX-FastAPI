@@ -22,3 +22,11 @@ def filter_warnings() -> None:
             "ignore", message="Model was trained with pyannote.audio*"
         )
         warnings.filterwarnings("ignore", message="Model was trained with torch*")
+
+        # Filter FastAPI OpenAPI duplicate operation ID warnings for callback
+        warnings.filterwarnings(
+            "ignore",
+            message="Duplicate Operation ID task_completion_callback.*",
+            category=UserWarning,
+            module="fastapi.openapi.utils",
+        )

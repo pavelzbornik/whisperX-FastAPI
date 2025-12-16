@@ -53,6 +53,9 @@ class Task(Base):
     url: Mapped[str | None] = mapped_column(
         String, nullable=True, comment="URL of the file associated with the task"
     )
+    callback_url: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Callback URL to POST results to"
+    )
     audio_duration: Mapped[float | None] = mapped_column(
         Float, nullable=True, comment="Duration of the audio in seconds"
     )

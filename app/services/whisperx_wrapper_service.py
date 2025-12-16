@@ -14,6 +14,7 @@ from whisperx import (
 )
 from whisperx.diarize import DiarizationPipeline
 
+from app.callbacks import post_task_callback
 from app.core.config import Config
 from app.core.logging import logger
 from app.domain.repositories.task_repository import ITaskRepository
@@ -29,6 +30,8 @@ from app.schemas import (
     AlignedTranscription,
     ComputeType,
     Device,
+    Metadata,
+    Result,
     SpeechToTextProcessingParams,
     TaskStatus,
     WhisperModel,
@@ -385,6 +388,7 @@ def process_audio_common(
                 "end_time": end_time,
             },
         )
+
     except (RuntimeError, ValueError, KeyError) as e:
         logger.error(
             "Speech-to-text processing failed for identifier: %s. Error: %s",
@@ -398,6 +402,7 @@ def process_audio_common(
                 "error": str(e),
             },
         )
+
     except MemoryError as e:
         logger.error(
             f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
@@ -406,5 +411,36 @@ def process_audio_common(
             identifier=params.identifier,
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
+
     finally:
+        try:
+            if params.callback_url:
+                task = repository.get_by_id(params.identifier)
+                if task:
+                    metadata = Metadata(
+                        task_type=task.task_type,
+                        task_params=task.task_params,
+                        language=task.language,
+                        file_name=task.file_name,
+                        url=task.url,
+                        callback_url=task.callback_url,
+                        duration=task.duration,
+                        audio_duration=task.audio_duration,
+                        start_time=task.start_time,
+                        end_time=task.end_time,
+                    )
+                    result_payload = Result(
+                        status=task.status,
+                        result=task.result,
+                        metadata=metadata,
+                        error=task.error,
+                    )
+                    post_task_callback(params.callback_url, result_payload.model_dump())
+        except Exception as e:
+            logger.error(
+                "Failed to send callback for identifier %s: %s",
+                params.identifier,
+                str(e),
+            )
+
         session.close()

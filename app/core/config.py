@@ -96,6 +96,19 @@ class LoggingSettings(BaseSettings):
     )
 
 
+class CallbackSettings(BaseSettings):
+    """Callback configuration settings."""
+
+    CALLBACK_TIMEOUT: int = Field(
+        default=10,
+        description="Timeout for callback requests in seconds",
+    )
+    CALLBACK_MAX_RETRIES: int = Field(
+        default=3,
+        description="Maximum number of retries for failed callback requests",
+    )
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -120,6 +133,7 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     whisper: WhisperSettings = Field(default_factory=WhisperSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    callback: CallbackSettings = Field(default_factory=CallbackSettings)
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod

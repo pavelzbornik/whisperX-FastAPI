@@ -25,6 +25,7 @@ class Metadata(BaseModel):
     language: str | None
     file_name: str | None
     url: str | None
+    callback_url: str | None
     duration: float | None
     audio_duration: float | None = None
     start_time: datetime | None = None
@@ -41,6 +42,7 @@ class TaskSimple(BaseModel):
     file_name: str | None
     error: str | None
     url: str | None
+    callback_url: str | None
     duration: float | None
     audio_duration: float | None = None
     start_time: datetime | None = None
@@ -62,6 +64,7 @@ class TaskSimple(BaseModel):
             file_name=getattr(task, "file_name", None),
             error=getattr(task, "error", None),
             url=getattr(task, "url", None),
+            callback_url=getattr(task, "callback_url", None),
             duration=getattr(task, "duration", None),
             audio_duration=getattr(task, "audio_duration", None),
             start_time=getattr(task, "start_time", None),
@@ -73,6 +76,12 @@ class ResultTasks(BaseModel):
     """Model for a list of simple tasks."""
 
     tasks: list[TaskSimple]
+
+
+class TaskEventReceived(BaseModel):
+    """Confirmation that the callback was received."""
+
+    ok: bool
 
 
 class TranscriptionSegment(BaseModel):
@@ -394,6 +403,7 @@ class SpeechToTextProcessingParams(BaseModel):
     whisper_model_params: WhisperModelParams
     alignment_params: AlignmentParams
     diarization_params: DiarizationParams
+    callback_url: str | None = None
 
 
 class TaskType(str, Enum):
