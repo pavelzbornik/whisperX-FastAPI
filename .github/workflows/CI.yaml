@@ -100,12 +100,12 @@ jobs:
       - name: Run tests with coverage
         run: uv run pytest --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under=80
       - name: Upload test report
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: test-report-${{ matrix.python-version }}
           path: pytest-report.xml
       - name: Upload coverage report
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
@@ -291,13 +291,13 @@ jobs:
           chmod +x sarif-to-markdown-table-linux
           cat trivy-results.sarif | ./sarif-to-markdown-table-linux > trivy-results.txt 2>/dev/null || cat trivy-results.sarif > trivy-results.txt
       - name: Upload Trivy scan results as artifact
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
         with:
           name: trivy-results
           path: trivy-results.txt
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@16140ae1a102900babc80a33c44059580f687047
+        uses: github/codeql-action/upload-sarif@1b168cd39490f61582a9beae412bb7057a6b2c4e
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
@@ -341,7 +341,7 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@5a70a1d133aebc31503dc07fb19f294cf18ff31c
+        uses: dependabot/fetch-metadata@fa6d7aee4f734d7f1a20fb075d01c7db6731009d
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge the PR
@@ -359,7 +359,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: googleapis/release-please-action@e5c2aa4f6acd6194e00632c8f262cff67ae17873
+      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38
         id: release-please
         with:
           token: ${{ secrets.PAT_TOKEN }}
@@ -373,7 +373,7 @@ jobs:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
         if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41
       - name: Update uv.lock
         if: ${{ steps.release-please.outputs.pr }}
         run: uv lock
