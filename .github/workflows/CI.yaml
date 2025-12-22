@@ -110,7 +110,7 @@ jobs:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
       - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarqube-scan-action@40f5b61913e891f9d316696628698051136015be
+        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
