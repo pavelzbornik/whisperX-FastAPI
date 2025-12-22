@@ -341,7 +341,7 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@fa6d7aee4f734d7f1a20fb075d01c7db6731009d
+        uses: dependabot/fetch-metadata@3837dcc013fa49857b3ce43e5e985c87b36856fe
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge the PR
