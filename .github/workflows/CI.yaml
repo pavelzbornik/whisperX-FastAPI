@@ -146,7 +146,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
       - name: Dependency Review
-        uses: actions/dependency-review-action@07b91577a360213440b7d4bc514338cb37ce61a0
+        uses: actions/dependency-review-action@774d14bf50b7a2e2460f9f49e25c52503ecab125
         with:
           fail-on-severity: moderate
       - name: Comment on PR if dependency review fails
