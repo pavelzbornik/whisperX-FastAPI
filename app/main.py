@@ -120,6 +120,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Add middleware in reverse order (LIFO)
+# ErrorHandling should catch exceptions from all other middleware
+from app.api.middleware import (  # noqa: E402
+    ErrorHandlingMiddleware,
+    RequestIDMiddleware,
+    RequestLoggingMiddleware,
+    TimingMiddleware,
+)
+
+app.add_middleware(ErrorHandlingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(TimingMiddleware)
+app.add_middleware(RequestIDMiddleware)
+
 # Register exception handlers
 app.add_exception_handler(TaskNotFoundError, task_not_found_handler)
 app.add_exception_handler(ValidationError, validation_error_handler)
