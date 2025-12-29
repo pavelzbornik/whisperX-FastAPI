@@ -48,7 +48,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "codespell==2.4.1",
-    "factory-boy==3.3.1",
+    "factory-boy==3.3.3",
     "mypy==1.19.0",
     "pandas-stubs>=2.1.0",
     "pre-commit==4.5.1",
