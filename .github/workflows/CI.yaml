@@ -347,7 +347,7 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@7d590d1f6c6419e97a707c1d273efcef1242c5ec
+        uses: dependabot/fetch-metadata@5a70a1d133aebc31503dc07fb19f294cf18ff31c
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge the PR
@@ -379,7 +379,7 @@ jobs:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
         if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867
+        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
       - name: Update uv.lock
         if: ${{ steps.release-please.outputs.pr }}
         run: uv lock
