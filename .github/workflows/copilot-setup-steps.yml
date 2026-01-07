@@ -26,7 +26,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           python-version: "3.11"
-          dependency-group: dev
       - name: Cache Hugging Face and Torch models
         uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
         with:
