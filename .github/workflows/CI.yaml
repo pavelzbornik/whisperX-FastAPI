@@ -15,6 +15,9 @@ on:
       - "dockerfile"
       - "docker-compose.yml"
       - "pyproject.toml"
+      - ".github/workflows/**"
+      - "uv.lock"
+      - ".pre-commit-config.yaml"
   push:
     branches:
       - main
@@ -25,6 +28,9 @@ on:
       - "dockerfile"
       - "docker-compose.yml"
       - "pyproject.toml"
+      - ".github/workflows/**"
+      - "uv.lock"
+      - ".pre-commit-config.yaml"
   workflow_dispatch:
   workflow_call:
 jobs:
