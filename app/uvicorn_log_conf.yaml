@@ -2,7 +2,7 @@ disable_existing_loggers: false
 formatters:
   colored:
     class: colorlog.ColoredFormatter
-    format: '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format: '%(log_color)s%(asctime)s [%(request_id)s] - %(name)s - %(levelname)s - %(message)s'
     log_colors:
       CRITICAL: red,bg_white
       DEBUG: cyan
@@ -11,7 +11,7 @@ formatters:
       WARNING: yellow
   default:
     class: logging.Formatter
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format: '%(asctime)s [%(request_id)s] - %(name)s - %(levelname)s - %(message)s'
 handlers:
   access:
     class: logging.StreamHandler

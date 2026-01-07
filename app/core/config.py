@@ -96,6 +96,28 @@ class LoggingSettings(BaseSettings):
     )
 
 
+class MiddlewareSettings(BaseSettings):
+    """Middleware configuration settings."""
+
+    ENABLE_REQUEST_LOGGING: bool = Field(
+        default=True,
+        description="Enable request/response logging middleware",
+    )
+    SLOW_REQUEST_THRESHOLD: float = Field(
+        default=5.0,
+        description="Threshold in seconds for logging slow requests",
+    )
+    SENSITIVE_HEADERS: set[str] = Field(
+        default={
+            "authorization",
+            "cookie",
+            "x-api-key",
+            "x-csrf-token",
+        },
+        description="Headers to redact in logs",
+    )
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -120,6 +142,7 @@ class Settings(BaseSettings):
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     whisper: WhisperSettings = Field(default_factory=WhisperSettings)
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
+    middleware: MiddlewareSettings = Field(default_factory=MiddlewareSettings)
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod

@@ -259,6 +259,7 @@ def process_audio_common(
     alignment_service: IAlignmentService | None = None,
     diarization_service: IDiarizationService | None = None,
     speaker_service: ISpeakerAssignmentService | None = None,
+    request_id: str = "",
 ) -> None:
     """
     Process an audio clip to generate a transcript with speaker labels.
@@ -269,17 +270,23 @@ def process_audio_common(
         alignment_service: Alignment service (defaults to WhisperX if None)
         diarization_service: Diarization service (defaults to WhisperX if None)
         speaker_service: Speaker assignment service (defaults to WhisperX if None)
+        request_id (str): Request ID for correlation tracking.
 
     Returns:
         None: The result is saved in the transcription requests dict.
     """
     # Import here to avoid circular dependency
+    from app.api.middleware.request_id import request_id_var
     from app.infrastructure.ml import (
         WhisperXAlignmentService,
         WhisperXDiarizationService,
         WhisperXSpeakerAssignmentService,
         WhisperXTranscriptionService,
     )
+
+    # Set request ID in context for logging
+    if request_id:
+        request_id_var.set(request_id)
 
     # Use provided services or create default WhisperX implementations
     transcription_svc = transcription_service or WhisperXTranscriptionService()
@@ -408,3 +415,6 @@ def process_audio_common(
         )
     finally:
         session.close()
+        # Clear request ID context after processing
+        if request_id:
+            request_id_var.set("")

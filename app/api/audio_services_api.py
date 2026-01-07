@@ -15,6 +15,7 @@ from fastapi import (
     Depends,
     File,
     Query,
+    Request,
     UploadFile,
 )
 from pydantic import ValidationError as PydanticValidationError
@@ -76,6 +77,7 @@ service_router = APIRouter()
 )
 async def transcribe(
     background_tasks: BackgroundTasks,
+    request: Request,
     model_params: WhisperModelParams = Depends(),
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
@@ -89,6 +91,7 @@ async def transcribe(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
+        request (Request): FastAPI request object.
         model_params (WhisperModelParams): Whisper model parameters.
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
@@ -129,6 +132,9 @@ async def transcribe(
 
     identifier = repository.add(task)
 
+    # Get request ID for correlation tracking
+    request_id = getattr(request.state, "request_id", "")
+
     background_tasks.add_task(
         process_transcribe,
         audio,
@@ -137,6 +143,7 @@ async def transcribe(
         asr_options_params,
         vad_options_params,
         transcription_service,
+        request_id,
     )
 
     logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
@@ -150,6 +157,7 @@ async def transcribe(
 )
 def align(
     background_tasks: BackgroundTasks,
+    request: Request,
     transcript: UploadFile = File(
         ..., description="Whisper style transcript json file"
     ),
@@ -170,6 +178,7 @@ def align(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
+        request (Request): FastAPI request object.
         transcript (UploadFile): Uploaded transcript file.
         file (UploadFile): Uploaded audio file.
         device (Device): Device for PyTorch inference.
@@ -234,6 +243,9 @@ def align(
 
     identifier = repository.add(task)
 
+    # Get request ID for correlation tracking
+    request_id = getattr(request.state, "request_id", "")
+
     background_tasks.add_task(
         process_alignment,
         audio,
@@ -242,6 +254,7 @@ def align(
         device,
         align_params,
         alignment_service,
+        request_id,
     )
 
     logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
@@ -253,6 +266,7 @@ def align(
 )
 async def diarize(
     background_tasks: BackgroundTasks,
+    request: Request,
     file: UploadFile = File(...),
     repository: ITaskRepository = Depends(get_task_repository),
     device: Device = Query(
@@ -268,6 +282,7 @@ async def diarize(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
+        request (Request): FastAPI request object.
         file (UploadFile): Uploaded audio file.
         repository (ITaskRepository): Task repository dependency.
         device (Device): Device for PyTorch inference.
@@ -305,6 +320,9 @@ async def diarize(
 
     identifier = repository.add(task)
 
+    # Get request ID for correlation tracking
+    request_id = getattr(request.state, "request_id", "")
+
     background_tasks.add_task(
         process_diarize,
         audio,
@@ -312,6 +330,7 @@ async def diarize(
         device,
         diarize_params,
         diarization_service,
+        request_id,
     )
 
     logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)
@@ -325,6 +344,7 @@ async def diarize(
 )
 async def combine(
     background_tasks: BackgroundTasks,
+    request: Request,
     aligned_transcript: UploadFile = File(...),
     diarization_result: UploadFile = File(...),
     repository: ITaskRepository = Depends(get_task_repository),
@@ -338,6 +358,7 @@ async def combine(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
+        request (Request): FastAPI request object.
         aligned_transcript (UploadFile): Uploaded aligned transcript file.
         diarization_result (UploadFile): Uploaded diarization result file.
         repository (ITaskRepository): Task repository dependency.
@@ -402,12 +423,16 @@ async def combine(
 
     identifier = repository.add(task)
 
+    # Get request ID for correlation tracking
+    request_id = getattr(request.state, "request_id", "")
+
     background_tasks.add_task(
         process_speaker_assignment,
         pd.json_normalize([segment.model_dump() for segment in diarization_segments]),
         transcript.model_dump(),
         identifier,
         speaker_service,
+        request_id,
     )
 
     logger.info(TASK_SCHEDULED_LOG_FORMAT, identifier)

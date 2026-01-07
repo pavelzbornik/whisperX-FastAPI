@@ -10,6 +10,7 @@ import uuid
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
+from app.api.middleware.request_id import get_request_id
 from app.core.exceptions import (
     DomainError,
     InfrastructureError,
@@ -38,19 +39,24 @@ async def domain_error_handler(
     # Cast to DomainError since we know it will be that type
     domain_exc = exc if isinstance(exc, DomainError) else DomainError(str(exc))
 
+    # Get request ID from middleware context
+    request_id = get_request_id()
+
     logger.warning(
         "Domain error: %s",
         domain_exc.message,
         extra={
             "correlation_id": domain_exc.correlation_id,
+            "request_id": request_id,
             "code": domain_exc.code,
             "path": request.url.path,
         },
     )
 
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST, content=domain_exc.to_dict()
-    )
+    error_response = domain_exc.to_dict()
+    error_response["request_id"] = request_id
+
+    return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content=error_response)
 
 
 async def validation_error_handler(
@@ -71,14 +77,24 @@ async def validation_error_handler(
     # Cast to ValidationError since we know it will be that type
     val_exc = exc if isinstance(exc, ValidationError) else ValidationError(str(exc))
 
+    # Get request ID from middleware context
+    request_id = get_request_id()
+
     logger.info(
         "Validation error: %s",
         val_exc.message,
-        extra={"correlation_id": val_exc.correlation_id, "path": request.url.path},
+        extra={
+            "correlation_id": val_exc.correlation_id,
+            "request_id": request_id,
+            "path": request.url.path,
+        },
     )
 
+    error_response = val_exc.to_dict()
+    error_response["request_id"] = request_id
+
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=val_exc.to_dict()
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content=error_response
     )
 
 
@@ -102,15 +118,23 @@ async def task_not_found_handler(
         exc if isinstance(exc, TaskNotFoundError) else TaskNotFoundError("unknown")
     )
 
+    # Get request ID from middleware context
+    request_id = get_request_id()
+
     logger.info(
         "Task not found: %s",
         task_exc.details.get("identifier"),
-        extra={"correlation_id": task_exc.correlation_id, "path": request.url.path},
+        extra={
+            "correlation_id": task_exc.correlation_id,
+            "request_id": request_id,
+            "path": request.url.path,
+        },
     )
 
-    return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND, content=task_exc.to_dict()
-    )
+    error_response = task_exc.to_dict()
+    error_response["request_id"] = request_id
+
+    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=error_response)
 
 
 async def infrastructure_error_handler(
@@ -134,11 +158,15 @@ async def infrastructure_error_handler(
         exc if isinstance(exc, InfrastructureError) else InfrastructureError(str(exc))
     )
 
+    # Get request ID from middleware context
+    request_id = get_request_id()
+
     logger.error(
         "Infrastructure error: %s",
         infra_exc.message,
         extra={
             "correlation_id": infra_exc.correlation_id,
+            "request_id": request_id,
             "code": infra_exc.code,
             "path": request.url.path,
         },
@@ -153,6 +181,7 @@ async def infrastructure_error_handler(
                 "message": "A temporary system error occurred. Please try again later.",
                 "code": infra_exc.code,
                 "correlation_id": infra_exc.correlation_id,
+                "request_id": request_id,
             }
         },
     )
@@ -173,11 +202,16 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
         JSONResponse with generic error message and HTTP 500 status
     """
     correlation_id = str(uuid.uuid4())
+    request_id = get_request_id()
 
     logger.error(
         "Unexpected error: %s",
         str(exc),
-        extra={"correlation_id": correlation_id, "path": request.url.path},
+        extra={
+            "correlation_id": correlation_id,
+            "request_id": request_id,
+            "path": request.url.path,
+        },
         exc_info=True,
     )
 
@@ -188,6 +222,7 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
                 "message": "An unexpected error occurred. Please contact support if the problem persists.",
                 "code": "INTERNAL_ERROR",
                 "correlation_id": correlation_id,
+                "request_id": request_id,
             }
         },
     )

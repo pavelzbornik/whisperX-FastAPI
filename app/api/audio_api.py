@@ -14,6 +14,7 @@ from fastapi import (
     Depends,
     File,
     Form,
+    Request,
     UploadFile,
 )
 
@@ -48,6 +49,7 @@ stt_router = APIRouter()
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
 async def speech_to_text(
     background_tasks: BackgroundTasks,
+    request: Request,
     model_params: WhisperModelParams = Depends(),
     align_params: AlignmentParams = Depends(),
     diarize_params: DiarizationParams = Depends(),
@@ -62,6 +64,7 @@ async def speech_to_text(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
+        request (Request): FastAPI request object.
         model_params (WhisperModelParams): Whisper model parameters.
         align_params (AlignmentParams): Alignment parameters.
         diarize_params (DiarizationParams): Diarization parameters.
@@ -122,7 +125,10 @@ async def speech_to_text(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params)
+    # Get request ID for correlation tracking
+    request_id = getattr(request.state, "request_id", "")
+
+    background_tasks.add_task(process_audio_common, audio_params, request_id=request_id)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
@@ -131,6 +137,7 @@ async def speech_to_text(
 @stt_router.post("/speech-to-text-url", tags=["Speech-2-Text"])
 async def speech_to_text_url(
     background_tasks: BackgroundTasks,
+    request: Request,
     model_params: WhisperModelParams = Depends(),
     align_params: AlignmentParams = Depends(),
     diarize_params: DiarizationParams = Depends(),
@@ -145,6 +152,7 @@ async def speech_to_text_url(
 
     Args:
         background_tasks (BackgroundTasks): Background tasks dependency.
+        request (Request): FastAPI request object.
         model_params (WhisperModelParams): Whisper model parameters.
         align_params (AlignmentParams): Alignment parameters.
         diarize_params (DiarizationParams): Diarization parameters.
@@ -202,7 +210,10 @@ async def speech_to_text_url(
         diarization_params=diarize_params,
     )
 
-    background_tasks.add_task(process_audio_common, audio_params)
+    # Get request ID for correlation tracking
+    request_id = getattr(request.state, "request_id", "")
+
+    background_tasks.add_task(process_audio_common, audio_params, request_id=request_id)
     logger.info("Background task scheduled for processing: ID %s", identifier)
 
     return Response(identifier=identifier, message="Task queued")
