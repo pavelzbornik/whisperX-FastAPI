@@ -87,3 +87,12 @@ repos:
       - id: hadolint
         files: '(^|/)[Dd]ockerfile$'
         types: [file] # Override the default 'dockerfile' type
+  - repo: local
+    hooks:
+      - id: update-badges
+        name: Update README badges
+        entry: python scripts/update-badges.py
+        language: system
+        files: '^(pyproject\.toml|scripts/update-badges\.py)$'
+        pass_filenames: false
+        stages: [pre-commit]
