@@ -65,7 +65,7 @@ def get_whisperx_version(use_ci: bool = False) -> str:
         from importlib.metadata import version
 
         return version("whisperx")
-    except Exception:
+    except (ImportError, ModuleNotFoundError):
         pass
 
     try:
@@ -77,7 +77,7 @@ def get_whisperx_version(use_ci: bool = False) -> str:
     except ImportError:
         pass
 
-    # Fallback to pyproject.toml
+    # Fallback to pyproject.toml if package metadata or module not available
     return get_version_from_pyproject("whisperx")
 
 
@@ -137,7 +137,7 @@ def get_version_from_pyproject(package: str) -> str:
             return version
 
         return "unknown"
-    except Exception as e:
+    except (FileNotFoundError, PermissionError, UnicodeDecodeError, OSError) as e:
         print(f"Warning: Could not read pyproject.toml: {e}", file=sys.stderr)
         return "unknown"
 
@@ -171,7 +171,7 @@ def get_cuda_version_from_pyproject() -> str:
                 return f"{major}.{minor}"
 
         return "n/a"
-    except Exception as e:
+    except (FileNotFoundError, PermissionError, UnicodeDecodeError, OSError) as e:
         print(
             f"Warning: Could not read CUDA version from pyproject.toml: {e}",
             file=sys.stderr,
@@ -240,7 +240,7 @@ def update_readme_badges(dry_run: bool = False, use_ci: bool = False) -> bool:
 
     try:
         content = readme_path.read_text()
-    except Exception as e:
+    except (FileNotFoundError, PermissionError, UnicodeDecodeError, OSError) as e:
         print(f"Error: Could not read README.md: {e}", file=sys.stderr)
         return False
 
@@ -285,7 +285,7 @@ def update_readme_badges(dry_run: bool = False, use_ci: bool = False) -> bool:
         readme_path.write_text(new_content)
         print(f"Successfully updated badges in {readme_path}")
         return True
-    except Exception as e:
+    except (PermissionError, OSError, UnicodeEncodeError) as e:
         print(f"Error: Could not write to README.md: {e}", file=sys.stderr)
         return False
 
@@ -319,7 +319,11 @@ def main() -> int:
         # Exit with 0 whether updated or not (both are valid states)
         return 0
     except Exception as e:
+        # Last resort error handler - log full traceback for debugging
+        import traceback
+
         print(f"Unexpected error: {e}", file=sys.stderr)
+        traceback.print_exc()
         return 1
 
 

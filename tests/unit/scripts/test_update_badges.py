@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from pytest import CaptureFixture
 
 # Load the update_badges module from scripts directory
 scripts_dir = Path(__file__).parent.parent.parent.parent / "scripts"
@@ -131,7 +132,7 @@ class TestReadmeUpdate:
             (tmp_path / "README.md").write_text("# Test\n\nNo markers here\n")
 
             # Mock Path to return our test file
-            def mock_resolve(*args, **kwargs):  # type: ignore[no-untyped-def]
+            def mock_resolve(*args: object, **kwargs: object) -> Path:
                 return tmp_path / "README.md"
 
             mock_path.return_value.resolve = mock_resolve
@@ -170,7 +171,9 @@ More content here.
             # Check that Python badge was updated
             assert "Python" in updated_content
 
-    def test_update_readme_dry_run(self, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+    def test_update_readme_dry_run(
+        self, tmp_path: Path, capsys: CaptureFixture[str]
+    ) -> None:
         """Test dry-run mode doesn't modify file."""
         readme_content = """# Test
 
@@ -193,11 +196,3 @@ More content.
             # Content should not change in dry-run mode
             # Even though we might say changes would be made, the file doesn't change
             # (unless Python version happens to be exactly 3.10)
-
-    def test_update_readme_no_changes_needed(self, tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
-        """Test when badges are already up to date."""
-        # This test is tricky to implement because we need the script to find
-        # the actual pyproject.toml to generate badges, but use our temp README.
-        # For simplicity, we'll just verify the function works without error.
-        # A real integration test would be better for this scenario.
-        pass  # Skipping complex mocking scenario
