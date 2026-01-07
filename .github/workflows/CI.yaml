@@ -15,6 +15,9 @@ on:
       - "dockerfile"
       - "docker-compose.yml"
       - "pyproject.toml"
+      - ".github/workflows/**"
+      - "uv.lock"
+      - ".pre-commit-config.yaml"
   push:
     branches:
       - main
@@ -25,6 +28,9 @@ on:
       - "dockerfile"
       - "docker-compose.yml"
       - "pyproject.toml"
+      - ".github/workflows/**"
+      - "uv.lock"
+      - ".pre-commit-config.yaml"
   workflow_dispatch:
   workflow_call:
 jobs:
@@ -37,7 +43,7 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Common setup
@@ -90,7 +96,7 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0 # Needed for SonarQube analysis
       - name: Common setup
@@ -110,7 +116,7 @@ jobs:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
       - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarqube-scan-action@40f5b61913e891f9d316696628698051136015be
+        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -144,9 +150,9 @@ jobs:
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Dependency Review
-        uses: actions/dependency-review-action@07b91577a360213440b7d4bc514338cb37ce61a0
+        uses: actions/dependency-review-action@774d14bf50b7a2e2460f9f49e25c52503ecab125
         with:
           fail-on-severity: moderate
       - name: Comment on PR if dependency review fails
@@ -187,7 +193,7 @@ jobs:
       security-events: write # Needed for uploading SARIF reports
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@1583c0f09d26c58c59d25b0eef29792b7ce99d9a
       - name: Free Disk Space (Ubuntu)
@@ -341,7 +347,7 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@fa6d7aee4f734d7f1a20fb075d01c7db6731009d
+        uses: dependabot/fetch-metadata@5a70a1d133aebc31503dc07fb19f294cf18ff31c
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge the PR
@@ -368,12 +374,12 @@ jobs:
         # release-please is unable to update uv.lock, so we do it ourselves
 
         if: ${{ steps.release-please.outputs.pr }}
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
         if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41
+        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
       - name: Update uv.lock
         if: ${{ steps.release-please.outputs.pr }}
         run: uv lock
@@ -395,7 +401,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@ff7abcd0c3c05ccf6adc123a8cd1fd4fb30fb493
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Set up GitHub CLI
         run: |
           sudo apt-get update && sudo apt-get install -y gh
