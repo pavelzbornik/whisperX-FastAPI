@@ -31,17 +31,21 @@ def validate_callback_url(callback_url: str) -> bool:
                 return True
             else:
                 logger.warning(
-                    f"Callback URL returned server error {response.status_code}: {callback_url}"
+                    "Callback URL returned server error %d: %s",
+                    response.status_code,
+                    callback_url,
                 )
                 return False
     except httpx.ConnectError:
-        logger.warning(f"Callback URL not reachable (connection error): {callback_url}")
+        logger.warning(
+            "Callback URL not reachable (connection error): %s", callback_url
+        )
         return False
     except httpx.TimeoutException:
-        logger.warning(f"Callback URL validation timeout: {callback_url}")
+        logger.warning("Callback URL validation timeout: %s", callback_url)
         return False
     except Exception as e:
-        logger.warning(f"Callback URL validation failed: {callback_url} - {str(e)}")
+        logger.warning("Callback URL validation failed: %s - %s", callback_url, str(e))
         return False
 
 
@@ -140,7 +144,7 @@ def post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
 
         if attempt < max_retries - 1:
             wait_time = 2**attempt
-            logger.debug(f"Waiting {wait_time}s before retry...")
+            logger.debug("Waiting %ss before retry...", wait_time)
             time.sleep(wait_time)
 
     logger.error(
