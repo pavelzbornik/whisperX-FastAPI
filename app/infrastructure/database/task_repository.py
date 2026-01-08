@@ -23,6 +23,7 @@ def add_task_to_db(
     task_params: dict[str, Any] | None = None,
     file_name: str | None = None,
     url: str | None = None,
+    callback_url: str | None = None,
     audio_duration: float | None = None,
     start_time: datetime | None = None,
     end_time: datetime | None = None,
@@ -38,6 +39,7 @@ def add_task_to_db(
         task_params (dict, optional): Parameters of the task. Defaults to None.
         file_name (str, optional): Name of the file associated with the task. Defaults to None.
         url (str, optional): URL associated with the task. Defaults to None.
+        callback_url (str, optional): Callback URL to POST results to. Defaults to None.
         audio_duration (float, optional): Duration of the audio file. Defaults to None.
         start_time (datetime, optional): Start time of the task. Defaults to None.
         end_time (datetime, optional): End time of the task. Defaults to None.
@@ -51,6 +53,7 @@ def add_task_to_db(
         language=language,
         file_name=file_name,
         url=url,
+        callback_url=callback_url,
         task_type=task_type,
         task_params=task_params,
         audio_duration=audio_duration,
@@ -113,6 +116,7 @@ def get_task_status_from_db(
                 "language": task.language,
                 "file_name": task.file_name,
                 "url": task.url,
+                "callback_url": task.callback_url,
                 "duration": task.duration,
                 "audio_duration": task.audio_duration,
                 "start_time": task.start_time,
@@ -152,6 +156,7 @@ def get_all_tasks_status_from_db(
         Task.audio_duration,
         Task.start_time,
         Task.end_time,
+        Task.callback_url,
     )
     for task in query:
         tasks.append(
@@ -167,6 +172,7 @@ def get_all_tasks_status_from_db(
                 audio_duration=task.audio_duration,
                 start_time=task.start_time,
                 end_time=task.end_time,
+                callback_url=task.callback_url,
             )
         )
     return ResultTasks(tasks=tasks)

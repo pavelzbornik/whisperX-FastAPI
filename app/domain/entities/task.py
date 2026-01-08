@@ -20,6 +20,7 @@ class Task:
         result: JSON data representing the result of the task
         file_name: Name of the file associated with the task
         url: URL of the file associated with the task
+        callback_url: Callback URL to POST results to
         audio_duration: Duration of the audio in seconds
         language: Language of the file associated with the task
         task_params: Parameters of the task
@@ -37,6 +38,7 @@ class Task:
     result: dict[str, Any] | None = None
     file_name: str | None = None
     url: str | None = None
+    callback_url: str | None = None
     audio_duration: float | None = None
     language: str | None = None
     task_params: dict[str, Any] | None = None
@@ -128,6 +130,7 @@ class Task:
             "result": self.result,
             "file_name": self.file_name,
             "url": self.url,
+            "callback_url": self.callback_url,
             "audio_duration": self.audio_duration,
             "language": self.language,
             "task_params": self.task_params,

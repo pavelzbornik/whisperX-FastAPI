@@ -70,6 +70,7 @@ async def get_transcription_status(
             language=task.language,
             file_name=task.file_name,
             url=task.url,
+            callback_url=task.callback_url,
             duration=task.duration,
             audio_duration=task.audio_duration,
             start_time=task.start_time,

@@ -38,6 +38,9 @@ from app.schemas import (
 from app.services import process_audio_common
 from app.services.file_service import FileService
 
+from app.api.callbacks import task_callback_router
+from app.callbacks import validate_callback_url_dependency
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +57,7 @@ async def speech_to_text(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     file: UploadFile = File(...),
+    callback_url: str | None = Depends(validate_callback_url_dependency),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
 ) -> Response:
@@ -68,6 +72,7 @@ async def speech_to_text(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         file (UploadFile): Uploaded audio file.
+        callback_url (str | None): Optional URL to call back when processing is complete.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
 
@@ -106,6 +111,7 @@ async def speech_to_text(
             "vad_options": vad_options_params.model_dump(),
             **diarize_params.model_dump(),
         },
+        callback_url=callback_url,
         start_time=datetime.now(tz=timezone.utc),
     )
 
@@ -120,6 +126,7 @@ async def speech_to_text(
         whisper_model_params=model_params,
         alignment_params=align_params,
         diarization_params=diarize_params,
+        callback_url=callback_url,
     )
 
     background_tasks.add_task(process_audio_common, audio_params)
@@ -128,7 +135,9 @@ async def speech_to_text(
     return Response(identifier=identifier, message="Task queued")
 
 
-@stt_router.post("/speech-to-text-url", tags=["Speech-2-Text"])
+@stt_router.post(
+    "/speech-to-text-url", callbacks=task_callback_router.routes, tags=["Speech-2-Text"]
+)
 async def speech_to_text_url(
     background_tasks: BackgroundTasks,
     model_params: WhisperModelParams = Depends(),
@@ -137,6 +146,7 @@ async def speech_to_text_url(
     asr_options_params: ASROptions = Depends(),
     vad_options_params: VADOptions = Depends(),
     url: str = Form(...),
+    callback_url: str | None = Depends(validate_callback_url_dependency),
     repository: ITaskRepository = Depends(get_task_repository),
     file_service: FileService = Depends(get_file_service),
 ) -> Response:
@@ -151,6 +161,7 @@ async def speech_to_text_url(
         asr_options_params (ASROptions): ASR options parameters.
         vad_options_params (VADOptions): VAD options parameters.
         url (str): URL of the audio file.
+        callback_url (str | None): Optional URL to call back when processing is complete.
         repository (ITaskRepository): Task repository dependency.
         file_service (FileService): File service dependency.
 
@@ -186,6 +197,7 @@ async def speech_to_text_url(
             **diarize_params.model_dump(),
         },
         url=url,
+        callback_url=callback_url,
         start_time=datetime.now(tz=timezone.utc),
     )
 
@@ -200,6 +212,7 @@ async def speech_to_text_url(
         whisper_model_params=model_params,
         alignment_params=align_params,
         diarization_params=diarize_params,
+        callback_url=callback_url,
     )
 
     background_tasks.add_task(process_audio_common, audio_params)
