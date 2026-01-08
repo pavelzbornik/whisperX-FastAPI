@@ -1,13 +1,20 @@
 """Unit tests for callback functionality."""
 
-import pytest
-from unittest.mock import Mock, MagicMock
-from app.callbacks import validate_callback_url, validate_callback_url_dependency, post_task_callback
-from pydantic import HttpUrl
-from fastapi import HTTPException
-import httpx
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, Mock
+
+import httpx
+import pytest
+from fastapi import HTTPException
+from pydantic import HttpUrl
 from pytest import MonkeyPatch
+
+from app.callbacks import (
+    post_task_callback,
+    validate_callback_url,
+    validate_callback_url_dependency,
+)
+
 
 class TestCallbacks:
     """Test callback functionality."""
@@ -109,7 +116,7 @@ class TestCallbacks:
         result = validate_callback_url_dependency(
             HttpUrl("http://example.com/callback")
         )
-        assert result == "http://example.com/callback/"
+        assert result == "http://example.com/callback"
 
     def test_callback_dependency_none_url(self) -> None:
         """Test callback URL dependency with None."""

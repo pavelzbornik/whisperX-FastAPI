@@ -20,6 +20,7 @@ class Task:
         result: JSON data representing the result of the task
         file_name: Name of the file associated with the task
         url: URL of the file associated with the task
+        callback_url: Callback URL to POST results to
         audio_duration: Duration of the audio in seconds
         language: Language of the file associated with the task
         task_params: Parameters of the task

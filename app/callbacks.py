@@ -1,8 +1,8 @@
 """Callback functionality."""
 
-from datetime import datetime
-from typing import Any, Optional, Dict
 import time
+from datetime import datetime
+from typing import Any
 
 import httpx
 from fastapi import HTTPException, status
@@ -46,8 +46,8 @@ def validate_callback_url(callback_url: str) -> bool:
 
 
 def validate_callback_url_dependency(
-    callback_url: Optional[HttpUrl] = None,
-) -> Optional[str]:
+    callback_url: HttpUrl | None = None,
+) -> str | None:
     """
     Fastapi dependency to validate callback URL during request validation.
 
@@ -86,7 +86,7 @@ def _serialize_datetime(obj: Any) -> Any:
         return obj
 
 
-def post_task_callback(callback_url: str, payload: Dict[str, Any]) -> None:
+def post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
     """
     POST task callback with serialized datetime objects and retry logic.
 
