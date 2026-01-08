@@ -34,26 +34,26 @@ class TestVersionDetection:
         assert parts[1].isdigit()
 
     @patch("update_badges.get_version_from_pyproject")
-    def test_get_fastapi_version_ci(self, mock_get_version: MagicMock) -> None:
-        """Test FastAPI version detection with CI flag."""
+    def test_get_fastapi_version(self, mock_get_version: MagicMock) -> None:
+        """Test FastAPI version detection from pyproject.toml."""
         mock_get_version.return_value = "0.128.0"
-        version = update_badges.get_fastapi_version(use_ci=True)
+        version = update_badges.get_fastapi_version()
         assert version == "0.128.0"
         mock_get_version.assert_called_once_with("fastapi")
 
     @patch("update_badges.get_version_from_pyproject")
-    def test_get_whisperx_version_ci(self, mock_get_version: MagicMock) -> None:
-        """Test WhisperX version detection with CI flag."""
+    def test_get_whisperx_version(self, mock_get_version: MagicMock) -> None:
+        """Test WhisperX version detection from pyproject.toml."""
         mock_get_version.return_value = "3.7.4"
-        version = update_badges.get_whisperx_version(use_ci=True)
+        version = update_badges.get_whisperx_version()
         assert version == "3.7.4"
         mock_get_version.assert_called_once_with("whisperx")
 
     @patch("update_badges.get_cuda_version_from_pyproject")
-    def test_get_cuda_version_ci(self, mock_get_cuda: MagicMock) -> None:
-        """Test CUDA version detection with CI flag."""
+    def test_get_cuda_version(self, mock_get_cuda: MagicMock) -> None:
+        """Test CUDA version detection from pyproject.toml."""
         mock_get_cuda.return_value = "12.8"
-        version = update_badges.get_cuda_version(use_ci=True)
+        version = update_badges.get_cuda_version()
         assert version == "12.8"
         mock_get_cuda.assert_called_once()
 
@@ -106,8 +106,7 @@ class TestBadgeGeneration:
 
     def test_generate_badges(self) -> None:
         """Test generating all badges."""
-        # Use CI mode to avoid import issues in tests
-        badges = update_badges.generate_badges(use_ci=True)
+        badges = update_badges.generate_badges()
         assert isinstance(badges, str)
         # Should contain all badge types
         assert "Python" in badges
@@ -137,7 +136,7 @@ class TestReadmeUpdate:
 
             mock_path.return_value.resolve = mock_resolve
 
-            result = update_badges.update_readme_badges(dry_run=False, use_ci=True)
+            result = update_badges.update_readme_badges(dry_run=False)
             assert result is False
 
     def test_update_readme_with_markers(self, tmp_path: Path) -> None:
@@ -159,7 +158,7 @@ More content here.
             mock_script_path.parent.parent = tmp_path
             mock_path.return_value = mock_script_path
 
-            update_badges.update_readme_badges(dry_run=False, use_ci=True)
+            update_badges.update_readme_badges(dry_run=False)
 
             # Read the updated content
             updated_content = readme.read_text()
@@ -191,7 +190,7 @@ More content.
             mock_script_path.parent.parent = tmp_path
             mock_path.return_value = mock_script_path
 
-            update_badges.update_readme_badges(dry_run=True, use_ci=True)
+            update_badges.update_readme_badges(dry_run=True)
 
             # Content should not change in dry-run mode
             # Even though we might say changes would be made, the file doesn't change

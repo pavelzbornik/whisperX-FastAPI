@@ -49,10 +49,10 @@ Thank you for your interest in contributing to whisperX-FastAPI! We welcome cont
 
 ### Automatic Badge Updates
 
-The repository uses a pre-commit hook to automatically update README badges (Python version, CUDA version, FastAPI version, WhisperX version) based on your environment.
+The repository uses a pre-commit hook to automatically update README badges (Python version, CUDA version, FastAPI version, WhisperX version) from `pyproject.toml`.
 
 - **Badges are updated automatically** when you commit changes to `pyproject.toml` or the badge update script itself.
-- The script reads version information from your installed packages and the `pyproject.toml` file.
+- The script reads version information directly from `pyproject.toml` as the single source of truth.
 - If you need to manually update badges, run:
 
   ```sh
@@ -63,12 +63,6 @@ The repository uses a pre-commit hook to automatically update README badges (Pyt
 
   ```sh
   python scripts/update-badges.py --dry-run
-  ```
-
-- For CI environments, use the `--ci` flag to read versions from `pyproject.toml` instead of installed packages:
-
-  ```sh
-  python scripts/update-badges.py --ci
   ```
 
 ## Pull Request Guidelines

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Update README badges with current versions from environment.
+"""Update README badges with current versions from pyproject.toml.
 
-This script automatically detects versions of FastAPI, WhisperX, CUDA, and Python,
+This script reads versions of FastAPI, WhisperX, CUDA, and Python from pyproject.toml,
 then updates the badge section in README.md between marker comments.
 
 Usage:
-    python scripts/update-badges.py [--dry-run] [--ci]
+    python scripts/update-badges.py [--dry-run]
 
 Options:
     --dry-run    Show changes without modifying files
-    --ci         Use CI-friendly detection methods (read from pyproject.toml)
 """
 
 import argparse
@@ -27,84 +26,31 @@ def get_python_version() -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}"
 
 
-def get_fastapi_version(use_ci: bool = False) -> str:
-    """Get FastAPI version.
-
-    Args:
-        use_ci: If True, read from pyproject.toml instead of importing
+def get_fastapi_version() -> str:
+    """Get FastAPI version from pyproject.toml.
 
     Returns:
         FastAPI version string (e.g., "0.128.0")
     """
-    if use_ci:
-        return get_version_from_pyproject("fastapi")
-
-    try:
-        import fastapi
-
-        return str(fastapi.__version__)
-    except ImportError:
-        # Fallback to pyproject.toml
-        return get_version_from_pyproject("fastapi")
+    return get_version_from_pyproject("fastapi")
 
 
-def get_whisperx_version(use_ci: bool = False) -> str:
-    """Get WhisperX version.
-
-    Args:
-        use_ci: If True, read from pyproject.toml instead of importing
+def get_whisperx_version() -> str:
+    """Get WhisperX version from pyproject.toml.
 
     Returns:
         WhisperX version string (e.g., "3.7.4")
     """
-    if use_ci:
-        return get_version_from_pyproject("whisperx")
-
-    try:
-        # Try importlib.metadata first
-        from importlib.metadata import version
-
-        return version("whisperx")
-    except (ImportError, ModuleNotFoundError):
-        pass
-
-    try:
-        # Try __version__ attribute
-        import whisperx
-
-        if hasattr(whisperx, "__version__"):
-            return str(whisperx.__version__)
-    except ImportError:
-        pass
-
-    # Fallback to pyproject.toml if package metadata or module not available
     return get_version_from_pyproject("whisperx")
 
 
-def get_cuda_version(use_ci: bool = False) -> str:
-    """Get CUDA version.
-
-    Args:
-        use_ci: If True, read from pyproject.toml instead of runtime detection
+def get_cuda_version() -> str:
+    """Get CUDA version from pyproject.toml.
 
     Returns:
-        CUDA version string (e.g., "12.8") or "n/a" if not available
+        CUDA version string (e.g., "12.8") or "n/a" if not found
     """
-    if use_ci:
-        return get_cuda_version_from_pyproject()
-
-    try:
-        import torch
-
-        if torch.cuda.is_available():
-            # Get CUDA version from torch
-            cuda_version = torch.version.cuda
-            if cuda_version:
-                return str(cuda_version)
-        return "n/a"
-    except ImportError:
-        # If torch not available, try to read from pyproject.toml
-        return get_cuda_version_from_pyproject()
+    return get_cuda_version_from_pyproject()
 
 
 def get_version_from_pyproject(package: str) -> str:
@@ -197,19 +143,16 @@ def generate_badge(label: str, message: str, color: str) -> str:
     return f"![{label}](https://img.shields.io/badge/{label_encoded}-{message_encoded}-{color}.svg)"
 
 
-def generate_badges(use_ci: bool = False) -> str:
+def generate_badges() -> str:
     """Generate all badges as markdown.
-
-    Args:
-        use_ci: If True, use CI-friendly detection methods
 
     Returns:
         Multi-line string with all badges
     """
     python_ver = get_python_version()
-    fastapi_ver = get_fastapi_version(use_ci)
-    whisperx_ver = get_whisperx_version(use_ci)
-    cuda_ver = get_cuda_version(use_ci)
+    fastapi_ver = get_fastapi_version()
+    whisperx_ver = get_whisperx_version()
+    cuda_ver = get_cuda_version()
 
     badges = [
         generate_badge("Python", python_ver, "blue"),
@@ -221,12 +164,11 @@ def generate_badges(use_ci: bool = False) -> str:
     return "\n".join(badges)
 
 
-def update_readme_badges(dry_run: bool = False, use_ci: bool = False) -> bool:
+def update_readme_badges(dry_run: bool = False) -> bool:
     """Update README.md with current badge values.
 
     Args:
         dry_run: If True, show changes without modifying file
-        use_ci: If True, use CI-friendly detection methods
 
     Returns:
         True if changes were made (or would be made in dry-run), False otherwise
@@ -257,7 +199,7 @@ def update_readme_badges(dry_run: bool = False, use_ci: bool = False) -> bool:
         return False
 
     # Generate new badges
-    new_badges = generate_badges(use_ci)
+    new_badges = generate_badges()
 
     # Replace content between markers
     pattern = rf"({re.escape(start_marker)})(.*?)({re.escape(end_marker)})"
@@ -297,7 +239,7 @@ def main() -> int:
         Exit code: 0 on success, 1 on error
     """
     parser = argparse.ArgumentParser(
-        description="Update README badges with current versions",
+        description="Update README badges with current versions from pyproject.toml",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__.split("Usage:")[0].strip(),
     )
@@ -306,16 +248,11 @@ def main() -> int:
         action="store_true",
         help="Show changes without modifying files",
     )
-    parser.add_argument(
-        "--ci",
-        action="store_true",
-        help="Use CI-friendly detection (read from pyproject.toml)",
-    )
 
     args = parser.parse_args()
 
     try:
-        update_readme_badges(dry_run=args.dry_run, use_ci=args.ci)
+        update_readme_badges(dry_run=args.dry_run)
         # Exit with 0 whether updated or not (both are valid states)
         return 0
     except Exception as e:
