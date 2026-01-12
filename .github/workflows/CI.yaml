@@ -379,7 +379,7 @@ jobs:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
         if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
       - name: Update uv.lock
         if: ${{ steps.release-please.outputs.pr }}
         run: uv lock
