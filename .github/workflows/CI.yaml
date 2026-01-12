@@ -152,7 +152,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Dependency Review
-        uses: actions/dependency-review-action@774d14bf50b7a2e2460f9f49e25c52503ecab125
+        uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
         with:
           fail-on-severity: moderate
       - name: Comment on PR if dependency review fails
@@ -195,7 +195,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@1583c0f09d26c58c59d25b0eef29792b7ce99d9a
+        uses: docker/setup-buildx-action@c7c4c00f3eef127be487a50899a220e44c6bcc87
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
@@ -347,11 +347,11 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@5a70a1d133aebc31503dc07fb19f294cf18ff31c
+        uses: dependabot/fetch-metadata@300ce8ecb06a0ee68a73f5f4f6d03c034c623e53
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
       - name: Merge the PR
-        run: gh pr merge "$PR_URL" --merge
+        run: gh pr merge "$PR_URL" --merge --admin
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -379,13 +379,13 @@ jobs:
           ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
       - name: Setup uv
         if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
       - name: Update uv.lock
         if: ${{ steps.release-please.outputs.pr }}
         run: uv lock
       - name: Commit updated uv.lock
         if: ${{ steps.release-please.outputs.pr }}
-        uses: stefanzweifel/git-auto-commit-action@8fa7f5a3c51038deaa521c22ae89fac24baad8e7
+        uses: stefanzweifel/git-auto-commit-action@6739571eaee7f2e84e98784215d23acd69740d13
         with:
           commit_message: "ci: update uv.lock"
           file_pattern: uv.lock
