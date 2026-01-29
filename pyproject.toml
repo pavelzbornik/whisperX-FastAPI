@@ -35,7 +35,7 @@ dependencies = [
     "numba==0.63.1",
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.1",
-    "python-multipart==0.0.21",
+    "python-multipart==0.0.22",
     "tqdm==4.67.1",
     "uvicorn==0.40.0",
     "whisperx==3.7.4",
