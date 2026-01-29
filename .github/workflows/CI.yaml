@@ -303,7 +303,7 @@ jobs:
           name: trivy-results
           path: trivy-results.txt
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@1b168cd39490f61582a9beae412bb7057a6b2c4e
+        uses: github/codeql-action/upload-sarif@b20883b0cd1f46c72ae0ba6d1090936928f9fa30
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
