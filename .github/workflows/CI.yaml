@@ -207,7 +207,7 @@ jobs:
           docker-images: true # Remove unused Docker images
           swap-storage: true
       - name: Build and export to Docker
-        uses: docker/build-push-action@64c9b141502b80dbbd71e008a0130ad330f480f8
+        uses: docker/build-push-action@806c75105a1251cac8905df5dd4723b33174552c
         with:
           context: .
           load: true
