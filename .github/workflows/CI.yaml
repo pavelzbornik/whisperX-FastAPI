@@ -385,7 +385,7 @@ jobs:
         run: uv lock
       - name: Commit updated uv.lock
         if: ${{ steps.release-please.outputs.pr }}
-        uses: stefanzweifel/git-auto-commit-action@6739571eaee7f2e84e98784215d23acd69740d13
+        uses: stefanzweifel/git-auto-commit-action@fc84150d7c7500bbbaedb7ec522588fcc41f4d4d
         with:
           commit_message: "ci: update uv.lock"
           file_pattern: uv.lock
