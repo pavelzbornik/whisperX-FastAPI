@@ -280,7 +280,7 @@ jobs:
           docker builder prune -f --filter "until=1h"
           df -h
       - name: Run Trivy vulnerability scanner (SARIF format)
-        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284
+        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478
         with:
           image-ref: whisperx-fastapi:latest
           format: "sarif"
