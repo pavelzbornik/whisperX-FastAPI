@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.5](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.4...v0.4.5) (2026-01-08)
+
+
+### Bug Fixes
+
+* address PR review comments ([d9e45c5](https://github.com/pavelzbornik/whisperX-FastAPI/commit/d9e45c549eb2cb83cfed61edec463524d9cb7065))
+* correct table header formatting in db_schema.md and exception-handling.md ([f1dcfea](https://github.com/pavelzbornik/whisperX-FastAPI/commit/f1dcfeaaa99aec610602164692643f580f76e77a))
+* downgrade CUDA version in Dockerfile to 13.0.1 ([c6ad4cc](https://github.com/pavelzbornik/whisperX-FastAPI/commit/c6ad4cc60f969b672f3173a0b141cb7f0b20d02f))
+* increase health check wait time and improve error logging in CI workflow; add curl to Dockerfile ([2ae089f](https://github.com/pavelzbornik/whisperX-FastAPI/commit/2ae089febce0042eb514fd65cae4b42e49710cd6))
+* replace datetime.utcnow() with timezone-aware datetime.now(timezone.utc) ([25e519b](https://github.com/pavelzbornik/whisperX-FastAPI/commit/25e519b77b797f12f1aecfd283b37b168a742bba))
+* revert CUDA base image version to 13.0.1 ([cf47db0](https://github.com/pavelzbornik/whisperX-FastAPI/commit/cf47db0da77328e89c2c818adce955b8b238b196))
+
+
+### Documentation
+
+* **issue-templates:** add Copilot Story issue template with TDD and testing standards ([dbfe2c6](https://github.com/pavelzbornik/whisperX-FastAPI/commit/dbfe2c6e0108d4e0fe7bfe6a4bfa91298f763e3b))
+
 ## [0.4.4](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.3...v0.4.4) (2025-12-15)
 
 
