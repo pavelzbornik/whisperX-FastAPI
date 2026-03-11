@@ -1,0 +1,3 @@
+# Normalize all text files to LF on commit (prevents CRLF creep on Windows/WSL2)
+* text=auto eol=lf
+*.sh text eol=lf
