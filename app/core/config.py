@@ -39,9 +39,9 @@ class WhisperSettings(BaseSettings):
         description="Default language for transcription",
     )
     DEVICE: Device = Field(
-        default_factory=lambda: Device.cuda
-        if torch.cuda.is_available()
-        else Device.cpu,
+        default_factory=lambda: (
+            Device.cuda if torch.cuda.is_available() else Device.cpu
+        ),
         description="Device to use for computation (cuda or cpu)",
     )
     COMPUTE_TYPE: ComputeType = Field(

@@ -21,13 +21,13 @@ jobs:
       COMPUTE_TYPE: int8
     steps:
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Common setup
         uses: ./.github/actions/setup
         with:
           python-version: "3.11"
       - name: Cache Hugging Face and Torch models
-        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
         with:
           path: |
             ~/.cache/huggingface

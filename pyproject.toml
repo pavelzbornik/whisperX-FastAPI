@@ -30,19 +30,19 @@ dependencies = [
     "colorlog==6.10.1",
     "dependency-injector>=4.41.0",
     "fastapi==0.128.0",
-    "gunicorn==23.0.0",
+    "gunicorn==25.0.3",
     "httpx==0.28.1",
     "numba==0.63.1",
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.1",
     "python-multipart==0.0.22",
-    "tqdm==4.67.1",
-    "uvicorn==0.40.0",
+    "tqdm==4.67.3",
+    "uvicorn==0.41.0",
     "whisperx==3.7.4",
     "torch<=2.8.0",
     "torchaudio<=2.8.0",
     "torchvision<=0.23.0",
-    "setuptools>=78.1.1",  # CVE-2025-47273 fix
+    "setuptools>=78.1.1",
 ]
 
 [project.optional-dependencies]
@@ -54,7 +54,7 @@ dev = [
     "pre-commit==4.5.1",
     "pytest==9.0.2",
     "pytest-cov==7.0.0",
-    "ruff==0.14.11",
+    "ruff==0.15.2",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]
