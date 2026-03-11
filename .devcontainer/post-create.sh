@@ -26,3 +26,11 @@ uv run pre-commit autoupdate
 
 # Run pre-commit on all files in the repository
 uv run pre-commit run --all-files || true
+
+# Install Claude Code CLI
+npm install -g @anthropic-ai/claude-code
+
+# Add cclaude alias (IS_SANDBOX=1 enables isolation; --dangerously-skip-permissions
+# allows unrestricted execution within the sandbox — safe inside a devcontainer)
+CCLAUDE_ALIAS='alias cclaude="IS_SANDBOX=1 claude --dangerously-skip-permissions"'
+grep -qF 'alias cclaude' /root/.bashrc 2>/dev/null || echo "$CCLAUDE_ALIAS" >> /root/.bashrc || true

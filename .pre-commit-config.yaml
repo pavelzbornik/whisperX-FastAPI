@@ -25,7 +25,7 @@ repos:
       # - id: name-tests-test
       - id: check-toml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.11
+    rev: v0.15.5
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -41,7 +41,7 @@ repos:
         args: [--config-file=pyproject.toml]
         exclude: ^tests/
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+    rev: v1.38.0
     hooks:
       - id: yamllint
         args: ["-d {extends: relaxed, rules: {line-length: disable}}", "-s"]
@@ -66,12 +66,12 @@ repos:
   - repo: https://github.com/igorshubovych/markdownlint-cli
     # Lint: Markdown
 
-    rev: v0.47.0
+    rev: v0.48.0
     hooks:
       - id: markdownlint
         args: ["--fix", "--config", ".markdownlint.json"]
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: v2.4.2
     hooks:
       - id: codespell
         additional_dependencies:
