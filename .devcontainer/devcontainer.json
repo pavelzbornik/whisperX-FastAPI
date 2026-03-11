@@ -8,52 +8,25 @@
   // Features to add to the dev container. More info: https://containers.dev/features.
   "features": {
     "ghcr.io/dhoeric/features/hadolint:1": {},
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
+        "ms-python.vscode-python-envs",
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "github.copilot",
         "charliermarsh.ruff",
         "github.vscode-github-actions",
         "george-alisson.html-preview-vscode",
-        "prettier.prettier-vscode",
         "ms-azuretools.vscode-docker",
         "SonarSource.sonarlint-vscode",
         "Anthropic.claude-code"
-      ],
-      "settings": {
-        "editor.formatOnSave": true,
-        "files.trimTrailingWhitespace": true,
-        "files.insertFinalNewline": true,
-        "editor.codeActionsOnSave": {
-          "source.fixAll": true,
-          "source.fixAll.eslint": true,
-          "source.organizeImports": true
-        },
-        "python.defaultInterpreterPath": "/workspaces/whisperX-FastAPI/.venv/bin/python3",
-        "python.analysis.typeCheckingMode": "strict",
-        "[python]": {
-          "editor.defaultFormatter": "charliermarsh.ruff",
-          "editor.formatOnSave": true
-        },
-        "ruff.codeAction.disableRuleComment": {
-          "enable": true
-        },
-        "ruff.codeAction.fixViolation": {
-          "enable": true
-        },
-        "ruff.lint.enable": true,
-        "ruff.format.enable": true,
-        "python.linting.enabled": true,
-        "sonarlint.ls.javaHome": "/usr/lib/jvm/java-17-openjdk-amd64",
-        "sonarlint.rules": {},
-        "sonarlint.connectedMode.servers": []
-      }
+      ]
     }
   },
   "postCreateCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh",
@@ -69,7 +42,8 @@
   "mounts": [
     "source=${env:USERPROFILE}\\.gitconfig,target=/home/vscode/.gitconfig,type=bind,consistency=cached",
     "source=${env:USERPROFILE}\\.claude,target=/root/.claude,type=bind",
-    "source=${env:USERPROFILE}\\.claude.json,target=/root/.claude.json,type=bind",
+    "source=whisperx-gh-config,target=/root/.config/gh,type=volume",
+"source=${env:USERPROFILE}\\.claude.json,target=/root/.claude.json,type=bind",
     "source=${localWorkspaceFolder}/.uv_cache,target=/workspaces/whisperX-FastAPI/.uv_cache,type=bind,consistency=cached",
     "source=${localWorkspaceFolder}/.cache/pre-commit,target=/workspaces/whisperX-FastAPI/.cache/pre-commit,type=bind,consistency=cached"
   ]

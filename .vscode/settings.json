@@ -1,10 +1,45 @@
 {
-    "python.testing.pytestArgs": [
-        "tests"
-    ],
+    "python.defaultInterpreterPath": "/workspaces/whisperX-FastAPI/.venv/bin/python",
+    "python.venvPath": "/workspaces/whisperX-FastAPI",
     "python.analysis.extraPaths": ["app"],
+    "python.analysis.typeCheckingMode": "strict",
+    "python.testing.pytestArgs": ["tests"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
+    "python.linting.enabled": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.fixAll.eslint": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true
+    },
+    "ruff.codeAction.disableRuleComment": {
+        "enable": true
+    },
+    "ruff.codeAction.fixViolation": {
+        "enable": true
+    },
+    "ruff.lint.enable": true,
+    "ruff.format.enable": true,
+    "files.eol": "\n",
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.watcherExclude": {
+        "**/.uv_cache/**": true,
+        "**/.cache/**": true,
+        "**/.venv/**": true
+    },
+    "search.exclude": {
+        "**/.uv_cache": true,
+        "**/.cache": true
+    },
+    "sonarlint.ls.javaHome": "/usr/lib/jvm/java-17-openjdk-amd64",
+    "sonarlint.rules": {},
+    "sonarlint.connectedMode.servers": [],
     "sonarlint.connectedMode.project": {
         "connectionId": "pavelzbornik",
         "projectKey": "pavelzbornik_whisperX-FastAPI"
