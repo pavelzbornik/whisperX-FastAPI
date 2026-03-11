@@ -1,4 +1,4 @@
-# app/api/CLAUDE.md
+# app/api
 
 HTTP layer: routers, schemas, mappers, dependency injection, and exception handlers.
 

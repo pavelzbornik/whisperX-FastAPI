@@ -1,4 +1,4 @@
-# app/domain/CLAUDE.md
+# app/domain
 
 Pure Python domain layer — entities, repository interface, and ML service interfaces.
 

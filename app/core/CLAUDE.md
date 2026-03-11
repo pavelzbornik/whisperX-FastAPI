@@ -1,4 +1,4 @@
-# app/core/CLAUDE.md
+# app/core
 
 Config, DI Container, and exception hierarchy for the application.
 

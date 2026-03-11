@@ -1,4 +1,4 @@
-# tests/CLAUDE.md
+# tests
 
 Test organization, fixtures, mocks, factories, and coverage requirements.
 

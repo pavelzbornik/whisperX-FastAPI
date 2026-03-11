@@ -1,4 +1,4 @@
-# app/infrastructure/CLAUDE.md
+# app/infrastructure
 
 Database and ML infrastructure — concrete implementations of domain interfaces.
 

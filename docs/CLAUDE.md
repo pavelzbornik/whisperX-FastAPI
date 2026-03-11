@@ -1,4 +1,4 @@
-# docs/CLAUDE.md
+# docs
 
 Documentation structure and when to update it.
 

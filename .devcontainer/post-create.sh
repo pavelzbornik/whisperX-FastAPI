@@ -22,15 +22,25 @@ uv pip install ctranslate2==4.6.0 --system
 git init
 uv run pre-commit install
 
-uv run pre-commit autoupdate
+uv run pre-commit autoupdate || true
 
 # Run pre-commit on all files in the repository
 uv run pre-commit run --all-files || true
 
 # Install Claude Code CLI
-npm install -g @anthropic-ai/claude-code
+if ! command -v npm &>/dev/null; then
+  echo "Error: npm not found — skipping Claude Code CLI installation" >&2
+else
+  npm install -g @anthropic-ai/claude-code
+fi
 
 # Add cclaude alias (IS_SANDBOX=1 enables isolation; --dangerously-skip-permissions
 # allows unrestricted execution within the sandbox — safe inside a devcontainer)
 CCLAUDE_ALIAS='alias cclaude="IS_SANDBOX=1 claude --dangerously-skip-permissions"'
 grep -qF 'alias cclaude' /root/.bashrc 2>/dev/null || echo "$CCLAUDE_ALIAS" >> /root/.bashrc || true
+
+# Authenticate GitHub CLI if not already logged in (token persisted in whisperx-gh-config volume)
+if ! gh auth status &>/dev/null; then
+  echo "GitHub CLI not authenticated. Starting interactive login..."
+  gh auth login
+fi

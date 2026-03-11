@@ -1,4 +1,4 @@
-# app/CLAUDE.md
+# app
 
 Code standards that apply across all `app/` subfolders.
 

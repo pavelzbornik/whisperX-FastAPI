@@ -1,4 +1,4 @@
-# app/services/CLAUDE.md
+# app/services
 
 Business logic orchestration — these services sit between the API layer and
 infrastructure/domain layers.

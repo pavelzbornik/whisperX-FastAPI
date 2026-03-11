@@ -8,7 +8,7 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y update \
     && apt-get -y install --no-install-recommends \
-    python3.11=3.11.0~rc1-1~22.04 \
+    python3.11 \
     git \
     ffmpeg=7:4.4.2-0ubuntu0.22.04.1 \
     libcudnn9-cuda-12=9.8.0.87-1 \
