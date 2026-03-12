@@ -2,7 +2,6 @@
 
 ## [0.4.5](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.4...v0.4.5) (2026-01-08)
 
-
 ### Bug Fixes
 
 * address PR review comments ([d9e45c5](https://github.com/pavelzbornik/whisperX-FastAPI/commit/d9e45c549eb2cb83cfed61edec463524d9cb7065))

@@ -24,7 +24,7 @@ def client() -> TestClient:
 @pytest.mark.e2e
 def test_get_all_tasks_status(client: TestClient) -> None:
     """Test retrieving the status of all tasks."""
-    response = client.get("/task/all")
+    response = client.get("/api/v1/task/all")
     assert response.status_code == 200
     assert "tasks" in response.json()
     assert isinstance(response.json()["tasks"], list)
@@ -37,7 +37,7 @@ def test_delete_task(client: TestClient) -> None:
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            f"/service/transcribe?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
+            f"/api/v1/service/transcribe?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
             files=files,
         )
     assert response.status_code == 200
@@ -47,12 +47,12 @@ def test_delete_task(client: TestClient) -> None:
     identifier = response.json()["identifier"]
 
     # Attempt to delete the task
-    delete_response = client.delete(f"/task/{identifier}/delete")
+    delete_response = client.delete(f"/api/v1/task/{identifier}/delete")
     assert delete_response.status_code == 200
     assert delete_response.json()["message"] == "Task deleted"
 
     # Ensure the task is not found after deletion
-    get_response = client.get(f"/task/{identifier}")
+    get_response = client.get(f"/api/v1/task/{identifier}")
     assert get_response.status_code == 404
     assert get_response.json()["error"]["code"] == "TASK_NOT_FOUND"
 
@@ -64,14 +64,14 @@ def test_get_task_by_id(client: TestClient) -> None:
     with open(AUDIO_FILE, "rb") as audio_file:
         files = {"file": ("audio_en.mp3", audio_file)}
         response = client.post(
-            f"/service/transcribe?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
+            f"/api/v1/service/transcribe?device={os.getenv('DEVICE')}&compute_type={os.getenv('COMPUTE_TYPE')}",
             files=files,
         )
     assert response.status_code == 200
     identifier = response.json()["identifier"]
 
     # Retrieve the task
-    get_response = client.get(f"/task/{identifier}")
+    get_response = client.get(f"/api/v1/task/{identifier}")
     assert get_response.status_code == 200
     task_data = get_response.json()
     # Verify the response has expected fields
@@ -83,6 +83,6 @@ def test_get_task_by_id(client: TestClient) -> None:
 @pytest.mark.e2e
 def test_get_nonexistent_task(client: TestClient) -> None:
     """Test retrieving a non-existent task returns 404."""
-    response = client.get("/task/non-existent-uuid-12345")
+    response = client.get("/api/v1/task/non-existent-uuid-12345")
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "TASK_NOT_FOUND"

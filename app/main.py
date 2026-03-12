@@ -15,7 +15,7 @@ from fastapi import FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-from app.api import service_router, stt_router, task_router  # noqa: E402
+from app.api.v1 import audio_router, service_router, task_router  # noqa: E402
 from app.api.exception_handlers import (  # noqa: E402
     domain_error_handler,
     generic_error_handler,
@@ -23,6 +23,7 @@ from app.api.exception_handlers import (  # noqa: E402
     task_not_found_handler,
     validation_error_handler,
 )
+from app.api.middleware import DeprecationMiddleware, VersionMiddleware  # noqa: E402
 from app.core.config import Config  # noqa: E402
 from app.core.container import Container  # noqa: E402
 from app.core.exceptions import (  # noqa: E402
@@ -90,11 +91,16 @@ tags_metadata = [
 
 
 app = FastAPI(
-    title="whisperX REST service",
+    title="WhisperX API",
     description=f"""
-    # whisperX RESTful API
+    # WhisperX Audio Transcription API - Version 1
 
-    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.
+    Welcome to the WhisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.
+
+    ## API Versioning
+    All endpoints are prefixed with `/api/v1/`. This allows for controlled evolution of the API while maintaining backward compatibility.
+
+    Current version: **v1.0.0**
 
     ## Documentation:
 
@@ -104,7 +110,7 @@ app = FastAPI(
 
     Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:
 
-    1. Transcribe: Transcribe an audio/video  file into text.
+    1. Transcribe: Transcribe an audio/video file into text.
     2. Align: Align the transcript to the audio/video file.
     3. Diarize: Diarize an audio/video file into speakers.
     4. Combine Transcript and Diarization: Combine the transcript and diarization results.
@@ -115,10 +121,17 @@ app = FastAPI(
     VIDEO_EXTENSIONS = {Config.VIDEO_EXTENSIONS}
 
     """,
-    version="0.0.1",
+    version="1.0.0",
     openapi_tags=tags_metadata,
     lifespan=lifespan,
+    openapi_url="/api/v1/openapi.json",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
 )
+
+# Register middleware
+app.add_middleware(VersionMiddleware)
+app.add_middleware(DeprecationMiddleware)
 
 # Register exception handlers
 app.add_exception_handler(TaskNotFoundError, task_not_found_handler)
@@ -127,8 +140,8 @@ app.add_exception_handler(DomainError, domain_error_handler)
 app.add_exception_handler(InfrastructureError, infrastructure_error_handler)
 app.add_exception_handler(Exception, generic_error_handler)
 
-# Include routers
-app.include_router(stt_router)
+# Include versioned routers
+app.include_router(audio_router)
 app.include_router(task_router)
 app.include_router(service_router)
 
@@ -136,7 +149,13 @@ app.include_router(service_router)
 @app.get("/", include_in_schema=False)
 async def index() -> RedirectResponse:
     """Redirect to the documentation."""
-    return RedirectResponse(url="/docs", status_code=307)
+    return RedirectResponse(url="/api/v1/docs", status_code=307)
+
+
+@app.get("/docs", include_in_schema=False)
+async def docs_redirect() -> RedirectResponse:
+    """Redirect old docs URL to versioned docs."""
+    return RedirectResponse(url="/api/v1/docs", status_code=307)
 
 
 # Health check endpoints

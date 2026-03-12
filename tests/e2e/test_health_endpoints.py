@@ -22,10 +22,10 @@ def client() -> TestClient:
 
 @pytest.mark.e2e
 def test_index_redirects_to_docs(client: TestClient) -> None:
-    """Test the index route redirects to the documentation."""
+    """Test the index route redirects to the versioned documentation."""
     response = client.get("/")
     assert response.status_code == 307
-    assert response.headers["location"] == "/docs"
+    assert response.headers["location"] == "/api/v1/docs"
 
 
 @pytest.mark.e2e

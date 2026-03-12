@@ -1,19 +1,19 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "whisperX REST service",
-    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.wma', '.aac', '.awb', '.ogg', '.amr', '.m4a', '.mp3', '.oga', '.wav'}\n\n    VIDEO_EXTENSIONS = {'.mp4', '.avi', '.wmv', '.mkv', '.mov'}\n\n    ",
-    "version": "0.0.1"
+    "title": "WhisperX API",
+    "description": "\n    # WhisperX Audio Transcription API - Version 1\n\n    Welcome to the WhisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## API Versioning\n    All endpoints are prefixed with `/api/v1/`. This allows for controlled evolution of the API while maintaining backward compatibility.\n\n    Current version: **v1.0.0**\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.ogg', '.wma', '.amr', '.aac', '.oga', '.m4a', '.awb', '.mp3', '.wav'}\n\n    VIDEO_EXTENSIONS = {'.avi', '.wmv', '.mov', '.mkv', '.mp4'}\n\n    ",
+    "version": "1.0.0"
   },
   "paths": {
-    "/speech-to-text": {
+    "/api/v1/speech-to-text": {
       "post": {
         "tags": [
           "Speech-2-Text"
         ],
         "summary": "Speech To Text",
-        "description": "Process an uploaded audio file for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
-        "operationId": "speech_to_text_speech_to_text_post",
+        "description": "Process an uploaded audio file for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    repository (ITaskRepository): Task repository dependency.\n    file_service (FileService): File service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "operationId": "speech_to_text_api_v1_speech_to_text_post",
         "parameters": [
           {
             "name": "language",
@@ -146,7 +146,8 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/WhisperModel",
-              "description": "Name of the Whisper model to use"
+              "description": "Name of the Whisper model to use",
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -495,7 +496,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_speech_to_text_speech_to_text_post"
+                "$ref": "#/components/schemas/Body_speech_to_text_api_v1_speech_to_text_post"
               }
             }
           }
@@ -524,14 +525,14 @@
         }
       }
     },
-    "/speech-to-text-url": {
+    "/api/v1/speech-to-text-url": {
       "post": {
         "tags": [
           "Speech-2-Text"
         ],
         "summary": "Speech To Text Url",
-        "description": "Process an audio file from a URL for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    url (str): URL of the audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
-        "operationId": "speech_to_text_url_speech_to_text_url_post",
+        "description": "Process an audio file from a URL for speech-to-text conversion.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    align_params (AlignmentParams): Alignment parameters.\n    diarize_params (DiarizationParams): Diarization parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    url (str): URL of the audio file.\n    repository (ITaskRepository): Task repository dependency.\n    file_service (FileService): File service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "operationId": "speech_to_text_url_api_v1_speech_to_text_url_post",
         "parameters": [
           {
             "name": "language",
@@ -664,7 +665,8 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/WhisperModel",
-              "description": "Name of the Whisper model to use"
+              "description": "Name of the Whisper model to use",
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -1013,7 +1015,7 @@
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
-                "$ref": "#/components/schemas/Body_speech_to_text_url_speech_to_text_url_post"
+                "$ref": "#/components/schemas/Body_speech_to_text_url_api_v1_speech_to_text_url_post"
               }
             }
           }
@@ -1042,21 +1044,21 @@
         }
       }
     },
-    "/task/all": {
+    "/api/v1/task/all": {
       "get": {
         "tags": [
           "Tasks Management"
         ],
         "summary": "Get All Tasks Status",
-        "description": "Retrieve the status of all tasks.\n\nArgs:\n    session (Session): Database session dependency.\n\nReturns:\n    ResultTasks: The status of all tasks.",
-        "operationId": "get_all_tasks_status_task_all_get",
+        "description": "Retrieve the status of all tasks.\n\nArgs:\n    service: Task management service dependency.\n\nReturns:\n    TaskListResponse: The status of all tasks.",
+        "operationId": "get_all_tasks_status_api_v1_task_all_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResultTasks"
+                  "$ref": "#/components/schemas/TaskListResponse"
                 }
               }
             }
@@ -1064,14 +1066,14 @@
         }
       }
     },
-    "/task/{identifier}": {
+    "/api/v1/task/{identifier}": {
       "get": {
         "tags": [
           "Tasks Management"
         ],
         "summary": "Get Transcription Status",
-        "description": "Retrieve the status of a specific task by its identifier.\n\nArgs:\n    identifier (str): The identifier of the task.\n    session (Session): Database session dependency.\n\nReturns:\n    Result: The status of the task.\n\nRaises:\n    HTTPException: If the identifier is not found.",
-        "operationId": "get_transcription_status_task__identifier__get",
+        "description": "Retrieve the status of a specific task by its identifier.\n\nArgs:\n    identifier (str): The identifier of the task.\n    service: Task management service dependency.\n\nReturns:\n    Result: The status of the task.\n\nRaises:\n    TaskNotFoundError: If the identifier is not found.",
+        "operationId": "get_transcription_status_api_v1_task__identifier__get",
         "parameters": [
           {
             "name": "identifier",
@@ -1107,14 +1109,14 @@
         }
       }
     },
-    "/task/{identifier}/delete": {
+    "/api/v1/task/{identifier}/delete": {
       "delete": {
         "tags": [
           "Tasks Management"
         ],
         "summary": "Delete Task",
-        "description": "Delete a specific task by its identifier.\n\nArgs:\n    identifier (str): The identifier of the task.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task deletion.\n\nRaises:\n    HTTPException: If the task is not found.",
-        "operationId": "delete_task_task__identifier__delete_delete",
+        "description": "Delete a specific task by its identifier.\n\nArgs:\n    identifier (str): The identifier of the task.\n    service: Task management service dependency.\n\nReturns:\n    Response: Confirmation message of task deletion.\n\nRaises:\n    TaskNotFoundError: If the task is not found.",
+        "operationId": "delete_task_api_v1_task__identifier__delete_delete",
         "parameters": [
           {
             "name": "identifier",
@@ -1150,14 +1152,14 @@
         }
       }
     },
-    "/service/transcribe": {
+    "/api/v1/service/transcribe": {
       "post": {
         "tags": [
           "Speech-2-Text services"
         ],
         "summary": "1. Transcribe",
-        "description": "Transcribe an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
-        "operationId": "1__Transcribe_service_transcribe_post",
+        "description": "Transcribe an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    model_params (WhisperModelParams): Whisper model parameters.\n    asr_options_params (ASROptions): ASR options parameters.\n    vad_options_params (VADOptions): VAD options parameters.\n    file (UploadFile): Uploaded audio file.\n    repository (ITaskRepository): Task repository dependency.\n    file_service (FileService): File service dependency.\n    transcription_service (ITranscriptionService): Transcription service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "operationId": "1__Transcribe_api_v1_service_transcribe_post",
         "parameters": [
           {
             "name": "language",
@@ -1290,7 +1292,8 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/WhisperModel",
-              "description": "Name of the Whisper model to use"
+              "description": "Name of the Whisper model to use",
+              "default": "tiny"
             },
             "description": "Name of the Whisper model to use"
           },
@@ -1562,7 +1565,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_1__Transcribe_service_transcribe_post"
+                "$ref": "#/components/schemas/Body_1__Transcribe_api_v1_service_transcribe_post"
               }
             }
           }
@@ -1591,14 +1594,14 @@
         }
       }
     },
-    "/service/align": {
+    "/api/v1/service/align": {
       "post": {
         "tags": [
           "Speech-2-Text services"
         ],
         "summary": "2. Align Transcript",
-        "description": "Align a transcript with an audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    transcript (UploadFile): Uploaded transcript file.\n    file (UploadFile): Uploaded audio file.\n    device (Device): Device for PyTorch inference.\n    align_params (AlignmentParams): Alignment parameters.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
-        "operationId": "2__Align_Transcript_service_align_post",
+        "description": "Align a transcript with an audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    transcript (UploadFile): Uploaded transcript file.\n    file (UploadFile): Uploaded audio file.\n    device (Device): Device for PyTorch inference.\n    align_params (AlignmentParams): Alignment parameters.\n    repository (ITaskRepository): Task repository dependency.\n    file_service (FileService): File service dependency.\n    alignment_service (IAlignmentService): Alignment service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "operationId": "2__Align_Transcript_api_v1_service_align_post",
         "parameters": [
           {
             "name": "device",
@@ -1658,7 +1661,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_2__Align_Transcript_service_align_post"
+                "$ref": "#/components/schemas/Body_2__Align_Transcript_api_v1_service_align_post"
               }
             }
           }
@@ -1687,14 +1690,14 @@
         }
       }
     },
-    "/service/diarize": {
+    "/api/v1/service/diarize": {
       "post": {
         "tags": [
           "Speech-2-Text services"
         ],
         "summary": "3. Diarize",
-        "description": "Perform diarization on an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    file (UploadFile): Uploaded audio file.\n    session (Session): Database session dependency.\n    device (Device): Device for PyTorch inference.\n    diarize_params (DiarizationParams): Diarization parameters.\n\nReturns:\n    Response: Confirmation message of task queuing.",
-        "operationId": "3__Diarize_service_diarize_post",
+        "description": "Perform diarization on an uploaded audio file.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    file (UploadFile): Uploaded audio file.\n    repository (ITaskRepository): Task repository dependency.\n    device (Device): Device for PyTorch inference.\n    diarize_params (DiarizationParams): Diarization parameters.\n    file_service (FileService): File service dependency.\n    diarization_service (IDiarizationService): Diarization service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "operationId": "3__Diarize_api_v1_service_diarize_post",
         "parameters": [
           {
             "name": "device",
@@ -1749,7 +1752,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_3__Diarize_service_diarize_post"
+                "$ref": "#/components/schemas/Body_3__Diarize_api_v1_service_diarize_post"
               }
             }
           }
@@ -1778,19 +1781,19 @@
         }
       }
     },
-    "/service/combine": {
+    "/api/v1/service/combine": {
       "post": {
         "tags": [
           "Speech-2-Text services"
         ],
         "summary": "4. Combine Transcript And Diarization Result",
-        "description": "Combine a transcript with diarization results.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    aligned_transcript (UploadFile): Uploaded aligned transcript file.\n    diarization_result (UploadFile): Uploaded diarization result file.\n    session (Session): Database session dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
-        "operationId": "4__Combine_Transcript_and_Diarization_result_service_combine_post",
+        "description": "Combine a transcript with diarization results.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    aligned_transcript (UploadFile): Uploaded aligned transcript file.\n    diarization_result (UploadFile): Uploaded diarization result file.\n    repository (ITaskRepository): Task repository dependency.\n    file_service (FileService): File service dependency.\n    speaker_service (ISpeakerAssignmentService): Speaker assignment service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing.",
+        "operationId": "4__Combine_Transcript_and_Diarization_result_api_v1_service_combine_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_4__Combine_Transcript_and_Diarization_result_service_combine_post"
+                "$ref": "#/components/schemas/Body_4__Combine_Transcript_and_Diarization_result_api_v1_service_combine_post"
               }
             }
           },
@@ -1883,7 +1886,7 @@
   },
   "components": {
     "schemas": {
-      "Body_1__Transcribe_service_transcribe_post": {
+      "Body_1__Transcribe_api_v1_service_transcribe_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -1896,9 +1899,9 @@
         "required": [
           "file"
         ],
-        "title": "Body_1__Transcribe_service_transcribe_post"
+        "title": "Body_1__Transcribe_api_v1_service_transcribe_post"
       },
-      "Body_2__Align_Transcript_service_align_post": {
+      "Body_2__Align_Transcript_api_v1_service_align_post": {
         "properties": {
           "transcript": {
             "type": "string",
@@ -1918,9 +1921,9 @@
           "transcript",
           "file"
         ],
-        "title": "Body_2__Align_Transcript_service_align_post"
+        "title": "Body_2__Align_Transcript_api_v1_service_align_post"
       },
-      "Body_3__Diarize_service_diarize_post": {
+      "Body_3__Diarize_api_v1_service_diarize_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -1932,9 +1935,9 @@
         "required": [
           "file"
         ],
-        "title": "Body_3__Diarize_service_diarize_post"
+        "title": "Body_3__Diarize_api_v1_service_diarize_post"
       },
-      "Body_4__Combine_Transcript_and_Diarization_result_service_combine_post": {
+      "Body_4__Combine_Transcript_and_Diarization_result_api_v1_service_combine_post": {
         "properties": {
           "aligned_transcript": {
             "type": "string",
@@ -1952,9 +1955,9 @@
           "aligned_transcript",
           "diarization_result"
         ],
-        "title": "Body_4__Combine_Transcript_and_Diarization_result_service_combine_post"
+        "title": "Body_4__Combine_Transcript_and_Diarization_result_api_v1_service_combine_post"
       },
-      "Body_speech_to_text_speech_to_text_post": {
+      "Body_speech_to_text_api_v1_speech_to_text_post": {
         "properties": {
           "file": {
             "type": "string",
@@ -1966,9 +1969,9 @@
         "required": [
           "file"
         ],
-        "title": "Body_speech_to_text_speech_to_text_post"
+        "title": "Body_speech_to_text_api_v1_speech_to_text_post"
       },
-      "Body_speech_to_text_url_speech_to_text_url_post": {
+      "Body_speech_to_text_url_api_v1_speech_to_text_url_post": {
         "properties": {
           "url": {
             "type": "string",
@@ -1979,7 +1982,7 @@
         "required": [
           "url"
         ],
-        "title": "Body_speech_to_text_url_speech_to_text_url_post"
+        "title": "Body_speech_to_text_url_api_v1_speech_to_text_url_post"
       },
       "ComputeType": {
         "type": "string",
@@ -2186,23 +2189,6 @@
         "title": "Result",
         "description": "Model for a result with status, result data, metadata, and optional error."
       },
-      "ResultTasks": {
-        "properties": {
-          "tasks": {
-            "items": {
-              "$ref": "#/components/schemas/TaskSimple"
-            },
-            "type": "array",
-            "title": "Tasks"
-          }
-        },
-        "type": "object",
-        "required": [
-          "tasks"
-        ],
-        "title": "ResultTasks",
-        "description": "Model for a list of simple tasks."
-      },
       "TaskEnum": {
         "type": "string",
         "enum": [
@@ -2212,30 +2198,40 @@
         "title": "TaskEnum",
         "description": "Enum for task types."
       },
-      "TaskSimple": {
+      "TaskListResponse": {
+        "properties": {
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskSummaryResponse"
+            },
+            "type": "array",
+            "title": "Tasks",
+            "description": "List of task summaries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tasks"
+        ],
+        "title": "TaskListResponse",
+        "description": "DTO for returning a list of task summaries."
+      },
+      "TaskSummaryResponse": {
         "properties": {
           "identifier": {
             "type": "string",
-            "title": "Identifier"
+            "title": "Identifier",
+            "description": "Unique identifier for the task"
           },
           "status": {
             "type": "string",
-            "title": "Status"
+            "title": "Status",
+            "description": "Current status of the task"
           },
           "task_type": {
             "type": "string",
-            "title": "Task Type"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
+            "title": "Task Type",
+            "description": "Type of task"
           },
           "file_name": {
             "anyOf": [
@@ -2246,18 +2242,8 @@
                 "type": "null"
               }
             ],
-            "title": "File Name"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
+            "title": "File Name",
+            "description": "Name of the file"
           },
           "url": {
             "anyOf": [
@@ -2268,18 +2254,8 @@
                 "type": "null"
               }
             ],
-            "title": "Url"
-          },
-          "duration": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration"
+            "title": "Url",
+            "description": "URL of the file"
           },
           "audio_duration": {
             "anyOf": [
@@ -2290,7 +2266,44 @@
                 "type": "null"
               }
             ],
-            "title": "Audio Duration"
+            "title": "Audio Duration",
+            "description": "Duration of the audio"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language",
+            "description": "Language of the audio"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error",
+            "description": "Error message if task failed"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration",
+            "description": "Execution duration in seconds"
           },
           "start_time": {
             "anyOf": [
@@ -2302,7 +2315,8 @@
                 "type": "null"
               }
             ],
-            "title": "Start Time"
+            "title": "Start Time",
+            "description": "Task start time"
           },
           "end_time": {
             "anyOf": [
@@ -2314,22 +2328,18 @@
                 "type": "null"
               }
             ],
-            "title": "End Time"
+            "title": "End Time",
+            "description": "Task end time"
           }
         },
         "type": "object",
         "required": [
           "identifier",
           "status",
-          "task_type",
-          "language",
-          "file_name",
-          "error",
-          "url",
-          "duration"
+          "task_type"
         ],
-        "title": "TaskSimple",
-        "description": "Simple task model with basic task information."
+        "title": "TaskSummaryResponse",
+        "description": "DTO for returning task summary in list operations.\n\nUsed for GET /task/all endpoint to provide a lighter response."
       },
       "ValidationError": {
         "properties": {
