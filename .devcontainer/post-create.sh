@@ -11,7 +11,7 @@ which uv
 apt-get update && apt-get install -y libatomic1 openjdk-17-jre-headless postgresql-client
 
 # Wait for PostgreSQL sidecar to be ready (provided by docker-compose devcontainer)
-if [ -n "$TEST_DB_URL" ]; then
+if [[ -n "$TEST_DB_URL" ]]; then
   echo "Waiting for PostgreSQL to be ready..."
   until pg_isready -h postgres -U postgres; do
     sleep 1
