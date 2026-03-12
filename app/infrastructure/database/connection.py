@@ -29,7 +29,20 @@ def _make_async_url(url: str) -> str:
     return url
 
 
+def _make_sync_url(url: str) -> str:
+    """Normalise a DB URL for the sync (psycopg2) driver.
+
+    SQLAlchemy 2.x deprecates the bare ``postgres://`` scheme; normalise it to
+    the canonical ``postgresql://`` so background-task engines don't emit
+    deprecation warnings (or break when the compat shim is removed).
+    """
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql://", 1)
+    return url
+
+
 _async_db_url = _make_async_url(_db_url)
+_sync_db_url = _make_sync_url(_db_url)
 
 # ── Async engine — used by all request-scoped FastAPI handlers ────────────────
 # SQLite async: NullPool because SQLite connections are not coroutine-safe.
@@ -77,7 +90,7 @@ else:
     _sync_engine_kwargs["pool_pre_ping"] = True
     _sync_engine_kwargs["pool_recycle"] = 300
 
-sync_engine = create_engine(_db_url, **_sync_engine_kwargs)
+sync_engine = create_engine(_sync_db_url, **_sync_engine_kwargs)
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
 

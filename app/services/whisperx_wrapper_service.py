@@ -411,6 +411,17 @@ def process_audio_common(
             update_data={"status": TaskStatus.failed, "error": str(e)},
         )
 
+    except Exception as e:
+        logger.error(
+            "Speech-to-text processing failed for identifier: %s with unexpected error. Error: %s",
+            params.identifier,
+            str(e),
+        )
+        repository.update(
+            identifier=params.identifier,
+            update_data={"status": TaskStatus.failed, "error": str(e)},
+        )
+
     finally:
         try:
             if params.callback_url:

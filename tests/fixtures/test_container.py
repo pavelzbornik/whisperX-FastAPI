@@ -1,10 +1,13 @@
 """Test container with mock implementations for testing."""
 
+import asyncio
+
 from dependency_injector import providers
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.core.container import Container
+from app.infrastructure.database.models import Base
 from tests.mocks import (
     MockAlignmentService,
     MockDiarizationService,
@@ -18,6 +21,15 @@ _test_async_engine = create_async_engine(
     poolclass=StaticPool,
     connect_args={"check_same_thread": False},
 )
+
+
+async def _create_test_tables() -> None:
+    async with _test_async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+asyncio.run(_create_test_tables())
+
 _test_session_factory = async_sessionmaker(
     _test_async_engine,
     class_=AsyncSession,
