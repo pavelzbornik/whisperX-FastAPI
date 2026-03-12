@@ -34,6 +34,7 @@
   "postCreateCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh",
   "postAttachCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-attach.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-attach.sh",
   "remoteUser": "root",
+  "envFile": "${localWorkspaceFolder}/.devcontainer/.env",
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
     "UV_CACHE_DIR": "/workspaces/whisperX-FastAPI/.uv_cache",
