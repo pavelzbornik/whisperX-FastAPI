@@ -164,11 +164,9 @@ addopts = "-v --strict-markers --strict-config"
 asyncio_mode = "auto"
 
 [tool.commitizen]
+# Commitizen is used only for commit message validation (commit-msg hook).
+# Version bumping and changelog generation are handled by release-please.
 name = "cz_conventional_commits"
-version = "0.4.5"
-version_files = ["pyproject.toml:^version"]
-tag_format = "v$version"
-update_changelog_on_bump = true
 
 [[tool.mypy.overrides]]
 module = [
