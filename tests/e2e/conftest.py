@@ -109,6 +109,7 @@ def client(
     """
     import app.main as main_module
     import app.services.audio_processing_service as audio_svc_module
+    import app.services.whisperx_wrapper_service as whisperx_svc_module
     from app.infrastructure.database.models import Base
 
     if request.param == "sqlite":
@@ -149,10 +150,12 @@ def client(
     original_main_engine = main_module.async_engine
     main_module.async_engine = async_engine
 
-    # Patch the sync session used by audio_processing_service background tasks
-    # so they write task results to the same database as the async engine.
-    original_sync_session = audio_svc_module.SyncSessionLocal
+    # Patch the sync session used by background task services so they write
+    # task results to the same database as the async engine.
+    original_audio_sync_session = audio_svc_module.SyncSessionLocal
+    original_whisperx_sync_session = whisperx_svc_module.SyncSessionLocal
     audio_svc_module.SyncSessionLocal = sync_session_factory
+    whisperx_svc_module.SyncSessionLocal = sync_session_factory
 
     # Override the DI container so request-scoped async sessions use our engine.
     container = main_module.container
@@ -166,4 +169,5 @@ def client(
     container.db_engine.reset_override()
     container.db_session_factory.reset_override()
     main_module.async_engine = original_main_engine
-    audio_svc_module.SyncSessionLocal = original_sync_session
+    audio_svc_module.SyncSessionLocal = original_audio_sync_session
+    whisperx_svc_module.SyncSessionLocal = original_whisperx_sync_session
