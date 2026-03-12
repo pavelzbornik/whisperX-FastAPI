@@ -61,18 +61,23 @@ AsyncSessionLocal = async_sessionmaker(
 # ── Sync engine — kept exclusively for audio_processing_service background tasks ─
 # Background tasks run in a thread pool, not on the event loop, so they must use
 # the sync driver.
+# SQLite sync: NullPool for the same reason as the async engine — SQLite's
+# single-writer file lock makes connection pooling harmful.
 _sync_connect_args = {"check_same_thread": False} if _is_sqlite else {}
+_sync_engine_kwargs: dict[str, Any] = {
+    "connect_args": _sync_connect_args,
+    "echo": _settings.database.DB_ECHO,
+}
+if _is_sqlite:
+    _sync_engine_kwargs["poolclass"] = NullPool
+else:
+    _sync_engine_kwargs["pool_size"] = 15
+    _sync_engine_kwargs["max_overflow"] = 30
+    _sync_engine_kwargs["pool_timeout"] = 60
+    _sync_engine_kwargs["pool_pre_ping"] = True
+    _sync_engine_kwargs["pool_recycle"] = 300
 
-sync_engine = create_engine(
-    _db_url,
-    connect_args=_sync_connect_args,
-    echo=_settings.database.DB_ECHO,
-    pool_size=15,
-    max_overflow=30,
-    pool_timeout=60,
-    pool_pre_ping=True,
-    pool_recycle=300,
-)
+sync_engine = create_engine(_db_url, **_sync_engine_kwargs)
 SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
 
