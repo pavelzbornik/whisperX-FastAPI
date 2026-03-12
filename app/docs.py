@@ -54,7 +54,7 @@ def generate_markdown_table(model: Table) -> str:
     # Transpose the table
     markdown_table = f"## Table: {table_name}\n\n"
     markdown_table += (
-        "| Field | Description | Type | Nullable |  Unique | Primary Key |\n"
+        "| Field | Description | Type | Nullable | Unique | Primary Key |\n"
     )
     markdown_table += "| --- | --- | --- | --- | --- | --- |\n"
     for i in range(len(column_names)):
@@ -83,7 +83,7 @@ def generate_db_schema(models: Iterable[Table]) -> None:
     Args:
         models: A list of SQLAlchemy models to generate the schema for.
     """
-    markdown_tables = "# Database schema \n\n"
+    markdown_tables = "# Database schema\n\n"
     for model in models:
         markdown_tables += generate_markdown_table(model)
 
