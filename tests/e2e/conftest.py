@@ -5,6 +5,7 @@ import os
 import socket
 from collections.abc import Generator
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from dependency_injector import providers
@@ -162,7 +163,14 @@ def client(
     container.db_engine.override(providers.Singleton(lambda: async_engine))
     container.db_session_factory.override(providers.Factory(session_factory))
 
-    with TestClient(main_module.app, follow_redirects=False) as c:
+    # Suppress docs generation so the lifespan does not rewrite openapi.json /
+    # openapi.yaml / db_schema.md on every test run (which would dirty the
+    # working tree and cause the pre-push hook to fail).
+    with (
+        patch("app.main.save_openapi_json"),
+        patch("app.main.generate_db_schema"),
+        TestClient(main_module.app, follow_redirects=False) as c,
+    ):
         yield c
 
     # Restore everything after the module finishes.
