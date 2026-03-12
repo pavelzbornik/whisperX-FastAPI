@@ -68,6 +68,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Clean up container on shutdown
     logging.info("Shutting down application")
+    # Dispose the async engine pool so pooled connections are not reused across
+    # event loops (e.g. between test modules that each create a TestClient context).
+    await async_engine.dispose()
 
 
 tags_metadata = [

@@ -23,19 +23,6 @@ AUDIO_FILE = "tests/test_files/audio_en.mp3"
 assert os.path.exists(AUDIO_FILE), f"Audio file not found: {AUDIO_FILE}"
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    """
-    Create and return test client.
-
-    Returns:
-        TestClient: The FastAPI test client instance
-    """
-    from app import main
-
-    return TestClient(main.app, follow_redirects=False)
-
-
 @pytest.fixture(autouse=True)
 def set_env_variable(monkeypatch: MonkeyPatch) -> None:
     """

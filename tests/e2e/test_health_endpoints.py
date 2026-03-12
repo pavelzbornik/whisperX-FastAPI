@@ -7,19 +7,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    """
-    Create and return test client.
-
-    Returns:
-        TestClient: The FastAPI test client instance
-    """
-    from app import main
-
-    return TestClient(main.app, follow_redirects=False)
-
-
 @pytest.mark.e2e
 def test_index_redirects_to_docs(client: TestClient) -> None:
     """Test the index route redirects to the documentation."""

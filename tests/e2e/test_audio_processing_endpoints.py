@@ -26,19 +26,6 @@ TRANSCRIPT_RESULT_1 = " This is a test audio"
 TRANSCRIPT_RESULT_2 = " This is the test audio"
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    """
-    Create and return test client.
-
-    Returns:
-        TestClient: The FastAPI test client instance
-    """
-    from app import main
-
-    return TestClient(main.app, follow_redirects=False)
-
-
 @pytest.fixture(autouse=True)
 def set_env_variable(monkeypatch: MonkeyPatch) -> None:
     """
