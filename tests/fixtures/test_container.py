@@ -2,7 +2,7 @@
 
 from dependency_injector import providers
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import StaticPool
 
 from app.core.container import Container
 from tests.mocks import (
@@ -15,7 +15,8 @@ from tests.mocks import (
 _test_async_engine = create_async_engine(
     "sqlite+aiosqlite:///:memory:",
     echo=False,
-    poolclass=NullPool,
+    poolclass=StaticPool,
+    connect_args={"check_same_thread": False},
 )
 _test_session_factory = async_sessionmaker(
     _test_async_engine,

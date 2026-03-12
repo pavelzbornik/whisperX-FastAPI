@@ -39,6 +39,8 @@ dependencies = [
     "tqdm==4.67.3",
     "uvicorn==0.41.0",
     "whisperx==3.7.4",
+    "sqlalchemy[asyncio]>=2.0.0",
+    "aiosqlite>=0.20.0",
     "torch<=2.8.0",
     "torchaudio<=2.8.0",
     "torchvision<=0.23.0",
@@ -51,7 +53,6 @@ postgres = [
     "asyncpg>=0.29.0",
 ]
 dev = [
-    "aiosqlite>=0.20.0",
     "locust>=2.20.0",
     "codespell==2.4.1",
     "factory-boy==3.3.3",
@@ -62,7 +63,6 @@ dev = [
     "pytest-asyncio>=0.24.0",
     "pytest-cov==7.0.0",
     "ruff==0.15.2",
-    "sqlalchemy[asyncio]>=2.0.0",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]
@@ -113,7 +113,6 @@ omit = [
     "venv/*",
     "*/virtualenv/*",
     "*/site-packages/*",
-    "app/infrastructure/database/task_repository.py",
 ]
 
 [tool.coverage.report]
