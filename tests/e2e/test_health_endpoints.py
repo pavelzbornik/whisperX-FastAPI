@@ -1,9 +1,9 @@
 """End-to-end tests for health check endpoints."""
 
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 from fastapi.testclient import TestClient
 
 
@@ -63,35 +63,25 @@ def test_readiness_check(client: TestClient) -> None:
 
 
 @pytest.mark.e2e
-def test_readiness_check_with_db_failure(
-    client: TestClient, monkeypatch: MonkeyPatch
-) -> None:
+def test_readiness_check_with_db_failure(client: TestClient) -> None:
     """Test the readiness check endpoint when database connection fails."""
-    from app.infrastructure.database import engine
 
-    # Create a mock engine connect method that raises an exception
-    def mock_connect(*args: Any, **kwargs: Any) -> Any:
-        class MockConnection:
-            def __enter__(self) -> "MockConnection":
-                raise TimeoutError("Database connection failed")
+    # Async context manager that raises TimeoutError on enter
+    class _FailingAsyncConn:
+        async def __aenter__(self) -> "_FailingAsyncConn":
+            raise TimeoutError("Database connection failed")
 
-            def __exit__(self, *args: Any) -> None:
-                """Exit the context manager - no cleanup needed for mock."""
-                pass
+        async def __aexit__(self, *args: Any) -> None:
+            """Exit the context manager."""
 
-        return MockConnection()
+    mock_engine = MagicMock()
+    mock_engine.connect.return_value = _FailingAsyncConn()
 
-    # Patch the engine.connect method
-    original_connect = engine.connect
-    monkeypatch.setattr(engine, "connect", mock_connect)
-
-    try:
+    with patch("app.main.async_engine", mock_engine):
         response = client.get("/health/ready")
-        assert response.status_code == 503
-        data = response.json()
-        assert data["status"] == "error"
-        assert data["database"] == "disconnected"
-        assert data["message"] == "Application is not ready due to an internal error."
-    finally:
-        # Restore the original connect method
-        monkeypatch.setattr(engine, "connect", original_connect)
+
+    assert response.status_code == 503
+    data = response.json()
+    assert data["status"] == "error"
+    assert data["database"] == "disconnected"
+    assert data["message"] == "Application is not ready due to an internal error."

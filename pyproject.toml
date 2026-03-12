@@ -46,15 +46,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+postgres = [
+    "psycopg2-binary>=2.9.9",
+    "asyncpg>=0.29.0",
+]
 dev = [
+    "aiosqlite>=0.20.0",
+    "locust>=2.20.0",
     "codespell==2.4.1",
     "factory-boy==3.3.3",
     "mypy==1.19.1",
     "pandas-stubs>=2.1.0",
     "pre-commit==4.5.1",
     "pytest==9.0.2",
+    "pytest-asyncio>=0.24.0",
     "pytest-cov==7.0.0",
     "ruff==0.15.2",
+    "sqlalchemy[asyncio]>=2.0.0",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]
@@ -104,7 +112,8 @@ omit = [
     "/tmp/*",
     "venv/*",
     "*/virtualenv/*",
-    "*/site-packages/*"
+    "*/site-packages/*",
+    "app/infrastructure/database/task_repository.py",
 ]
 
 [tool.coverage.report]
@@ -149,8 +158,10 @@ markers = [
     "integration: Integration tests with real database or external services",
     "e2e: End-to-end tests through API",
     "slow: Slow tests (ML operations, large files)",
+    "load: Load / performance tests — require a live server and locust; excluded from CI",
 ]
 addopts = "-v --strict-markers --strict-config"
+asyncio_mode = "auto"
 
 [[tool.mypy.overrides]]
 module = [

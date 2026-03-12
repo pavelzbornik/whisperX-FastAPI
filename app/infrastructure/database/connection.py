@@ -4,26 +4,81 @@ from collections.abc import Callable, Generator
 from functools import wraps
 from typing import Any
 
-from dotenv import load_dotenv
 from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
-from app.core.config import Config
+from app.core.config import get_settings
 
-# Load environment variables from .env
-load_dotenv()
+_settings = get_settings()
+_db_url = _settings.database.DB_URL
+_is_sqlite = _db_url.startswith("sqlite")
 
-# Create engine and session
-DB_URL = Config.DB_URL
-engine = create_engine(DB_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def _make_async_url(url: str) -> str:
+    """Convert a sync DB URL to an async-driver URL."""
+    if url.startswith("sqlite://"):
+        return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    return url
+
+
+_async_db_url = _make_async_url(_db_url)
+
+# ── Async engine — used by all request-scoped FastAPI handlers ────────────────
+# SQLite async: NullPool because SQLite connections are not coroutine-safe.
+# PostgreSQL async: standard QueuePool config.
+_async_engine_kwargs: dict[str, Any] = {
+    "echo": _settings.database.DB_ECHO,
+}
+if _is_sqlite:
+    _async_engine_kwargs["poolclass"] = NullPool
+else:
+    _async_engine_kwargs["pool_size"] = 15
+    _async_engine_kwargs["max_overflow"] = 30
+    _async_engine_kwargs["pool_timeout"] = 60
+    _async_engine_kwargs["pool_pre_ping"] = True
+    _async_engine_kwargs["pool_recycle"] = 300
+
+async_engine = create_async_engine(_async_db_url, **_async_engine_kwargs)
+
+# expire_on_commit=False prevents implicit lazy-loads after commit, which would
+# raise MissingGreenlet inside an async context.
+AsyncSessionLocal = async_sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
+
+# ── Sync engine — kept exclusively for audio_processing_service background tasks ─
+# Background tasks run in a thread pool, not on the event loop, so they must use
+# the sync driver.
+_sync_connect_args = {"check_same_thread": False} if _is_sqlite else {}
+
+sync_engine = create_engine(
+    _db_url,
+    connect_args=_sync_connect_args,
+    echo=_settings.database.DB_ECHO,
+    pool_size=15,
+    max_overflow=30,
+    pool_timeout=60,
+    pool_pre_ping=True,
+    pool_recycle=300,
+)
+SyncSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 
 
 def get_db_session() -> Generator[Session, None, None]:
     """Provide a transactional scope around a series of operations."""
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
         yield db
     finally:

@@ -115,7 +115,7 @@ async def speech_to_text(
         start_time=datetime.now(tz=timezone.utc),
     )
 
-    identifier = repository.add(task)
+    identifier = await repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
     audio_params = SpeechToTextProcessingParams(
@@ -201,7 +201,7 @@ async def speech_to_text_url(
         start_time=datetime.now(tz=timezone.utc),
     )
 
-    identifier = repository.add(task)
+    identifier = await repository.add(task)
     logger.info("Task added to database: ID %s", identifier)
 
     audio_params = SpeechToTextProcessingParams(

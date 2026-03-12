@@ -14,14 +14,13 @@ from app.core.exceptions import (
     ValidationError,
 )
 from app.core.logging import logger
-from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
 from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.domain.services.transcription_service import ITranscriptionService
-from app.infrastructure.database.connection import SessionLocal
+from app.infrastructure.database.connection import SyncSessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
-    SQLAlchemyTaskRepository,
+    SyncSQLAlchemyTaskRepository,
 )
 from app.schemas import (
     AlignmentParams,
@@ -66,9 +65,9 @@ def process_audio_task(
         identifier (str): The task identifier.
         task_type (str): The type of the task.
     """
-    # Create repository for this background task
-    session = SessionLocal()
-    repository: ITaskRepository = SQLAlchemyTaskRepository(session)
+    # Create repository for this background task (sync — runs in thread pool)
+    session = SyncSessionLocal()
+    repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
     try:
         start_time = datetime.now()

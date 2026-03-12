@@ -1,7 +1,8 @@
 """Test container with mock implementations for testing."""
 
 from dependency_injector import providers
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 from app.core.container import Container
 from tests.mocks import (
@@ -11,6 +12,19 @@ from tests.mocks import (
     MockTranscriptionService,
 )
 
+_test_async_engine = create_async_engine(
+    "sqlite+aiosqlite:///:memory:",
+    echo=False,
+    poolclass=NullPool,
+)
+_test_session_factory = async_sessionmaker(
+    _test_async_engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
+
 
 class TestContainer(Container):
     """
@@ -18,7 +32,7 @@ class TestContainer(Container):
 
     This container extends the production Container and overrides:
     - ML services with fast, deterministic mocks (no GPU, no network)
-    - Database with in-memory SQLite for isolated testing
+    - Database with in-memory async SQLite for isolated testing
     - All other services remain the same (repositories, file service, etc.)
 
     Usage in tests:
@@ -35,13 +49,9 @@ class TestContainer(Container):
         ...     # Cleanup happens automatically
     """
 
-    # Override database with in-memory SQLite for test isolation
-    db_engine = providers.Singleton(
-        create_engine,
-        "sqlite:///:memory:",
-        echo=False,
-        connect_args={"check_same_thread": False},
-    )
+    # Override database with in-memory async SQLite for test isolation
+    db_engine = providers.Singleton(lambda: _test_async_engine)
+    db_session_factory = providers.Factory(_test_session_factory)
 
     # Override ML services with fast mocks (no GPU, no network calls)
     transcription_service = providers.Singleton(MockTranscriptionService)

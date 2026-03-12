@@ -32,12 +32,10 @@ from app.core.exceptions import (  # noqa: E402
     ValidationError,
 )
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
-from app.infrastructure.database import Base, engine  # noqa: E402
+from app.infrastructure.database import Base, async_engine  # noqa: E402
 
 # Load environment variables from .env
 load_dotenv()
-
-Base.metadata.create_all(bind=engine)
 
 # Create dependency injection container
 container = Container()
@@ -60,6 +58,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app (FastAPI): The FastAPI application instance.
     """
     logging.info("Application lifespan started - dependency container initialized")
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
@@ -179,8 +180,8 @@ async def readiness_check() -> JSONResponse:
     """
     try:
         # Check database connection
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+        async with async_engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,

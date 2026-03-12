@@ -23,7 +23,7 @@ class TaskManagementService:
         """
         self.repository = repository
 
-    def create_task(self, task: Task) -> str:
+    async def create_task(self, task: Task) -> str:
         """
         Create a new task in the repository.
 
@@ -34,11 +34,11 @@ class TaskManagementService:
             The UUID of the created task
         """
         logger.debug("Creating new task: %s", task.uuid)
-        identifier = self.repository.add(task)
+        identifier = await self.repository.add(task)
         logger.info("Task created with UUID: %s", identifier)
         return identifier
 
-    def get_task(self, identifier: str) -> Task | None:
+    async def get_task(self, identifier: str) -> Task | None:
         """
         Retrieve a task by its identifier.
 
@@ -49,7 +49,7 @@ class TaskManagementService:
             The task domain entity if found, None otherwise
         """
         logger.debug("Retrieving task with identifier: %s", identifier)
-        task = self.repository.get_by_id(identifier)
+        task = await self.repository.get_by_id(identifier)
 
         if task:
             logger.debug("Task found: %s", identifier)
@@ -58,7 +58,7 @@ class TaskManagementService:
 
         return task
 
-    def get_all_tasks(self) -> list[Task]:
+    async def get_all_tasks(self) -> list[Task]:
         """
         Retrieve all tasks from the repository.
 
@@ -66,11 +66,11 @@ class TaskManagementService:
             List of all task domain entities
         """
         logger.debug("Retrieving all tasks")
-        tasks = self.repository.get_all()
+        tasks = await self.repository.get_all()
         logger.info("Retrieved %d tasks", len(tasks))
         return tasks
 
-    def delete_task(self, identifier: str) -> bool:
+    async def delete_task(self, identifier: str) -> bool:
         """
         Delete a task by its identifier.
 
@@ -81,7 +81,7 @@ class TaskManagementService:
             True if the task was deleted, False if not found
         """
         logger.debug("Deleting task with identifier: %s", identifier)
-        result = self.repository.delete(identifier)
+        result = await self.repository.delete(identifier)
 
         if result:
             logger.info("Task deleted successfully: %s", identifier)
@@ -90,7 +90,9 @@ class TaskManagementService:
 
         return result
 
-    def update_task_status(self, identifier: str, update_data: dict[str, Any]) -> None:
+    async def update_task_status(
+        self, identifier: str, update_data: dict[str, Any]
+    ) -> None:
         """
         Update task status and related information.
 
@@ -99,5 +101,5 @@ class TaskManagementService:
             update_data: Dictionary of fields to update
         """
         logger.debug("Updating task %s with data: %s", identifier, update_data.keys())
-        self.repository.update(identifier, update_data)
+        await self.repository.update(identifier, update_data)
         logger.info("Task updated successfully: %s", identifier)
