@@ -9,11 +9,14 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      # --- General File Fixes ---
+      # --- General File Fixes (pre-commit only — modifying hooks must not run at pre-push) ---
       - id: trailing-whitespace
+        stages: [pre-commit]
       - id: end-of-file-fixer
+        stages: [pre-commit]
       - id: mixed-line-ending
         args: [--fix=lf] # Enforce LF line endings
+        stages: [pre-commit]
       - id: check-illegal-windows-names
       # --- Git Sanity Checks ---
       - id: check-added-large-files
@@ -100,13 +103,11 @@ repos:
         files: '^(pyproject\.toml|scripts/update-badges\.py)$'
         pass_filenames: false
         stages: [pre-commit]
-
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.13.9
     hooks:
       - id: commitizen
         stages: [commit-msg]
-
   - repo: local
     hooks:
       - id: pytest-fast
