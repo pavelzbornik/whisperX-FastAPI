@@ -83,7 +83,7 @@ for supported database URLs.
 
 | `DB_URL` scheme | Async driver used |
 | --- | --- |
-| `sqlite://` | `aiosqlite` (included in dev extras) |
+| `sqlite://` | `aiosqlite` (included by default) |
 | `postgresql://` | `asyncpg` (install with `--extra postgres`) |
 
 For PostgreSQL, install the driver extra: `uv sync --no-dev --extra postgres`. The

@@ -1,7 +1,7 @@
 """This module provides services for processing audio tasks including transcription, diarization, alignment, and speaker assignment using WhisperX and FastAPI."""
 
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from whisperx import utils as whisperx_utils
@@ -70,7 +70,7 @@ def process_audio_task(
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
     try:
-        start_time = datetime.now()
+        start_time = datetime.now(tz=timezone.utc)
         logger.info(f"Starting {task_type} task for identifier {identifier}")
 
         result = audio_processor()
@@ -78,7 +78,7 @@ def process_audio_task(
         if task_type == "diarization":
             result = result.drop(columns=["segment"]).to_dict(orient="records")
 
-        end_time = datetime.now()
+        end_time = datetime.now(tz=timezone.utc)
         duration = (end_time - start_time).total_seconds()
         logger.info(
             f"Completed {task_type} task for identifier {identifier}. Duration: {duration}s"

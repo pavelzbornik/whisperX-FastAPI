@@ -52,7 +52,12 @@ class Container(containers.DeclarativeContainer):
     db_engine = providers.Singleton(lambda: async_engine)
     db_session_factory = providers.Factory(AsyncSessionLocal)
 
-    # Repositories - Factory pattern with session dependency
+    # Repositories - Factory pattern with session dependency.
+    # NOTE: request-scoped code in app/api/dependencies.py does NOT use this
+    # provider directly — it manages the AsyncSession lifecycle itself via
+    # `async with _container.db_session_factory() as session:`. This provider
+    # exists for TestContainer overrides and internal wiring only; do not call
+    # it for request-scoped operations as the session will not be closed.
     task_repository = providers.Factory(
         AsyncSQLAlchemyTaskRepository,
         session=db_session_factory,

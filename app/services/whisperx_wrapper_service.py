@@ -1,7 +1,7 @@
 """This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
 
 import gc
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -296,7 +296,7 @@ def process_audio_common(
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
     try:
-        start_time = datetime.now()
+        start_time = datetime.now(tz=timezone.utc)
         logger.info(
             "Starting speech-to-text processing for identifier: %s",
             params.identifier,
@@ -369,7 +369,7 @@ def process_audio_common(
 
         logger.debug("Completed combining transcript with diarization results")
 
-        end_time = datetime.now()
+        end_time = datetime.now(tz=timezone.utc)
         duration = (end_time - start_time).total_seconds()
         logger.info(
             "Completed speech-to-text processing for identifier: %s. Duration: %ss",

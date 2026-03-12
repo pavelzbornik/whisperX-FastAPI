@@ -27,8 +27,11 @@ def _pg_available() -> bool:
 
 def _async_url(url: str) -> str:
     """Rewrite a sync URL to its async-driver equivalent if needed."""
-    if url.startswith("postgresql://") or url.startswith("postgres://"):
-        return url.replace("://", "+asyncpg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    if url.startswith("postgres://"):
+        # Heroku/Railway shorthand — must become the full postgresql dialect.
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
     if url.startswith("sqlite://"):
         return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
     return url
