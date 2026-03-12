@@ -163,6 +163,13 @@ markers = [
 addopts = "-v --strict-markers --strict-config"
 asyncio_mode = "auto"
 
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.4.5"
+version_files = ["pyproject.toml:^version"]
+tag_format = "v$version"
+update_changelog_on_bump = true
+
 [[tool.mypy.overrides]]
 module = [
     "whisperx.*",
