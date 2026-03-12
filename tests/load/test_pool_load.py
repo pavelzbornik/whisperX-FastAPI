@@ -86,7 +86,7 @@ def _locust_cmd(
         "1",
     ]
     if user_classes:
-        cmd += ["--user-classes", *user_classes]
+        cmd += user_classes
     if csv_name:
         _RESULTS_DIR.mkdir(exist_ok=True)
         cmd += ["--csv", str(_RESULTS_DIR / csv_name)]

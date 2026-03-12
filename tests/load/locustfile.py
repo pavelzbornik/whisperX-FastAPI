@@ -12,7 +12,7 @@ Run all classes (default):
 
 Run a single class::
 
-    uv run locust -f tests/load/locustfile.py --user-classes ReadOnlyUser \
+    uv run locust -f tests/load/locustfile.py ReadOnlyUser \
         --host http://localhost:8000
 """
 
