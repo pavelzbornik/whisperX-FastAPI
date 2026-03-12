@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "sonarqube": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i", "--init",
+        "-e", "SONARQUBE_TOKEN",
+        "-e", "SONARQUBE_ORG",
+        "mcp/sonarqube"
+      ],
+      "env": {
+        "SONARQUBE_TOKEN": "${SONAR_TOKEN}",
+        "SONARQUBE_ORG": "${SONAR_ORG}"
+      }
+    }
+  }
+}
