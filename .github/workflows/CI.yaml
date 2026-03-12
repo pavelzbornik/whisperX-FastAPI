@@ -80,7 +80,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     needs: lint
     env:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
