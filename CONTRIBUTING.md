@@ -2,81 +2,115 @@
 
 Thank you for your interest in contributing to whisperX-FastAPI! We welcome contributions of all kinds, including bug fixes, new features, documentation improvements, and more.
 
+## Branch Strategy
+
+```text
+feature/xxx  →  dev  →  main
+fix/xxx      ↗
+```
+
+- All development happens in feature branches targeting `dev`
+- `dev` is the default branch — pull requests target it automatically
+- `main` receives periodic releases from `dev` and is always production-ready
+
 ## Getting Started
 
 1. **Fork the repository** and clone it to your local machine.
 2. **Set up your development environment** as described in the [README.md](README.md).
-3. **Install pre-commit hooks** to ensure code quality and automatic updates:
+3. **Install pre-commit hooks** to ensure code quality:
 
    ```sh
-   # Install pre-commit (if not already installed)
    pip install pre-commit
-
-   # Install the git hooks
    pre-commit install
    ```
 
-   This will automatically:
-   - Format and lint your code with Ruff
-   - Run type checking with mypy
-   - Check for common issues (trailing whitespace, large files, etc.)
-   - **Update README badges** to reflect current versions from your environment
+   This automatically runs on every commit:
+   - Format and lint with Ruff
+   - Type checking with mypy
+   - Common issue checks (trailing whitespace, large files, etc.)
+   - README badge updates from `pyproject.toml`
 
-4. **Create a new branch** for your feature or bugfix:
+## Workflow
 
-   ```sh
-   git checkout -b my-feature-branch
-   ```
+### Starting a new feature or fix
 
-4. **Make your changes** and add tests as appropriate.
-5. **Run the test suite** to ensure everything works:
+```sh
+git checkout dev && git pull
+git checkout -b feat/my-thing   # or fix/my-thing
+```
 
-   ```sh
-   pytest
-   ```
+### Opening a pull request
 
-6. **Commit your changes** with a clear and descriptive message.
-7. **Push your branch** to your fork and open a Pull Request (PR) against the `dev` branch.
+```sh
+gh pr create --fill --draft     # opens a draft PR to dev immediately
+```
+
+`--fill` uses your commit messages as the title and body — no manual writing needed if your commits are descriptive.
+
+### Merging
+
+```sh
+gh pr ready                     # mark out of draft when done
+gh pr merge --squash --auto     # auto-merges when CI goes green
+```
+
+Feature branches are deleted automatically after merge.
+
+## Commit Messages
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) — the pre-commit hook enforces this via commitizen:
+
+```text
+feat: add PostgreSQL support
+fix: handle missing HF_TOKEN gracefully
+chore: bump ruff to 0.15.2
+docs: update contributing guide
+```
 
 ## Code Style & Quality
 
-- Follow [PEP8](https://www.python.org/dev/peps/pep-0008/) for Python code.
-- Use type hints where possible.
+- Follow [PEP 8](https://www.python.org/dev/peps/pep-0008/) and use type hints throughout.
 - Keep functions and classes small and focused.
 - Add or update docstrings for public functions and classes.
-- Code must pass [Ruff](https://docs.astral.sh/ruff/) linter and formatter checks (`ruff check .` and `ruff format --check .`).
-- Code coverage must be at least **55%** (see CI for details).
+- Code must pass [Ruff](https://docs.astral.sh/ruff/) checks: `uv run ruff check .` and `uv run ruff format --check .`
+- Code coverage must be at least **80%**.
 
-### Automatic Badge Updates
+### Running tests
 
-The repository uses a pre-commit hook to automatically update README badges (Python version, CUDA version, FastAPI version, WhisperX version) from `pyproject.toml`.
+```sh
+# All tests with coverage (CI standard)
+uv run pytest --cov=app --cov-report=term --cov-fail-under=80
 
-- **Badges are updated automatically** when you commit changes to `pyproject.toml` or the badge update script itself.
-- The script reads version information directly from `pyproject.toml` as the single source of truth.
-- If you need to manually update badges, run:
+# Fast subset (unit + integration, no slow/load)
+uv run pytest -m "not slow and not load"
 
-  ```sh
-  python scripts/update-badges.py
-  ```
+# Single file
+uv run pytest tests/unit/domain/entities/test_task.py
 
-- To see what would be updated without making changes:
+# Load tests (run manually, not in CI)
+uv run pytest -m load
+```
 
-  ```sh
-  python scripts/update-badges.py --dry-run
-  ```
+### Badge updates
+
+Badges in README are updated automatically when you commit changes to `pyproject.toml`. To update manually:
+
+```sh
+uv run python scripts/update-badges.py
+uv run python scripts/update-badges.py --dry-run  # preview only
+```
 
 ## Pull Request Guidelines
 
-- PRs should be opened against the `dev` branch.
-- Include a clear description of your changes and the motivation behind them.
-- Reference related issues in your PR description (e.g., `Fixes #123`).
-- Ensure all tests pass and new code is covered by tests.
-- Code must pass all CI checks:
+- PRs must target the `dev` branch (the default).
+- Include a clear description of your changes and the motivation.
+- Reference related issues (e.g., `Fixes #123`).
+- All CI checks must pass:
   - Ruff linter and formatter
-  - All tests must pass
-  - Coverage must be at least 55%
-- If your change affects documentation, update the relevant docs.
+  - mypy type checking
+  - All tests pass with ≥80% coverage
+  - Dependency review (no new high/critical vulnerabilities)
 
 ## Reporting Issues
 
-If you find a bug or have a feature request, please [open an issue](https://github.com/pavelzbornik/whisperX-FastAPI/issues) and provide as much detail as possible.
+If you find a bug or have a feature request, please [open an issue](https://github.com/pavelzbornik/whisperX-FastAPI/issues) with as much detail as possible.
