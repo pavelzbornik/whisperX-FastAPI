@@ -70,21 +70,23 @@ class Task(Base):
         Float, nullable=True, comment="Duration of the task execution"
     )
     start_time: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True, comment="Start time of the task execution"
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Start time of the task execution",
     )
     end_time: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True, comment="End time of the task execution"
+        DateTime(timezone=True), nullable=True, comment="End time of the task execution"
     )
     error: Mapped[str | None] = mapped_column(
         String, nullable=True, comment="Error message, if any, associated with the task"
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         comment="Date and time of creation",
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
         comment="Date and time of last update",

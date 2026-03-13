@@ -33,12 +33,18 @@ COPY app/gunicorn_logging.conf .
 
 # Install Python dependencies using UV with pyproject.toml
 # UV automatically selects CUDA 12.8 wheels on Linux
-RUN uv sync --frozen --no-dev \
+RUN uv sync --frozen --no-dev --extra postgres \
     && uv pip install --system ctranslate2==4.6.0 \
     && rm -rf /root/.cache /tmp/* /root/.uv /var/cache/* \
     && find /usr/local -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true \
     && find /usr/local -type f -name '*.pyc' -delete \
     && find /usr/local -type f -name '*.pyo' -delete
+
+# Pre-download NLTK punkt tokenizer data required by the alignment service
+ENV NLTK_DATA=/app/nltk_data
+RUN uv run python -c "import nltk; \
+    nltk.download('punkt', download_dir='/app/nltk_data', quiet=False); \
+    nltk.download('punkt_tab', download_dir='/app/nltk_data', quiet=False)"
 
 EXPOSE 8000
 

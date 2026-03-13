@@ -127,7 +127,7 @@ async def transcribe(
         start_time=datetime.now(tz=timezone.utc),
     )
 
-    identifier = repository.add(task)
+    identifier = await repository.add(task)
 
     background_tasks.add_task(
         process_transcribe,
@@ -148,7 +148,7 @@ async def transcribe(
     tags=["Speech-2-Text services"],
     name="2. Align Transcript",
 )
-def align(
+async def align(
     background_tasks: BackgroundTasks,
     transcript: UploadFile = File(
         ..., description="Whisper style transcript json file"
@@ -232,7 +232,7 @@ def align(
         start_time=datetime.now(tz=timezone.utc),
     )
 
-    identifier = repository.add(task)
+    identifier = await repository.add(task)
 
     background_tasks.add_task(
         process_alignment,
@@ -303,7 +303,7 @@ async def diarize(
         start_time=datetime.now(tz=timezone.utc),
     )
 
-    identifier = repository.add(task)
+    identifier = await repository.add(task)
 
     background_tasks.add_task(
         process_diarize,
@@ -400,7 +400,7 @@ async def combine(
         start_time=datetime.now(tz=timezone.utc),
     )
 
-    identifier = repository.add(task)
+    identifier = await repository.add(task)
 
     background_tasks.add_task(
         process_speaker_assignment,

@@ -1,7 +1,7 @@
 """This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
 
 import gc
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import numpy as np
@@ -17,14 +17,13 @@ from whisperx.diarize import DiarizationPipeline
 from app.callbacks import post_task_callback
 from app.core.config import Config
 from app.core.logging import logger
-from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
 from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.domain.services.transcription_service import ITranscriptionService
-from app.infrastructure.database.connection import SessionLocal
+from app.infrastructure.database.connection import SyncSessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
-    SQLAlchemyTaskRepository,
+    SyncSQLAlchemyTaskRepository,
 )
 from app.schemas import (
     AlignedTranscription,
@@ -292,12 +291,12 @@ def process_audio_common(
     )
     speaker_svc = speaker_service or WhisperXSpeakerAssignmentService()
 
-    # Create repository for this background task
-    session = SessionLocal()
-    repository: ITaskRepository = SQLAlchemyTaskRepository(session)
+    # Create repository for this background task (sync — runs in thread pool)
+    session = SyncSessionLocal()
+    repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
     try:
-        start_time = datetime.now()
+        start_time = datetime.now(tz=timezone.utc)
         logger.info(
             "Starting speech-to-text processing for identifier: %s",
             params.identifier,
@@ -370,7 +369,7 @@ def process_audio_common(
 
         logger.debug("Completed combining transcript with diarization results")
 
-        end_time = datetime.now()
+        end_time = datetime.now(tz=timezone.utc)
         duration = (end_time - start_time).total_seconds()
         logger.info(
             "Completed speech-to-text processing for identifier: %s. Duration: %ss",
@@ -406,6 +405,17 @@ def process_audio_common(
     except MemoryError as e:
         logger.error(
             f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
+        )
+        repository.update(
+            identifier=params.identifier,
+            update_data={"status": TaskStatus.failed, "error": str(e)},
+        )
+
+    except Exception as e:
+        logger.error(
+            "Speech-to-text processing failed for identifier: %s with unexpected error. Error: %s",
+            params.identifier,
+            str(e),
         )
         repository.update(
             identifier=params.identifier,

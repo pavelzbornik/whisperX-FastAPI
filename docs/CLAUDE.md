@@ -8,6 +8,7 @@ ADRs document *why* core design decisions were made:
 
 | File | Topic |
 | --- | --- |
+| `async-sqlalchemy-concurrency.md` | Async SQLAlchemy migration: dual-engine design, load test results |
 | `dependency-injection.md` | DI Container design and rationale |
 | `domain-model-pattern.md` | Pure domain entity and Repository pattern |
 | `exception-handling.md` | Typed exception hierarchy strategy |

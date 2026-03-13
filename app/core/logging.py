@@ -29,10 +29,6 @@ config["root"]["level"] = log_level
 # Apply the updated logging configuration
 logging.config.dictConfig(config)
 
-# Save the updated config back to the YAML file
-with open(config_path, "w") as f:
-    yaml.dump(config, f)
-
 # Configure whisperX logger
 logger = logging.getLogger("whisperX")
 logger.setLevel(log_level)
