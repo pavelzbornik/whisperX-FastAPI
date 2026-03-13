@@ -26,7 +26,7 @@ _RESULTS_DIR = Path(__file__).parent.parent.parent / "load_results"
 
 
 def _assert_csv_failure_rate_under(csv_path: Path, max_rate: float) -> None:
-    """Assert the aggregated failure rate is below ``max_rate`` (0–1 fraction).
+    """Assert the aggregated failure rate is below ``max_rate`` (0-1 fraction).
 
     Silently passes if the CSV was not written (e.g. locust exited early —
     the caller handles that case separately).
