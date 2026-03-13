@@ -362,8 +362,8 @@ jobs:
         uses: dependabot/fetch-metadata@e74077de530ef48d09568e2268558f6093a85509
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Merge the PR
-        run: gh pr merge "$PR_URL" --merge --admin
+      - name: Enable auto-merge on PR
+        run: gh pr merge "$PR_URL" --squash --auto
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -403,30 +403,11 @@ jobs:
           file_pattern: uv.lock
           commit_user_name: "GitHub Action"
           commit_user_email: "action@github.com"
-  auto-merge-release-please:
-    name: Auto-merge Release Please PR
-    runs-on: ubuntu-latest
-    needs: [release-please]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Set up GitHub CLI
-        run: |
-          sudo apt-get update && sudo apt-get install -y gh
-      - name: Find and merge Release Please PRs
+      - name: Enable auto-merge on Release Please PR
+        if: ${{ steps.release-please.outputs.pr }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          prs=$(gh pr list --state open --author github-actions[bot] --json number --jq '.[].number')
-          if [ -z "$prs" ]; then
-            echo "No open Release Please PRs to merge."
-            exit 0
-          fi
-          for pr in $prs; do
-            echo "Merging Release Please PR #$pr"
-            gh pr merge $pr --merge --admin --delete-branch || exit 1
-          done
+          PR_NUMBER=$(echo '${{ steps.release-please.outputs.pr }}' | python3 -c "import json,sys; print(json.load(sys.stdin)['number'])")
+          gh pr merge "$PR_NUMBER" --squash --auto
+          echo "Auto-merge enabled on release-please PR #$PR_NUMBER"
