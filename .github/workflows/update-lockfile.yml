@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - pyproject.toml
+concurrency:
+  group: update-lockfile-${{ github.head_ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:

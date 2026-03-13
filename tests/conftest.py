@@ -43,8 +43,9 @@ def setup_test_db(
     from app.infrastructure.database.connection import async_engine  # noqa: E402
     from app.infrastructure.database.models import Base  # noqa: E402
 
-    logger.debug(f"conftest.py: Setting DB_URL to {os.environ['DB_URL']}")
-    logger.debug(f"conftest.py: Async engine URL is {async_engine.url}")
+    _db_backend = os.environ["DB_URL"].split("://")[0]
+    logger.debug(f"conftest.py: DB_URL backend = {_db_backend}")
+    logger.debug(f"conftest.py: Async engine dialect = {async_engine.dialect.name}")
 
     # Create all tables using the async engine, then dispose the pool so that
     # connections created inside asyncio.run()'s temporary event loop are not
@@ -52,6 +53,9 @@ def setup_test_db(
     # to a different loop" errors when TEST_DB_URL points at PostgreSQL).
     async def _create_tables() -> None:
         async with async_engine.begin() as conn:
+            # Drop first so re-running against an existing external DB (e.g.
+            # PostgreSQL via TEST_DB_URL) starts from a clean schema.
+            await conn.run_sync(Base.metadata.drop_all)
             await conn.run_sync(Base.metadata.create_all)
         await async_engine.dispose()
 

@@ -18,27 +18,41 @@ _db_url = _settings.database.DB_URL
 _is_sqlite = _db_url.startswith("sqlite")
 
 
+def _strip_driver(url: str) -> str:
+    """Strip any existing driver qualifier from a DB URL.
+
+    Normalises ``sqlite+aiosqlite://``, ``postgresql+asyncpg://``, etc. back to
+    their bare scheme so the caller can unconditionally add the correct driver.
+    """
+    return (
+        url.replace("+aiosqlite", "")
+        .replace("+asyncpg", "")
+        .replace("+psycopg2", "")
+        .replace("postgres://", "postgresql://")
+    )
+
+
 def _make_async_url(url: str) -> str:
-    """Convert a sync DB URL to an async-driver URL."""
+    """Convert a DB URL to the correct async-driver URL.
+
+    Handles bare schemes (``sqlite://``, ``postgresql://``) and pre-qualified
+    URLs (``sqlite+aiosqlite://``, ``postgresql+asyncpg://``, etc.).
+    """
+    url = _strip_driver(url)
     if url.startswith("sqlite://"):
         return url.replace("sqlite://", "sqlite+aiosqlite://", 1)
     if url.startswith("postgresql://"):
         return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+asyncpg://", 1)
     return url
 
 
 def _make_sync_url(url: str) -> str:
-    """Normalise a DB URL for the sync (psycopg2) driver.
+    """Normalise a DB URL for the sync driver.
 
-    SQLAlchemy 2.x deprecates the bare ``postgres://`` scheme; normalise it to
-    the canonical ``postgresql://`` so background-task engines don't emit
-    deprecation warnings (or break when the compat shim is removed).
+    Strips async driver qualifiers and normalises the deprecated ``postgres://``
+    scheme to ``postgresql://`` so background-task engines use the correct driver.
     """
-    if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
-    return url
+    return _strip_driver(url)
 
 
 _async_db_url = _make_async_url(_db_url)
