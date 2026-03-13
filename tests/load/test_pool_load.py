@@ -214,7 +214,7 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
     runners can produce under high concurrency — the test is checking for pool
     exhaustion (which would cause many failures), not zero-error perfection.
     """
-    subprocess.run(
+    result = subprocess.run(
         _locust_cmd(
             live_server_url,
             users=60,
@@ -226,6 +226,9 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
         capture_output=True,
         text=True,
         timeout=120,
+    )
+    assert result.returncode == 0, (
+        f"Mixed workload load test failed:\n{result.stdout}\n{result.stderr}"
     )
     _assert_csv_failure_rate_under(_RESULTS_DIR / "mixed_test_stats.csv", max_rate=0.01)
     _assert_csv_p95_under(_RESULTS_DIR / "mixed_test_stats.csv", threshold_ms=1000)

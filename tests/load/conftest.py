@@ -45,11 +45,17 @@ def live_server_url() -> Generator[str, None, None]:
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
     deadline = time.time() + 10
+    healthy = False
     while time.time() < deadline:
         with contextlib.suppress(Exception):
             httpx.get(f"http://127.0.0.1:{port}/health", timeout=1).raise_for_status()
+            healthy = True
             break
         time.sleep(0.2)
+    if not healthy:
+        server.should_exit = True
+        thread.join(timeout=5)
+        pytest.fail(f"Server did not become healthy within 10 s on port {port}")
     yield f"http://127.0.0.1:{port}"
     server.should_exit = True
     thread.join(timeout=5)
