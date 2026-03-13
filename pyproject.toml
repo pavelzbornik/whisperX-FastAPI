@@ -34,7 +34,7 @@ dependencies = [
     "httpx==0.28.1",
     "numba==0.63.1",
     "pydantic-settings>=2.0.0",
-    "python-dotenv==1.2.1",
+    "python-dotenv==1.2.2",
     "python-multipart==0.0.22",
     "tqdm==4.67.3",
     "uvicorn==0.41.0",
