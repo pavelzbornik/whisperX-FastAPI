@@ -111,6 +111,26 @@ uv run python scripts/update-badges.py --dry-run  # preview only
   - All tests pass with ≥80% coverage
   - Dependency review (no new high/critical vulnerabilities)
 
+## Releasing
+
+Releases are cut from `main` using [release-please](https://github.com/googleapis/release-please).
+
+### How it works
+
+1. Features and fixes accumulate in `dev` via squash-merged PRs with [Conventional Commits](https://www.conventionalcommits.org/).
+2. When `dev` is ready to ship, open a PR from `dev` → `main`:
+
+   ```sh
+   gh pr create --base main --head dev --title "chore: release to main"
+   ```
+
+3. After CI passes and the PR is merged to `main`, release-please automatically creates a versioned release PR (e.g. `chore(main): release 0.4.7`) that bumps `pyproject.toml` and updates `CHANGELOG.md`.
+4. Review the release PR, then merge it — release-please creates the git tag and GitHub release automatically.
+
+### Lock file
+
+`uv.lock` is kept in sync automatically: the **Update Lock File** workflow runs on any PR that touches `pyproject.toml` and commits the updated lock file to the PR branch.
+
 ## Reporting Issues
 
 If you find a bug or have a feature request, please [open an issue](https://github.com/pavelzbornik/whisperX-FastAPI/issues) with as much detail as possible.
