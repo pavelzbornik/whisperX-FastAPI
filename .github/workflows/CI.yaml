@@ -64,7 +64,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if ! git diff --quiet README.md; then
             git add README.md
-            git commit -m "chore: update README badges [skip ci]"
+            git commit -m "chore: update README badges"
             git push
           fi
       - name: Run full pre-commit validation
