@@ -73,9 +73,27 @@ See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details
 
 ![Service chart](app/docs/service_chart.svg)
 
-Status and result of each tasks are stored in db using ORM Sqlalchemy, db connection is defined by environment variable `DB_URL` if value is not specified `db.py` sets default db as `sqlite:///records.db`
+Task status and results are stored in a database via async SQLAlchemy. The DB connection
+is configured with `DB_URL` (default: `sqlite:///records.db`).
 
-See documentation for driver definition at [Sqlalchemy Engine configuration](https://docs.sqlalchemy.org/en/20/core/engines.html) if you want to connect other type of db than Sqlite.
+See [SQLAlchemy Engine configuration](https://docs.sqlalchemy.org/en/20/core/engines.html)
+for supported database URLs.
+
+**Async drivers are required** — the application rewrites the URL scheme automatically:
+
+| `DB_URL` scheme | Async driver used |
+| --- | --- |
+| `sqlite://` | `aiosqlite` (included by default) |
+| `postgresql://` | `asyncpg` (install with `--extra postgres`) |
+
+For PostgreSQL, install the driver extra: `uv sync --no-dev --extra postgres`. The
+Docker image includes it automatically.
+
+> **Performance note:** SQLite is suitable for development and low-concurrency use.
+> For production or sustained concurrent load, use PostgreSQL — it sustains 350+ req/s
+> at 200 concurrent users vs. ~15 req/s with SQLite. See
+> [Async SQLAlchemy concurrency guide](docs/architecture/async-sqlalchemy-concurrency.md)
+> for full load test results.
 
 #### Database schema
 
@@ -126,8 +144,8 @@ To get started with the API, follow these steps:
    # For production dependencies only
    uv sync --no-dev
 
-   # For development dependencies (includes production + testing, linting, etc.)
-   uv sync
+   # For development (includes testing, linting, async SQLite driver)
+   uv sync --all-extras
    ```
 
 3. Configure your environment (see `.env` file setup below)
@@ -219,6 +237,8 @@ The models used by whisperX are stored in `root/.cache`, if you want to avoid do
 
    - Check the `DB_URL` environment variable for correctness.
    - Ensure the database server is running and accessible.
+   - **PostgreSQL driver**: when using `DB_URL=postgresql://...` outside Docker, install the driver with `uv sync --extra postgres`.
+   - **Async driver mismatch**: if you set a `DB_URL` with a sync scheme (e.g. `postgresql+psycopg2://`), the app will fail to start. Use the plain scheme (`postgresql://`) and let the app rewrite it to `postgresql+asyncpg://` automatically.
 
 3. **Model Download Failures**
 

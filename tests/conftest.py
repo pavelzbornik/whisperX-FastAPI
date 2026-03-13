@@ -1,13 +1,20 @@
 """Pytest configuration file for setting up test environment."""
 
+import asyncio
 import os
 
 from typing import Generator
 
 import pytest
 
-from tests.fixtures import TestContainer
-from tests.fixtures.database import db_session, test_db_engine  # noqa: F401
+# Must happen before any app imports — connection.py reads get_settings() at
+# module level, so DB_URL must be set before TestContainer triggers that chain.
+_test_db_url = os.environ.get("TEST_DB_URL")
+if _test_db_url:
+    os.environ["DB_URL"] = _test_db_url
+
+from tests.fixtures import TestContainer  # noqa: E402
+from tests.fixtures.database import db_session, test_db_engine  # noqa: E402, F401
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -23,23 +30,32 @@ def setup_test_db(
     Args:
         tmp_path_factory: Pytest fixture for creating temporary paths
     """
-    test_db_file = tmp_path_factory.mktemp("db_dir") / "test.db"
-    os.environ["DB_URL"] = f"sqlite:///{test_db_file}"
+    if not os.environ.get("DB_URL"):
+        test_db_file = tmp_path_factory.mktemp("db_dir") / "test.db"
+        os.environ["DB_URL"] = f"sqlite:///{test_db_file}"
     os.environ["DEVICE"] = "cpu"
     os.environ["COMPUTE_TYPE"] = "int8"
     os.environ["WHISPER_MODEL"] = "tiny"
     os.environ["DEFAULT_LANG"] = "en"
 
-    # Now import the app modules to create tables
+    # Import lazily so the engine is created after env vars are set
     from app.core.logging import logger  # noqa: E402
-    from app.infrastructure.database import Base, engine  # noqa: E402
+    from app.infrastructure.database.connection import async_engine  # noqa: E402
+    from app.infrastructure.database.models import Base  # noqa: E402
 
     logger.debug(f"conftest.py: Setting DB_URL to {os.environ['DB_URL']}")
-    logger.debug(f"conftest.py: Engine URL is {engine.url}")
+    logger.debug(f"conftest.py: Async engine URL is {async_engine.url}")
 
-    # Create all tables in the test database
-    Base.metadata.create_all(bind=engine)
+    # Create all tables using the async engine, then dispose the pool so that
+    # connections created inside asyncio.run()'s temporary event loop are not
+    # reused by the test session's event loop (avoids asyncpg "Future attached
+    # to a different loop" errors when TEST_DB_URL points at PostgreSQL).
+    async def _create_tables() -> None:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        await async_engine.dispose()
 
+    asyncio.run(_create_tables())
     logger.debug("conftest.py: Tables created")
 
     yield

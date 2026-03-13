@@ -1,6 +1,6 @@
 """Dependency injection providers for FastAPI endpoints."""
 
-from collections.abc import Generator
+from collections.abc import AsyncGenerator, Generator
 
 from app.api.constants import CONTAINER_NOT_INITIALIZED_ERROR
 from app.core.container import Container
@@ -9,6 +9,9 @@ from app.domain.services.alignment_service import IAlignmentService
 from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.domain.services.transcription_service import ITranscriptionService
+from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
+    AsyncSQLAlchemyTaskRepository,
+)
 from app.services.file_service import FileService
 from app.services.task_management_service import TaskManagementService
 
@@ -23,13 +26,13 @@ def set_container(container: Container) -> None:
     _container = container
 
 
-def get_task_repository() -> Generator[ITaskRepository, None, None]:
+async def get_task_repository() -> AsyncGenerator[ITaskRepository, None]:
     """
     Provide a task repository implementation for dependency injection.
 
-    This function uses the container to provide a task repository instance
-    with a managed database session. The container ensures proper lifecycle
-    management of both the session and repository.
+    Opens an AsyncSession for the duration of the request and closes it on
+    teardown. The container's ``db_session_factory`` is used so that
+    TestContainer overrides take effect in tests.
 
     Yields:
         ITaskRepository: A task repository implementation
@@ -39,12 +42,13 @@ def get_task_repository() -> Generator[ITaskRepository, None, None]:
         >>> async def create_task(
         ...     repository: ITaskRepository = Depends(get_task_repository)
         ... ):
-        ...     task_id = repository.add(task)
+        ...     task_id = await repository.add(task)
         ...     return {"id": task_id}
     """
     if _container is None:
         raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
-    yield _container.task_repository()
+    async with _container.db_session_factory() as session:
+        yield AsyncSQLAlchemyTaskRepository(session)
 
 
 def get_file_service() -> Generator[FileService, None, None]:
@@ -62,19 +66,21 @@ def get_file_service() -> Generator[FileService, None, None]:
     yield _container.file_service()
 
 
-def get_task_management_service() -> Generator[TaskManagementService, None, None]:
+async def get_task_management_service() -> AsyncGenerator[TaskManagementService, None]:
     """
     Provide a TaskManagementService instance for dependency injection.
 
-    The service is initialized with a task repository from the container.
-    Registered as a factory, so a new instance is created for each request.
+    Opens an AsyncSession, wraps it in a repository, and passes the repository
+    to a fresh TaskManagementService. Session is closed after the request.
 
     Yields:
         TaskManagementService: A task management service instance
     """
     if _container is None:
         raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
-    yield _container.task_management_service()
+    async with _container.db_session_factory() as session:
+        repo = AsyncSQLAlchemyTaskRepository(session)
+        yield TaskManagementService(repo)
 
 
 def get_transcription_service() -> Generator[ITranscriptionService, None, None]:

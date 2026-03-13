@@ -3,12 +3,14 @@
 from types import TracebackType
 from typing import Protocol
 
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.core.logging import logger
-from app.infrastructure.database.connection import SessionLocal
+from app.infrastructure.database.connection import AsyncSessionLocal, SyncSessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
-    SQLAlchemyTaskRepository,
+    AsyncSQLAlchemyTaskRepository,
+    SyncSQLAlchemyTaskRepository,
 )
 
 
@@ -21,7 +23,7 @@ class IUnitOfWork(Protocol):
     concurrency problems.
     """
 
-    tasks: SQLAlchemyTaskRepository
+    tasks: SyncSQLAlchemyTaskRepository
 
     def commit(self) -> None:
         """Commit the current transaction."""
@@ -47,24 +49,21 @@ class IUnitOfWork(Protocol):
 
 class SQLAlchemyUnitOfWork:
     """
-    SQLAlchemy implementation of the Unit of Work pattern.
+    Sync SQLAlchemy implementation of the Unit of Work pattern.
 
-    This class provides a transactional context for repository operations,
-    ensuring that all operations within a unit of work either succeed or fail
-    together (atomicity).
+    Used exclusively by background tasks that run outside the event loop.
 
     Example usage:
         >>> with SQLAlchemyUnitOfWork() as uow:
         ...     task = uow.tasks.get_by_id("some-uuid")
-        ...     task.mark_as_completed(result, duration, end_time)
-        ...     uow.tasks.update(task.uuid, task.to_dict())
-        ...     uow.commit()  # Atomic - all or nothing
+        ...     uow.tasks.update(task.uuid, {"status": "completed"})
+        ...     uow.commit()
 
     Attributes:
-        tasks: The task repository instance
+        tasks: The sync task repository instance
     """
 
-    def __init__(self, session: Session | None = None):
+    def __init__(self, session: Session | None = None) -> None:
         """
         Initialize the Unit of Work.
 
@@ -84,10 +83,9 @@ class SQLAlchemyUnitOfWork:
             SQLAlchemyUnitOfWork: This unit of work instance
         """
         if self._session is None:
-            self._session = SessionLocal()
+            self._session = SyncSessionLocal()
 
-        # Initialize repositories with the session
-        self.tasks = SQLAlchemyTaskRepository(self._session)
+        self.tasks = SyncSQLAlchemyTaskRepository(self._session)
 
         logger.debug("Unit of Work context entered")
         return self
@@ -101,11 +99,6 @@ class SQLAlchemyUnitOfWork:
         """
         Exit the context manager and clean up resources.
 
-        If an exception occurred during the context, the transaction will be
-        rolled back automatically. If no exception occurred but commit was not
-        explicitly called, the transaction will also be rolled back to ensure
-        explicit commit semantics.
-
         Args:
             exc_type: Exception type if an exception occurred
             exc_val: Exception value if an exception occurred
@@ -115,8 +108,6 @@ class SQLAlchemyUnitOfWork:
             logger.error(f"Exception in Unit of Work: {exc_val}")
             self.rollback()
         else:
-            # If no exception occurred but commit() was not called, rollback
-            # and warn the developer about the missing commit
             if not self._committed:
                 logger.warning(
                     "Unit of Work exiting without explicit commit() - rolling back changes. "
@@ -132,9 +123,6 @@ class SQLAlchemyUnitOfWork:
         """
         Commit the current transaction.
 
-        This will persist all changes made within this unit of work to the
-        database.
-
         Raises:
             Exception: If commit fails
         """
@@ -149,11 +137,103 @@ class SQLAlchemyUnitOfWork:
             raise
 
     def rollback(self) -> None:
-        """
-        Rollback the current transaction.
-
-        This will discard all changes made within this unit of work.
-        """
+        """Rollback the current transaction."""
         if self._session:
             self._session.rollback()
             logger.debug("Unit of Work rolled back")
+
+
+class AsyncSQLAlchemyUnitOfWork:
+    """
+    Async SQLAlchemy implementation of the Unit of Work pattern.
+
+    Used for request-scoped operations that require explicit transaction control
+    spanning multiple repository calls.
+
+    Example usage:
+        >>> async with AsyncSQLAlchemyUnitOfWork() as uow:
+        ...     await uow.tasks.update(task_id, {"status": "completed"})
+        ...     await uow.commit()
+
+    Attributes:
+        tasks: The async task repository instance
+    """
+
+    def __init__(self, session: AsyncSession | None = None) -> None:
+        """
+        Initialize the async Unit of Work.
+
+        Args:
+            session: Optional async session. If not provided, a new session
+                    will be created.
+        """
+        self._session = session
+        self._should_close_session = session is None
+        self._committed = False
+
+    async def __aenter__(self) -> "AsyncSQLAlchemyUnitOfWork":
+        """
+        Enter the async context manager.
+
+        Returns:
+            AsyncSQLAlchemyUnitOfWork: This unit of work instance
+        """
+        if self._session is None:
+            self._session = AsyncSessionLocal()
+
+        self.tasks = AsyncSQLAlchemyTaskRepository(self._session)
+
+        logger.debug("Async Unit of Work context entered")
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        """
+        Exit the async context manager and clean up resources.
+
+        Args:
+            exc_type: Exception type if an exception occurred
+            exc_val: Exception value if an exception occurred
+            exc_tb: Exception traceback if an exception occurred
+        """
+        if exc_type is not None:
+            logger.error(f"Exception in Async Unit of Work: {exc_val}")
+            await self.rollback()
+        else:
+            if not self._committed:
+                logger.warning(
+                    "Async Unit of Work exiting without explicit commit() - rolling back. "
+                    "Did you forget to call uow.commit()?"
+                )
+                await self.rollback()
+
+        if self._should_close_session and self._session:
+            await self._session.close()
+            logger.debug("Async Unit of Work session closed")
+
+    async def commit(self) -> None:
+        """
+        Commit the current transaction.
+
+        Raises:
+            Exception: If commit fails
+        """
+        try:
+            if self._session:
+                await self._session.commit()
+                self._committed = True
+                logger.debug("Async Unit of Work committed successfully")
+        except Exception as e:
+            logger.error(f"Failed to commit Async Unit of Work: {str(e)}")
+            await self.rollback()
+            raise
+
+    async def rollback(self) -> None:
+        """Rollback the current transaction."""
+        if self._session:
+            await self._session.rollback()
+            logger.debug("Async Unit of Work rolled back")

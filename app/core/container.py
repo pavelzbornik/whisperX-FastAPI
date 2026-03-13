@@ -3,9 +3,9 @@
 from dependency_injector import containers, providers
 
 from app.core.config import get_settings
-from app.infrastructure.database.connection import SessionLocal, engine
+from app.infrastructure.database.connection import AsyncSessionLocal, async_engine
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
-    SQLAlchemyTaskRepository,
+    AsyncSQLAlchemyTaskRepository,
 )
 from app.infrastructure.ml import (
     WhisperXAlignmentService,
@@ -27,7 +27,7 @@ class Container(containers.DeclarativeContainer):
 
     Architecture:
         - Configuration: Singleton settings instance
-        - Database: Singleton engine, factory sessions
+        - Database: Singleton async engine, factory async sessions
         - Repositories: Factory instances with session dependencies
         - Services: Mix of singletons (stateless) and factories (stateful)
         - ML Services: Singletons for model caching and reuse
@@ -48,13 +48,18 @@ class Container(containers.DeclarativeContainer):
     # Configuration - Singleton for application settings
     config = providers.Singleton(get_settings)
 
-    # Database - Singleton engine, factory for sessions
-    db_engine = providers.Singleton(lambda: engine)
-    db_session_factory = providers.Factory(SessionLocal)
+    # Database - Singleton async engine, factory for async sessions
+    db_engine = providers.Singleton(lambda: async_engine)
+    db_session_factory = providers.Factory(AsyncSessionLocal)
 
-    # Repositories - Factory pattern with session dependency
+    # Repositories - Factory pattern with session dependency.
+    # NOTE: request-scoped code in app/api/dependencies.py does NOT use this
+    # provider directly — it manages the AsyncSession lifecycle itself via
+    # `async with _container.db_session_factory() as session:`. This provider
+    # exists for TestContainer overrides and internal wiring only; do not call
+    # it for request-scoped operations as the session will not be closed.
     task_repository = providers.Factory(
-        SQLAlchemyTaskRepository,
+        AsyncSQLAlchemyTaskRepository,
         session=db_session_factory,
     )
 

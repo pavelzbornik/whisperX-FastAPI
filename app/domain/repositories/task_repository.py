@@ -17,7 +17,7 @@ class ITaskRepository(Protocol):
     exceptions when operations fail.
     """
 
-    def add(self, task: Task) -> str:
+    async def add(self, task: Task) -> str:
         """
         Add a new task to the repository.
 
@@ -32,7 +32,7 @@ class ITaskRepository(Protocol):
         """
         ...
 
-    def get_by_id(self, identifier: str) -> Task | None:
+    async def get_by_id(self, identifier: str) -> Task | None:
         """
         Get a task by its UUID.
 
@@ -44,7 +44,7 @@ class ITaskRepository(Protocol):
         """
         ...
 
-    def get_all(self) -> list[Task]:
+    async def get_all(self) -> list[Task]:
         """
         Get all tasks from the repository.
 
@@ -53,7 +53,7 @@ class ITaskRepository(Protocol):
         """
         ...
 
-    def update(self, identifier: str, update_data: dict[str, Any]) -> None:
+    async def update(self, identifier: str, update_data: dict[str, Any]) -> None:
         """
         Update a task by its UUID.
 
@@ -68,7 +68,7 @@ class ITaskRepository(Protocol):
         """
         ...
 
-    def delete(self, identifier: str) -> bool:
+    async def delete(self, identifier: str) -> bool:
         """
         Delete a task by its UUID.
 

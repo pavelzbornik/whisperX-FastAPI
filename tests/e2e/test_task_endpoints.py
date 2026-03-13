@@ -8,19 +8,6 @@ from fastapi.testclient import TestClient
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
 
 
-@pytest.fixture(scope="module")
-def client() -> TestClient:
-    """
-    Create and return test client.
-
-    Returns:
-        TestClient: The FastAPI test client instance
-    """
-    from app import main
-
-    return TestClient(main.app, follow_redirects=False)
-
-
 @pytest.mark.e2e
 def test_get_all_tasks_status(client: TestClient) -> None:
     """Test retrieving the status of all tasks."""

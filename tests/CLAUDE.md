@@ -12,6 +12,7 @@ Tests are tagged with pytest markers — `--strict-markers` is enforced:
 | `integration` | Real DB or service integration. |
 | `e2e` | Full API via `TestClient`. |
 | `slow` | ML operations (model load, inference). |
+| `load` | Live server + locust load tests. Excluded from CI. Run with `uv run pytest -m load`. |
 
 Run a subset: `uv run pytest -m unit` or `uv run pytest -m "not slow"`.
 

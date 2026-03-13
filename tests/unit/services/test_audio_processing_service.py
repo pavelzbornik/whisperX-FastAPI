@@ -31,8 +31,8 @@ class TestAudioProcessingService:
         with pytest.raises(ValidationError, match="Invalid language code"):
             validate_language_code("xyz")
 
-    @patch("app.services.audio_processing_service.SQLAlchemyTaskRepository")
-    @patch("app.services.audio_processing_service.SessionLocal")
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
     def test_process_audio_task_success(
         self, mock_session_local: Mock, mock_repository_class: Mock
     ) -> None:
@@ -64,8 +64,8 @@ class TestAudioProcessingService:
         }
         mock_session.close.assert_called_once()
 
-    @patch("app.services.audio_processing_service.SQLAlchemyTaskRepository")
-    @patch("app.services.audio_processing_service.SessionLocal")
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
     def test_process_audio_task_handles_diarization_result(
         self, mock_session_local: Mock, mock_repository_class: Mock
     ) -> None:
@@ -105,8 +105,8 @@ class TestAudioProcessingService:
         assert len(result) == 2
         assert "segment" not in result[0]  # segment column should be dropped
 
-    @patch("app.services.audio_processing_service.SQLAlchemyTaskRepository")
-    @patch("app.services.audio_processing_service.SessionLocal")
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
     def test_process_audio_task_handles_error(
         self, mock_session_local: Mock, mock_repository_class: Mock
     ) -> None:
@@ -135,8 +135,8 @@ class TestAudioProcessingService:
         assert "error" in update_call[1]["update_data"]
         mock_session.close.assert_called_once()
 
-    @patch("app.services.audio_processing_service.SQLAlchemyTaskRepository")
-    @patch("app.services.audio_processing_service.SessionLocal")
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
     def test_process_audio_task_records_timing(
         self, mock_session_local: Mock, mock_repository_class: Mock
     ) -> None:

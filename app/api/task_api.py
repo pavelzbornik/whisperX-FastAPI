@@ -27,7 +27,7 @@ async def get_all_tasks_status(
         TaskListResponse: The status of all tasks.
     """
     logger.info("Retrieving status of all tasks")
-    tasks = service.get_all_tasks()
+    tasks = await service.get_all_tasks()
 
     # Convert domain tasks to API DTOs using mapper
     task_summaries = [TaskMapper.to_summary(task) for task in tasks]
@@ -54,7 +54,7 @@ async def get_transcription_status(
         TaskNotFoundError: If the identifier is not found.
     """
     logger.info("Retrieving status for task ID: %s", identifier)
-    task = service.get_task(identifier)
+    task = await service.get_task(identifier)
 
     if task is None:
         logger.error("Task ID not found: %s", identifier)
@@ -99,7 +99,7 @@ async def delete_task(
         TaskNotFoundError: If the task is not found.
     """
     logger.info("Deleting task ID: %s", identifier)
-    if service.delete_task(identifier):
+    if await service.delete_task(identifier):
         logger.info("Task deleted: ID %s", identifier)
         return Response(identifier=identifier, message="Task deleted")
     else:
