@@ -39,22 +39,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref || github.ref }}
       - name: Common setup
         uses: ./.github/actions/setup
         with:
           python-version: "3.11"
       - name: Install hadolint
         run: |
-          wget -O hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64
           chmod +x hadolint
           sudo mv hadolint /usr/local/bin/
+      - name: Update README badges
+        run: uv run python scripts/update-badges.py
+      - name: Commit badge updates if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet README.md; then
+            git add README.md
+            git commit -m "chore: update README badges [skip ci]"
+            git push
+          fi
       - name: Run full pre-commit validation
         uses: pre-commit/action@1b06ec171f2f6faa71ed760c4042bd969e4f8b43
       - name: Comment on PR if lint job fails
