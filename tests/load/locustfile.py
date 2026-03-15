@@ -217,7 +217,7 @@ class ErrorProbeUser(HttpUser):
 
     @task(1)
     def upload_empty_file(self) -> None:
-        """POST /service/transcribe with empty file — expects 400/422/500."""
+        """POST /service/transcribe with empty file — expects 400/422."""
         with self.client.post(
             "/service/transcribe",
             files={"file": ("empty.mp3", b"", "audio/mpeg")},
