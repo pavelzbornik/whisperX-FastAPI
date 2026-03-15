@@ -130,6 +130,12 @@ def test_db_pool_handles_concurrent_users(live_server_url: str) -> None:
     This is the regression test for the async SQLAlchemy migration:
     the pre-migration sync engine exhausted QueuePool at ~20 users.
     """
+    db_url = os.environ.get("DB_URL", "sqlite:///records.db")
+    if db_url.startswith("sqlite"):
+        pytest.skip(
+            "Pool-regression test requires PostgreSQL QueuePool. "
+            "Set DB_URL=postgresql://... to run."
+        )
     result = subprocess.run(
         _locust_cmd(
             live_server_url,
@@ -214,6 +220,12 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
     runners can produce under high concurrency — the test is checking for pool
     exhaustion (which would cause many failures), not zero-error perfection.
     """
+    db_url = os.environ.get("DB_URL", "sqlite:///records.db")
+    if db_url.startswith("sqlite"):
+        pytest.skip(
+            "Pool-stability test requires PostgreSQL QueuePool. "
+            "Set DB_URL=postgresql://... to run."
+        )
     result = subprocess.run(
         _locust_cmd(
             live_server_url,

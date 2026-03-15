@@ -32,7 +32,7 @@ from app.core.exceptions import (  # noqa: E402
     ValidationError,
 )
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
-from app.infrastructure.database import Base, async_engine  # noqa: E402
+from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
 
 # Load environment variables from .env
 load_dotenv()
@@ -68,9 +68,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Clean up container on shutdown
     logging.info("Shutting down application")
-    # Dispose the async engine pool so pooled connections are not reused across
-    # event loops (e.g. between test modules that each create a TestClient context).
+    # Dispose both engine pools so connections are not reused across event loops
+    # (e.g. between test modules that each create a TestClient context).
+    # sync_engine uses QueuePool for PostgreSQL; disposing prevents connection leaks.
     await async_engine.dispose()
+    sync_engine.dispose()
 
 
 tags_metadata = [

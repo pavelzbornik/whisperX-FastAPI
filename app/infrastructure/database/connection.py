@@ -19,17 +19,18 @@ _is_sqlite = _db_url.startswith("sqlite")
 
 
 def _strip_driver(url: str) -> str:
-    """Strip any existing driver qualifier from a DB URL.
+    """Strip any existing driver qualifier from a DB URL scheme.
 
     Normalises ``sqlite+aiosqlite://``, ``postgresql+asyncpg://``, etc. back to
     their bare scheme so the caller can unconditionally add the correct driver.
+    Only the scheme portion (before ``://``) is modified — credentials and host
+    components in the URL are left untouched.
     """
-    return (
-        url.replace("+aiosqlite", "")
-        .replace("+asyncpg", "")
-        .replace("+psycopg2", "")
-        .replace("postgres://", "postgresql://")
-    )
+    scheme, sep, rest = url.partition("://")
+    base_scheme = scheme.split("+")[0]
+    if base_scheme == "postgres":
+        base_scheme = "postgresql"
+    return f"{base_scheme}{sep}{rest}"
 
 
 def _make_async_url(url: str) -> str:
