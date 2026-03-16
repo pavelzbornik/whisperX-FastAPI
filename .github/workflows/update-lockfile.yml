@@ -12,7 +12,8 @@ jobs:
   update-lockfile:
     name: Update uv.lock
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'renovate[bot]'
     permissions:
       contents: write
     steps:
