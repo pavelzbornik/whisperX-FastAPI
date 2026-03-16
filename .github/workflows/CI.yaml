@@ -349,22 +349,3 @@ jobs:
           mode: upsert
           comment-tag: ci-build-failure
           reactions: eyes, x
-  dependabot-auto-merge:
-    name: Auto-merge Dependabot PR
-    runs-on: ubuntu-latest
-    needs: [build, test, dependency-review]
-    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]'
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@47503d2a1069cc9c99e5d422f3cbd1b038e55ea3
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Enable auto-merge on PR
-        run: gh pr merge "$PR_URL" --squash --auto
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -79,8 +79,7 @@ This project follows a **Layered Architecture** with **Repository Pattern** for 
 ├── .github/                      # CI/CD configuration
 │   ├── workflows/
 │   │   ├── CI.yaml               # Main CI pipeline (lint, test, build, scan)
-│   │   ├── gitleaks.yaml         # Secret scanning
-│   │   └── precommit-autoupdate.yml # Weekly pre-commit hook updates
+│   │   └── gitleaks.yaml         # Secret scanning
 │   ├── actions/
 │   │   └── setup/action.yaml     # Reusable setup action (Python, uv, deps)
 │   └── instructions/             # Custom instruction files
@@ -416,17 +415,17 @@ The CI runs on PRs and pushes to `main`/`dev` branches when these paths change:
    - Outputs scan results to job summary
    - Comments on PR if fails
 
-5. **`dependabot-auto-merge`** (runs after build/test/dependency-review):
-   - Auto-merges Dependabot PRs if all checks pass
-
-6. **`release-please`** (main branch only):
+5. **`release-please`** (main branch only):
    - Creates release PRs using conventional commits
    - Updates `uv.lock` automatically
 
 **Other Workflows:**
 
 - **`gitleaks.yaml`**: Scans for secrets on all pushes/PRs
-- **`precommit-autoupdate.yml`**: Weekly cron to update pre-commit hooks
+
+**Dependency Updates (Renovate):**
+
+Dependency updates are managed by Renovate (`renovate.json`), not Dependabot. Updates are batched monthly (first Monday) and grouped by ecosystem. ML-critical packages (PyTorch, huggingface-hub, whisperx) require manual review. Minor and patch updates for FastAPI, database, runtime utilities, dev tools, GitHub Actions, pre-commit hooks, and Docker images auto-merge after CI passes; major updates for those groups require manual review.
 
 ### Common Setup Action
 

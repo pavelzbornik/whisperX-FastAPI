@@ -1,0 +1,360 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":separatePatchReleases"
+  ],
+  "baseBranches": [
+    "dev"
+  ],
+  "schedule": [
+    "before 6am on the first Monday of the month"
+  ],
+  "timezone": "UTC",
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "labels": [
+    "dependencies"
+  ],
+  "commitMessagePrefix": "chore(deps):",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [
+      "at any time"
+    ],
+    "labels": [
+      "security",
+      "dependencies"
+    ]
+  },
+  "uv": {
+    "enabled": true
+  },
+  "docker": {
+    "enabled": true
+  },
+  "pre-commit": {
+    "enabled": true
+  },
+  "github-actions": {
+    "enabled": true,
+    "pinDigests": true
+  },
+  "packageRules": [
+    {
+      "description": "PyTorch ecosystem \u2014 hard ceiling, manual review only",
+      "matchPackageNames": [
+        "torch",
+        "torchaudio"
+      ],
+      "groupName": "PyTorch ecosystem",
+      "allowedVersions": "<=2.8.0",
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "pytorch"
+      ],
+      "reviewers": [
+        "pavelzbornik"
+      ]
+    },
+    {
+      "description": "torchvision \u2014 hard ceiling matching pyproject.toml constraint, manual review only",
+      "matchPackageNames": [
+        "torchvision"
+      ],
+      "groupName": "PyTorch ecosystem",
+      "allowedVersions": "<=0.23.0",
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "pytorch"
+      ],
+      "reviewers": [
+        "pavelzbornik"
+      ]
+    },
+    {
+      "description": "huggingface-hub \u2014 critical pyannote.audio compat constraint",
+      "matchPackageNames": [
+        "huggingface-hub"
+      ],
+      "allowedVersions": "<0.36.0",
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "ml-compat"
+      ]
+    },
+    {
+      "description": "ML core libraries \u2014 manual review",
+      "matchPackageNames": [
+        "whisperx",
+        "numba",
+        "ctranslate2"
+      ],
+      "groupName": "ML core libraries",
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "ml-core"
+      ]
+    },
+    {
+      "description": "FastAPI ecosystem \u2014 minor+patch auto-merge",
+      "matchPackageNames": [
+        "fastapi",
+        "uvicorn",
+        "gunicorn",
+        "httpx",
+        "pydantic-settings",
+        "python-multipart",
+        "python-dotenv"
+      ],
+      "groupName": "FastAPI ecosystem",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "fastapi"
+      ]
+    },
+    {
+      "description": "FastAPI ecosystem \u2014 major manual review",
+      "matchPackageNames": [
+        "fastapi",
+        "uvicorn",
+        "gunicorn",
+        "httpx",
+        "pydantic-settings",
+        "python-multipart",
+        "python-dotenv"
+      ],
+      "groupName": "FastAPI ecosystem",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "fastapi"
+      ]
+    },
+    {
+      "description": "Database stack \u2014 minor+patch auto-merge",
+      "matchPackageNames": [
+        "sqlalchemy",
+        "aiosqlite",
+        "asyncpg",
+        "psycopg2-binary"
+      ],
+      "groupName": "Database stack",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "database"
+      ]
+    },
+    {
+      "description": "Database stack \u2014 major manual review",
+      "matchPackageNames": [
+        "sqlalchemy",
+        "aiosqlite",
+        "asyncpg",
+        "psycopg2-binary"
+      ],
+      "groupName": "Database stack",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "database"
+      ]
+    },
+    {
+      "description": "Dev tools \u2014 minor+patch auto-merge as one group",
+      "matchPackageNames": [
+        "ruff",
+        "mypy",
+        "codespell",
+        "types-requests",
+        "types-PyYAML",
+        "pandas-stubs",
+        "pytest",
+        "pytest-asyncio",
+        "pytest-cov",
+        "factory-boy",
+        "locust",
+        "pre-commit",
+        "commitizen",
+        "setuptools",
+        "wheel"
+      ],
+      "groupName": "Dev and utility tools",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "dev-tools"
+      ]
+    },
+    {
+      "description": "Runtime utility libraries \u2014 minor+patch auto-merge",
+      "matchPackageNames": [
+        "dependency-injector",
+        "tqdm",
+        "colorlog"
+      ],
+      "groupName": "Runtime utility libraries",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "runtime-utils"
+      ]
+    },
+    {
+      "description": "Runtime utility libraries \u2014 major manual review",
+      "matchPackageNames": [
+        "dependency-injector",
+        "tqdm",
+        "colorlog"
+      ],
+      "groupName": "Runtime utility libraries",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "runtime-utils"
+      ]
+    },
+    {
+      "description": "nvidia/cuda base image \u2014 ignore, never update",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "nvidia/cuda"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Docker images (non-CUDA) \u2014 patch auto-merge",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "docker"
+      ]
+    },
+    {
+      "description": "Docker images (non-CUDA) \u2014 minor/major manual review",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "docker"
+      ]
+    },
+    {
+      "description": "GitHub Actions \u2014 minor+patch auto-merge (SHA-pinned)",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "github-actions"
+      ],
+      "pinDigests": true
+    },
+    {
+      "description": "GitHub Actions major \u2014 manual review",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "github-actions"
+      ],
+      "pinDigests": true
+    },
+    {
+      "description": "Pre-commit hooks \u2014 minor+patch auto-merge",
+      "matchManagers": [
+        "pre-commit"
+      ],
+      "groupName": "Pre-commit hooks",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "autoMerge": true,
+      "autoMergeType": "squash",
+      "labels": [
+        "dependencies",
+        "pre-commit"
+      ]
+    },
+    {
+      "description": "Pre-commit hooks major \u2014 manual review",
+      "matchManagers": [
+        "pre-commit"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "autoMerge": false,
+      "labels": [
+        "dependencies",
+        "pre-commit"
+      ]
+    }
+  ]
+}
