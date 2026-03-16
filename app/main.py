@@ -18,8 +18,13 @@ _original_torch_load = torch.load
 
 @functools.wraps(_original_torch_load)
 def _torch_load_compat(*args: object, **kwargs: object) -> object:
-    """Wrap torch.load to default weights_only=False for trusted model files."""
-    if "weights_only" not in kwargs:
+    """Wrap torch.load to default weights_only=False for trusted model files.
+
+    PyTorch 2.6 treats weights_only=None as "not set" and defaults to True.
+    lightning_fabric (used by pyannote) passes weights_only=None explicitly,
+    so we must intercept None as well as missing to restore the pre-2.6 default.
+    """
+    if kwargs.get("weights_only") is not True:
         kwargs["weights_only"] = False
     return _original_torch_load(*args, **kwargs)
 
