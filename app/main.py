@@ -8,25 +8,23 @@ filter_warnings()
 
 # PyTorch 2.6 changed torch.load default to weights_only=True, which breaks
 # speechbrain/pyannote model loading (used by WhisperX diarization and VAD).
-# Register all omegaconf types that speechbrain serialises via torch.save so
-# they are treated as safe globals during deserialisation.
+# These models are loaded from trusted HuggingFace sources, so we restore the
+# pre-2.6 default of weights_only=False for callers that don't set it explicitly.
+import functools  # noqa: E402
 import torch  # noqa: E402
-import omegaconf.base  # noqa: E402
-import omegaconf.dictconfig  # noqa: E402
-import omegaconf.listconfig  # noqa: E402
 
-torch.serialization.add_safe_globals(
-    [
-        omegaconf.base.ContainerMetadata,
-        omegaconf.base.Metadata,
-        omegaconf.base.Node,
-        omegaconf.base.Box,
-        omegaconf.base.SCMode,
-        omegaconf.base.ValueKind,
-        omegaconf.listconfig.ListConfig,
-        omegaconf.dictconfig.DictConfig,
-    ]
-)
+_original_torch_load = torch.load
+
+
+@functools.wraps(_original_torch_load)
+def _torch_load_compat(*args: object, **kwargs: object) -> object:
+    """Wrap torch.load to default weights_only=False for trusted model files."""
+    if "weights_only" not in kwargs:
+        kwargs["weights_only"] = False
+    return _original_torch_load(*args, **kwargs)
+
+
+torch.load = _torch_load_compat
 
 import logging  # noqa: E402
 import time  # noqa: E402
