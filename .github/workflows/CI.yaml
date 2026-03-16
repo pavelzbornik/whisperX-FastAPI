@@ -39,22 +39,35 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: write
       pull-requests: write # Needed for PR failure comment
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+          ref: ${{ github.head_ref || github.ref }}
       - name: Common setup
         uses: ./.github/actions/setup
         with:
           python-version: "3.11"
       - name: Install hadolint
         run: |
-          wget -O hadolint https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+          wget -O hadolint https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64
           chmod +x hadolint
           sudo mv hadolint /usr/local/bin/
+      - name: Update README badges
+        run: uv run python scripts/update-badges.py
+      - name: Commit badge updates if changed
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet README.md; then
+            git add README.md
+            git commit -m "chore: update README badges"
+            git push
+          fi
       - name: Run full pre-commit validation
         uses: pre-commit/action@1b06ec171f2f6faa71ed760c4042bd969e4f8b43
       - name: Comment on PR if lint job fails
@@ -152,7 +165,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Dependency Review
-        uses: actions/dependency-review-action@98884d411b0f1c583e5ee579e7e897d4623019c2
+        uses: actions/dependency-review-action@f5b971718edcbb31275a1db40004592335c0e031
         with:
           fail-on-severity: moderate
       - name: Comment on PR if dependency review fails
@@ -303,7 +316,7 @@ jobs:
           name: trivy-results
           path: trivy-results.txt
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@6bc82e05fd0ea64601dd4b465378bbcf57de0314
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
@@ -347,74 +360,11 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: metadata
-        uses: dependabot/fetch-metadata@e74077de530ef48d09568e2268558f6093a85509
+        uses: dependabot/fetch-metadata@47503d2a1069cc9c99e5d422f3cbd1b038e55ea3
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Merge the PR
-        run: gh pr merge "$PR_URL" --merge --admin
+      - name: Enable auto-merge on PR
+        run: gh pr merge "$PR_URL" --squash --auto
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  release-please:
-    name: Release Please
-    runs-on: ubuntu-latest
-    needs: [build, test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-    steps:
-      - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38
-        id: release-please
-        with:
-          token: ${{ secrets.PAT_TOKEN }}
-          release-type: python
-      - name: Checkout release branch
-        # release-please is unable to update uv.lock, so we do it ourselves
-
-        if: ${{ steps.release-please.outputs.pr }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          ref: ${{ fromJson(steps.release-please.outputs.pr).headBranchName }}
-      - name: Setup uv
-        if: ${{ steps.release-please.outputs.pr }}
-        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
-      - name: Update uv.lock
-        if: ${{ steps.release-please.outputs.pr }}
-        run: uv lock
-      - name: Commit updated uv.lock
-        if: ${{ steps.release-please.outputs.pr }}
-        uses: stefanzweifel/git-auto-commit-action@6739571eaee7f2e84e98784215d23acd69740d13
-        with:
-          commit_message: "ci: update uv.lock"
-          file_pattern: uv.lock
-          commit_user_name: "GitHub Action"
-          commit_user_email: "action@github.com"
-  auto-merge-release-please:
-    name: Auto-merge Release Please PR
-    runs-on: ubuntu-latest
-    needs: [release-please]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - name: Set up GitHub CLI
-        run: |
-          sudo apt-get update && sudo apt-get install -y gh
-      - name: Find and merge Release Please PRs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          prs=$(gh pr list --state open --author github-actions[bot] --json number --jq '.[].number')
-          if [ -z "$prs" ]; then
-            echo "No open Release Please PRs to merge."
-            exit 0
-          fi
-          for pr in $prs; do
-            echo "Merging Release Please PR #$pr"
-            gh pr merge $pr --merge --admin --delete-branch || exit 1
-          done

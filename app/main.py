@@ -6,6 +6,31 @@ from app.core.warnings_filter import filter_warnings
 
 filter_warnings()
 
+# PyTorch 2.6 changed torch.load default to weights_only=True, which breaks
+# speechbrain/pyannote model loading (used by WhisperX diarization and VAD).
+# These models are loaded from trusted HuggingFace sources, so we restore the
+# pre-2.6 default of weights_only=False for callers that don't set it explicitly.
+import functools  # noqa: E402
+import torch  # noqa: E402
+
+_original_torch_load = torch.load
+
+
+@functools.wraps(_original_torch_load)
+def _torch_load_compat(*args: object, **kwargs: object) -> object:
+    """Wrap torch.load to default weights_only=False for trusted model files.
+
+    PyTorch 2.6 treats weights_only=None as "not set" and defaults to True.
+    lightning_fabric (used by pyannote) passes weights_only=None explicitly,
+    so we must intercept None as well as missing to restore the pre-2.6 default.
+    """
+    if kwargs.get("weights_only") is not True:
+        kwargs["weights_only"] = False
+    return _original_torch_load(*args, **kwargs)
+
+
+torch.load = _torch_load_compat
+
 import logging  # noqa: E402
 import time  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
@@ -32,7 +57,7 @@ from app.core.exceptions import (  # noqa: E402
     ValidationError,
 )
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
-from app.infrastructure.database import Base, async_engine  # noqa: E402
+from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
 
 # Load environment variables from .env
 load_dotenv()
@@ -68,9 +93,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Clean up container on shutdown
     logging.info("Shutting down application")
-    # Dispose the async engine pool so pooled connections are not reused across
-    # event loops (e.g. between test modules that each create a TestClient context).
+    # Dispose both engine pools so connections are not reused across event loops
+    # (e.g. between test modules that each create a TestClient context).
+    # sync_engine uses QueuePool for PostgreSQL; disposing prevents connection leaks.
     await async_engine.dispose()
+    sync_engine.dispose()
 
 
 tags_metadata = [

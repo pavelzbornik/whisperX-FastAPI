@@ -21,9 +21,9 @@ via DI — the Container factory handles session creation and cleanup.
 must manage sessions directly:
 
 ```python
-session = SessionLocal()
+session = SyncSessionLocal()
 try:
-    repo = SQLAlchemyTaskRepository(session)
+    repo = SyncSQLAlchemyTaskRepository(session)
     # ... do work ...
     session.commit()
 finally:

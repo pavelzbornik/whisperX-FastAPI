@@ -233,11 +233,11 @@ def test_process_audio_common_gpu(
 
     with (
         patch(
-            "app.services.whisperx_wrapper_service.SessionLocal",
+            "app.services.whisperx_wrapper_service.SyncSessionLocal",
             return_value=mock_session,
         ),
         patch(
-            "app.services.whisperx_wrapper_service.SQLAlchemyTaskRepository",
+            "app.services.whisperx_wrapper_service.SyncSQLAlchemyTaskRepository",
             return_value=mock_repository,
         ),
         patch(

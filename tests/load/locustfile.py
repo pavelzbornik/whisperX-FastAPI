@@ -62,7 +62,14 @@ class ReadOnlyUser(HttpUser):
     def poll_known_task(self) -> None:
         """GET /task/{id} — per-ID poll against a real task row."""
         if not self._known_ids:
-            return
+            # Refresh from the task list in case tasks were created after on_start
+            resp = self.client.get("/task/all")
+            if resp.status_code == 200:
+                self._known_ids = [
+                    t["identifier"] for t in resp.json().get("tasks", [])
+                ]
+            if not self._known_ids:
+                return
         identifier = random.choice(self._known_ids)
         self.client.get(f"/task/{identifier}", name="/task/[id]")
 
@@ -210,14 +217,14 @@ class ErrorProbeUser(HttpUser):
 
     @task(1)
     def upload_empty_file(self) -> None:
-        """POST /service/transcribe with empty file — expects 400/422/500."""
+        """POST /service/transcribe with empty file — expects 400/422."""
         with self.client.post(
             "/service/transcribe",
             files={"file": ("empty.mp3", b"", "audio/mpeg")},
             name="/service/transcribe [empty]",
             catch_response=True,
         ) as resp:
-            if resp.status_code in (400, 422, 500):
+            if resp.status_code in (400, 422):
                 resp.success()
             else:
                 resp.failure(f"Unexpected status {resp.status_code}")

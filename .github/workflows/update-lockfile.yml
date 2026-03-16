@@ -1,0 +1,34 @@
+name: Update Lock File
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+concurrency:
+  group: update-lockfile-${{ github.head_ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  update-lockfile:
+    name: Update uv.lock
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Set up uv
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b
+      - name: Regenerate uv.lock
+        run: uv lock
+      - name: Commit updated uv.lock
+        uses: stefanzweifel/git-auto-commit-action@fc84150d7c7500bbbaedb7ec522588fcc41f4d4d
+        with:
+          commit_message: "ci: update uv.lock"
+          file_pattern: uv.lock
+          commit_user_name: "GitHub Action"
+          commit_user_email: "action@github.com"

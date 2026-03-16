@@ -149,6 +149,7 @@ def callback_server() -> tuple[HTTPServer, str]:
     server.shutdown()
 
 
+@pytest.mark.slow
 class TestCallbackEndpoints:
     """End-to-end tests for callback functionality."""
 

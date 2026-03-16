@@ -26,7 +26,7 @@ _RESULTS_DIR = Path(__file__).parent.parent.parent / "load_results"
 
 
 def _assert_csv_failure_rate_under(csv_path: Path, max_rate: float) -> None:
-    """Assert the aggregated failure rate is below ``max_rate`` (0–1 fraction).
+    """Assert the aggregated failure rate is below ``max_rate`` (0-1 fraction).
 
     Silently passes if the CSV was not written (e.g. locust exited early —
     the caller handles that case separately).
@@ -113,8 +113,7 @@ def _locust_cmd(
         "--host",
         host,
     ]
-    if exit_code_on_error:
-        cmd += ["--exit-code-on-error", "1"]
+    cmd += ["--exit-code-on-error", "1" if exit_code_on_error else "0"]
     if user_classes:
         cmd += user_classes
     if csv_name:
@@ -130,6 +129,12 @@ def test_db_pool_handles_concurrent_users(live_server_url: str) -> None:
     This is the regression test for the async SQLAlchemy migration:
     the pre-migration sync engine exhausted QueuePool at ~20 users.
     """
+    db_url = os.environ.get("DB_URL", "sqlite:///records.db")
+    if db_url.startswith("sqlite"):
+        pytest.skip(
+            "Pool-regression test requires PostgreSQL QueuePool. "
+            "Set DB_URL=postgresql://... to run."
+        )
     result = subprocess.run(
         _locust_cmd(
             live_server_url,
@@ -214,6 +219,12 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
     runners can produce under high concurrency — the test is checking for pool
     exhaustion (which would cause many failures), not zero-error perfection.
     """
+    db_url = os.environ.get("DB_URL", "sqlite:///records.db")
+    if db_url.startswith("sqlite"):
+        pytest.skip(
+            "Pool-stability test requires PostgreSQL QueuePool. "
+            "Set DB_URL=postgresql://... to run."
+        )
     subprocess.run(
         _locust_cmd(
             live_server_url,
