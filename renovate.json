@@ -9,6 +9,7 @@
   "baseBranches": ["dev"],
   "schedule": ["before 6am on the first day of the month"],
   "timezone": "UTC",
+  "dependencyDashboardApproval": false,
   "prConcurrentLimit": 10,
   "prHourlyLimit": 0,
   "labels": ["dependencies"],
