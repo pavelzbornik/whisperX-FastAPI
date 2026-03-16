@@ -113,9 +113,11 @@ DB_URL=sqlite:///records.db
 `tests/`, `dockerfile`, `docker-compose.yml`, or `pyproject.toml` change.
 
 Jobs: **lint** → **test** (≥80% coverage) → **dependency-review** + **build** (Docker +
-Trivy scan) → **dependabot-auto-merge** → **release-please** (main only).
+Trivy scan) → **release-please** (main only).
 
-Pre-commit hooks are auto-updated weekly via `precommit-autoupdate.yml`.
+Dependency updates (including pre-commit hooks, GitHub Actions, Docker images, and uv
+packages) are managed by Renovate (`renovate.json`). Updates are batched monthly; ML-critical
+packages (PyTorch, huggingface-hub, whisperx) require manual review.
 
 **PyTorch wheels:** `uv.lock` is platform-specific (CUDA on Linux x86\_64, CPU on
 macOS/Windows). Never manually edit `uv.lock`.

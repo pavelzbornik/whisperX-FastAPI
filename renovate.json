@@ -43,9 +43,19 @@
 
     {
       "description": "PyTorch ecosystem — hard ceiling, manual review only",
-      "matchPackageNames": ["torch", "torchaudio", "torchvision"],
+      "matchPackageNames": ["torch", "torchaudio"],
       "groupName": "PyTorch ecosystem",
       "allowedVersions": "<=2.8.0",
+      "autoMerge": false,
+      "labels": ["dependencies", "pytorch"],
+      "reviewers": ["pavelzbornik"]
+    },
+
+    {
+      "description": "torchvision — hard ceiling matching pyproject.toml constraint, manual review only",
+      "matchPackageNames": ["torchvision"],
+      "groupName": "PyTorch ecosystem",
+      "allowedVersions": "<=0.23.0",
       "autoMerge": false,
       "labels": ["dependencies", "pytorch"],
       "reviewers": ["pavelzbornik"]
