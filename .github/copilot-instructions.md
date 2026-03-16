@@ -425,7 +425,7 @@ The CI runs on PRs and pushes to `main`/`dev` branches when these paths change:
 
 **Dependency Updates (Renovate):**
 
-Dependency updates are managed by Renovate (`renovate.json`), not Dependabot. Updates are batched monthly (first Monday) and grouped by ecosystem. ML-critical packages (PyTorch, huggingface-hub, whisperx) require manual review; all others auto-merge after CI passes.
+Dependency updates are managed by Renovate (`renovate.json`), not Dependabot. Updates are batched monthly (first Monday) and grouped by ecosystem. ML-critical packages (PyTorch, huggingface-hub, whisperx) require manual review. Minor and patch updates for FastAPI, database, runtime utilities, dev tools, GitHub Actions, pre-commit hooks, and Docker images auto-merge after CI passes; major updates for those groups require manual review.
 
 ### Common Setup Action
 

@@ -115,9 +115,10 @@ DB_URL=sqlite:///records.db
 Jobs: **lint** → **test** (≥80% coverage) → **dependency-review** + **build** (Docker +
 Trivy scan) → **release-please** (main only).
 
-Dependency updates (including pre-commit hooks, GitHub Actions, Docker images, and uv
-packages) are managed by Renovate (`renovate.json`). Updates are batched monthly; ML-critical
-packages (PyTorch, huggingface-hub, whisperx) require manual review.
+Dependency updates (uv packages, GitHub Actions, Docker images, pre-commit hooks) are
+managed by Renovate (`renovate.json`), batched monthly. ML-critical packages (PyTorch,
+huggingface-hub, whisperx) require manual review; minor/patch updates for all other
+groups auto-merge after CI passes.
 
 **PyTorch wheels:** `uv.lock` is platform-specific (CUDA on Linux x86\_64, CPU on
 macOS/Windows). Never manually edit `uv.lock`.
