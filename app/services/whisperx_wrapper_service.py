@@ -152,7 +152,7 @@ def diarize(
             f"GPU memory before loading model - used: {torch.cuda.memory_allocated() / 1024**2:.2f} MB, available: {torch.cuda.get_device_properties(0).total_memory / 1024**2:.2f} MB"
         )
 
-    model = DiarizationPipeline(use_auth_token=Config.HF_TOKEN, device=device.value)
+    model = DiarizationPipeline(token=Config.HF_TOKEN, device=device.value)
     result = model(audio=audio, min_speakers=min_speakers, max_speakers=max_speakers)
 
     # Log GPU memory before cleanup
