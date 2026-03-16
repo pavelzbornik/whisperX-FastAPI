@@ -16,12 +16,24 @@ Two functions — always use them, never read ORM fields directly in services:
 - `to_domain(orm_task) -> Task` — converts `TaskORM` → `Task` domain entity
 - `to_orm(domain_task) -> TaskORM` — converts `Task` → `TaskORM` for persistence
 
+### Connection & Sessions (`database/connection.py`)
+
+Two engines and two session factories — one for each execution context:
+
+| Name | Engine | Use |
+| --- | --- | --- |
+| `async_engine` / `AsyncSessionLocal` | asyncpg / aiosqlite | FastAPI request handlers (async) |
+| `sync_engine` / `SyncSessionLocal` | psycopg2 / sqlite3 | Background task threads (sync) |
+
 ### Repository (`database/repositories/sqlalchemy_task_repository.py`)
 
-Concrete `ITaskRepository` implementation. Owns session usage, exception wrapping
-(re-raises as `DatabaseOperationError`), and logging. Background tasks call
-`SessionLocal()` directly and pass the session to the repository constructor;
-request-scoped code receives the repository via DI (Container factory).
+Two concrete `ITaskRepository` implementations split by session type:
+
+- `AsyncSQLAlchemyTaskRepository` — request-scoped; received via DI (Container factory).
+- `SyncSQLAlchemyTaskRepository` — background tasks; call `SyncSessionLocal()` directly
+  and pass the session to the constructor.
+
+Both re-raise infrastructure errors as `DatabaseOperationError`.
 
 ### Unit of Work (`database/unit_of_work.py`)
 

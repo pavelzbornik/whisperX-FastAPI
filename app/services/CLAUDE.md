@@ -23,7 +23,7 @@ must manage sessions directly:
 ```python
 session = SyncSessionLocal()
 try:
-    repo = SQLAlchemyTaskRepository(session)
+    repo = SyncSQLAlchemyTaskRepository(session)
     # ... do work ...
     session.commit()
 finally:
