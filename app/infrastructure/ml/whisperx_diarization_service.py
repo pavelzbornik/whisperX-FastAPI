@@ -59,7 +59,7 @@ class WhisperXDiarizationService:
             )
 
         # Load model
-        model = DiarizationPipeline(use_auth_token=self.hf_token, device=device)
+        model = DiarizationPipeline(token=self.hf_token, device=device)
 
         # Perform diarization
         result = model(
@@ -98,7 +98,7 @@ class WhisperXDiarizationService:
         """
         self.logger.info(f"Loading diarization model on {device}")
         self.hf_token = hf_token
-        self.model = DiarizationPipeline(use_auth_token=self.hf_token, device=device)
+        self.model = DiarizationPipeline(token=self.hf_token, device=device)
 
     def unload_model(self) -> None:
         """Unload diarization model and free GPU memory."""
