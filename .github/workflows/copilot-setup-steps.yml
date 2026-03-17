@@ -53,6 +53,16 @@ jobs:
           import os
           os.environ['HF_TOKEN'] = os.getenv('HF_TOKEN', '')
 
+          # PyTorch 2.6+ defaults weights_only=True; register omegaconf types
+          # used by pyannote/whisperX checkpoints as safe globals
+          import torch
+          import omegaconf.listconfig
+          import omegaconf.dictconfig
+          torch.serialization.add_safe_globals([
+              omegaconf.listconfig.ListConfig,
+              omegaconf.dictconfig.DictConfig,
+          ])
+
           from whisperx import load_model, load_align_model
 
           print("📥 Downloading Whisper tiny model...")
