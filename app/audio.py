@@ -8,6 +8,7 @@ import numpy as np
 from whisperx import load_audio
 from whisperx.audio import SAMPLE_RATE
 
+from app.core.exceptions import AudioProcessingError
 from app.files import VIDEO_EXTENSIONS, check_file_extension
 
 
@@ -53,7 +54,12 @@ def process_audio_file(audio_file: str) -> np.ndarray[Any, np.dtype[np.float32]]
     file_extension = check_file_extension(audio_file)
     if file_extension in VIDEO_EXTENSIONS:
         audio_file = convert_video_to_audio(audio_file)
-    return load_audio(audio_file)  # type: ignore[no-any-return]
+    try:
+        return load_audio(audio_file)  # type: ignore[no-any-return]
+    except Exception as exc:
+        raise AudioProcessingError(
+            reason=f"Failed to load audio file: {exc}", original_error=exc
+        ) from exc
 
 
 def get_audio_duration(audio: np.ndarray[Any, np.dtype[np.float32]]) -> float:

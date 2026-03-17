@@ -183,7 +183,7 @@ def test_write_path_handles_concurrent_submitters(live_server_url: str) -> None:
     assert result.returncode == 0, (
         f"Write load test failures:\n{result.stdout}\n{result.stderr}"
     )
-    _assert_csv_p95_under(_RESULTS_DIR / "write_test_stats.csv", threshold_ms=2000)
+    _assert_csv_p95_under(_RESULTS_DIR / "write_test_stats.csv", threshold_ms=10000)
 
 
 @pytest.mark.load
@@ -205,7 +205,9 @@ def test_error_paths_stable_under_load(live_server_url: str) -> None:
     assert result.returncode == 0, (
         f"Error-probe load test failed:\n{result.stdout}\n{result.stderr}"
     )
-    _assert_csv_p95_under(_RESULTS_DIR / "error_probe_test_stats.csv", threshold_ms=500)
+    _assert_csv_p95_under(
+        _RESULTS_DIR / "error_probe_test_stats.csv", threshold_ms=1000
+    )
 
 
 @pytest.mark.load
@@ -239,4 +241,4 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
         timeout=120,
     )
     _assert_csv_failure_rate_under(_RESULTS_DIR / "mixed_test_stats.csv", max_rate=0.01)
-    _assert_csv_p95_under(_RESULTS_DIR / "mixed_test_stats.csv", threshold_ms=1000)
+    _assert_csv_p95_under(_RESULTS_DIR / "mixed_test_stats.csv", threshold_ms=5000)

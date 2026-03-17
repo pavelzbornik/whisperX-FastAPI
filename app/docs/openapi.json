@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.awb', '.wma', '.amr', '.wav', '.ogg', '.aac', '.mp3', '.oga', '.m4a'}\n\n    VIDEO_EXTENSIONS = {'.wmv', '.mov', '.mp4', '.avi', '.mkv'}\n\n    ",
+    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.wav', '.amr', '.aac', '.mp3', '.ogg', '.wma', '.awb', '.oga', '.m4a'}\n\n    VIDEO_EXTENSIONS = {'.wmv', '.avi', '.mp4', '.mov', '.mkv'}\n\n    ",
     "version": "0.0.1"
   },
   "paths": {
@@ -1974,7 +1974,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Audio/video file to transcribe"
           }
@@ -1989,13 +1989,13 @@
         "properties": {
           "transcript": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "Transcript",
             "description": "Whisper style transcript json file"
           },
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Audio/video file which has been transcribed"
           }
@@ -2011,7 +2011,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File"
           }
         },
@@ -2025,12 +2025,12 @@
         "properties": {
           "aligned_transcript": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "Aligned Transcript"
           },
           "diarization_result": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "Diarization Result"
           }
         },
@@ -2045,7 +2045,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File"
           }
         },
@@ -2474,6 +2474,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",
