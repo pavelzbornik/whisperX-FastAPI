@@ -45,7 +45,7 @@ dependencies = [
     "torchaudio<=2.8.0",
     "torchvision<=0.23.0",
     "setuptools>=78.1.1",
-    # pyannote.audio 3.4.0 uses deprecated use_auth_token parameter removed in 0.36.0
+    # whisperx 3.8.2 uses deprecated use_auth_token parameter removed in 0.36.0
     "huggingface-hub<0.36.0",
 ]
 
@@ -179,3 +179,6 @@ module = [
     "numpy.*",
 ]
 ignore_missing_imports = true
+
+[tool.setuptools.packages.find]
+include = ["app*"]
