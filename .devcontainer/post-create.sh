@@ -7,8 +7,7 @@ set -e
 echo "Verifying uv is in PATH..."
 which uv
 
-# Install system dependencies needed for pre-commit hooks and SonarLint (Java 17+)
-apt-get update && apt-get install -y libatomic1 openjdk-17-jre-headless postgresql-client
+# System dependencies (openjdk, postgresql-client) are pre-installed in the dev stage
 
 # Wait for PostgreSQL sidecar to be ready (provided by docker-compose devcontainer)
 if [[ -n "$TEST_DB_URL" ]]; then

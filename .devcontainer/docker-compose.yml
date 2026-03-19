@@ -3,6 +3,7 @@ services:
     build:
       context: ..
       dockerfile: dockerfile
+      target: dev
     volumes:
       - ..:/workspaces/whisperX-FastAPI:cached
     entrypoint: ["sleep", "infinity"]

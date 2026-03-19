@@ -1,9 +1,11 @@
-FROM nvidia/cuda:13.0.1-base-ubuntu22.04
+# ---- Stage 1: base ----
+# Shared foundation for both dev and production stages
+FROM nvidia/cuda:13.0.1-base-ubuntu22.04 AS base
 
 ENV PYTHON_VERSION=3.11
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
-# Install dependencies and clean up in the same layer
+# Install system dependencies and clean up in the same layer
 # hadolint ignore=DL3008
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y update \
@@ -24,27 +26,49 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Copy project files
-COPY pyproject.toml .
-COPY uv.lock .
-COPY app app/
-COPY tests tests/
-COPY app/gunicorn_logging.conf .
+# ---- Stage 2: dev (devcontainer target) ----
+# Pre-installs dev dependencies and tools so devcontainer startup is fast
+FROM base AS dev
 
-# Install Python dependencies using UV with pyproject.toml
+# Install dev system dependencies (SonarLint requires Java 17+, pg_isready for healthcheck)
+# hadolint ignore=DL3008
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y update \
+    && apt-get -y install --no-install-recommends \
+    openjdk-17-jre-headless \
+    postgresql-client \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pre-install all dependencies (including dev extras) to warm cache
+# Devcontainer mounts source as volume, so no COPY app/ needed
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --all-extras --no-install-project \
+    && uv pip install --system ctranslate2==4.6.0
+
+# ---- Stage 3: production (default) ----
+# Lean image with only runtime dependencies
+FROM base AS production
+
+# Layer 1: Install Python dependencies (cached unless pyproject.toml/uv.lock change)
 # UV automatically selects CUDA 12.8 wheels on Linux
-RUN uv sync --frozen --no-dev --extra postgres \
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project --extra postgres \
     && uv pip install --system ctranslate2==4.6.0 \
     && rm -rf /root/.cache /tmp/* /root/.uv /var/cache/* \
     && find /usr/local -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true \
     && find /usr/local -type f -name '*.pyc' -delete \
     && find /usr/local -type f -name '*.pyo' -delete
 
-# Pre-download NLTK punkt tokenizer data required by the alignment service
+# Layer 2: NLTK data (cached, depends only on nltk package not app code)
 ENV NLTK_DATA=/app/nltk_data
-RUN uv run python -c "import nltk; \
+RUN uv run --no-sync python -c "import nltk; \
     nltk.download('punkt', download_dir='/app/nltk_data', quiet=False); \
     nltk.download('punkt_tab', download_dir='/app/nltk_data', quiet=False)"
+
+# Layer 3: Application code (rebuilds on code changes — cheap)
+COPY app app/
+COPY app/gunicorn_logging.conf .
 
 EXPOSE 8000
 

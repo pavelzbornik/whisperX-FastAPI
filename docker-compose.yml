@@ -2,7 +2,7 @@ services:
   whisperx-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
     image: whisperx-service
     deploy:
       resources:
