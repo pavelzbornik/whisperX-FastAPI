@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.7](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.6...v0.4.7) (2026-03-19)
+
+
+### Bug Fixes
+
+* **audio:** narrow exception handling and avoid leaking internal error detail ([f472594](https://github.com/pavelzbornik/whisperX-FastAPI/commit/f472594a8ec1bd9254ce63e49d8085583e914523))
+* **audio:** return HTTP 400 for unreadable audio files instead of 500 ([9fa7d7d](https://github.com/pavelzbornik/whisperX-FastAPI/commit/9fa7d7d15c59d12c4f278be923c7094d8eadbdf4))
+* **ci:** register omegaconf safe globals for PyTorch 2.6 compatibility ([23ab7f3](https://github.com/pavelzbornik/whisperX-FastAPI/commit/23ab7f36c94338834fb7a20987cec70b4a1ceb34))
+* **deps:** disable dependency dashboard approval gate ([2853039](https://github.com/pavelzbornik/whisperX-FastAPI/commit/285303970f16235597476115fd435f3bfaa9ddd3))
+* **deps:** fix invalid Renovate configuration ([5d1dfdd](https://github.com/pavelzbornik/whisperX-FastAPI/commit/5d1dfdd81bf202eb25b08c6d3b88ba85e4d1e229))
+* **renovate:** override Mend platform mode=silent to enable PR creation ([1a303d5](https://github.com/pavelzbornik/whisperX-FastAPI/commit/1a303d530d9ed1d2abac0352bde4223125b9a88f))
+
 ## [0.4.6](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.5...v0.4.6) (2026-03-13)
 
 
