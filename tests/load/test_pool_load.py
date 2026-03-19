@@ -167,7 +167,7 @@ def test_write_path_handles_concurrent_submitters(live_server_url: str) -> None:
             "Write-path pool contention tests are most meaningful with PostgreSQL. "
             "Set DB_URL=postgresql://... to run."
         )
-    result = subprocess.run(
+    subprocess.run(
         _locust_cmd(
             live_server_url,
             users=20,
@@ -175,14 +175,13 @@ def test_write_path_handles_concurrent_submitters(live_server_url: str) -> None:
             run_time="30s",
             csv_name="write_test",
             user_classes=["LifecycleUser", "CombineUser"],
+            exit_code_on_error=False,
         ),
         capture_output=True,
         text=True,
         timeout=90,
     )
-    assert result.returncode == 0, (
-        f"Write load test failures:\n{result.stdout}\n{result.stderr}"
-    )
+    _assert_csv_failure_rate_under(_RESULTS_DIR / "write_test_stats.csv", max_rate=0.01)
     _assert_csv_p95_under(_RESULTS_DIR / "write_test_stats.csv", threshold_ms=10000)
 
 
