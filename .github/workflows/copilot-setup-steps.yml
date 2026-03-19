@@ -21,13 +21,13 @@ jobs:
       COMPUTE_TYPE: int8
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - name: Common setup
         uses: ./.github/actions/setup
         with:
           python-version: "3.11"
       - name: Cache Hugging Face and Torch models
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306
+        uses: actions/cache@565629816435f6c0b50676926c9b05c254113c0c
         with:
           path: |
             ~/.cache/huggingface
@@ -52,6 +52,16 @@ jobs:
           uv run python << 'EOF'
           import os
           os.environ['HF_TOKEN'] = os.getenv('HF_TOKEN', '')
+
+          # PyTorch 2.6+ defaults weights_only=True; register omegaconf types
+          # used by pyannote/whisperX checkpoints as safe globals
+          import torch
+          import omegaconf.listconfig
+          import omegaconf.dictconfig
+          torch.serialization.add_safe_globals([
+              omegaconf.listconfig.ListConfig,
+              omegaconf.dictconfig.DictConfig,
+          ])
 
           from whisperx import load_model, load_align_model
 

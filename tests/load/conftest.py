@@ -26,7 +26,7 @@ class _UvicornServer(uvicorn.Server):
         """Skip signal handler installation for non-main-thread use."""
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def live_server_url() -> Generator[str, None, None]:
     """Start a live uvicorn server and yield its base URL.
 
@@ -44,7 +44,7 @@ def live_server_url() -> Generator[str, None, None]:
     server = _UvicornServer(config)
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
-    deadline = time.time() + 10
+    deadline = time.time() + 30
     healthy = False
     while time.time() < deadline:
         with contextlib.suppress(Exception):
@@ -55,7 +55,7 @@ def live_server_url() -> Generator[str, None, None]:
     if not healthy:
         server.should_exit = True
         thread.join(timeout=5)
-        pytest.fail(f"Server did not become healthy within 10 s on port {port}")
+        pytest.fail(f"Server did not become healthy within 30 s on port {port}")
     yield f"http://127.0.0.1:{port}"
     server.should_exit = True
-    thread.join(timeout=5)
+    thread.join(timeout=30)

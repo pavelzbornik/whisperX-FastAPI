@@ -14,3 +14,4 @@ pytest-report.xml
 .pytest_cache
 docs/stories/
 .devcontainer/.env
+load_results/
