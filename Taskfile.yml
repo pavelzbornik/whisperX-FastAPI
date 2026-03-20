@@ -12,7 +12,7 @@ tasks:
     desc: Install all dependencies (including dev extras)
     cmds:
       - uv sync --all-extras
-      - uv pip install ctranslate2=={{.CTRANSLATE2_VERSION}} --system
+      - uv pip install ctranslate2=={{.CTRANSLATE2_VERSION}}
     sources:
       - pyproject.toml
       - uv.lock
@@ -20,7 +20,7 @@ tasks:
     desc: Install production dependencies only
     cmds:
       - uv sync --no-dev
-      - uv pip install ctranslate2=={{.CTRANSLATE2_VERSION}} --system
+      - uv pip install ctranslate2=={{.CTRANSLATE2_VERSION}}
   deps:lock:
     desc: Regenerate uv.lock after editing pyproject.toml
     cmds:
@@ -71,4 +71,4 @@ tasks:
   run:
     desc: Start the application locally with hot reload
     cmds:
-      - uvicorn app.main:app --reload --log-config app/uvicorn_log_conf.yaml
+      - uv run uvicorn app.main:app --reload --log-config app/uvicorn_log_conf.yaml

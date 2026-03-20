@@ -73,7 +73,8 @@ tasks:
         # installed them. When ~/.claude is bind-mounted from Windows,
         # paths like /home/vscode/.claude/... won't resolve as root.
         # Symlink bridges the gap without modifying the shared JSON files.
-        if [ "$HOME" != "/home/vscode" ] && [ ! -e /home/vscode/.claude ]; then
+        if [ "$HOME" != "/home/vscode" ] && { [ ! -e /home/vscode/.claude ] || [ "$(readlink /home/vscode/.claude 2>/dev/null)" != "$HOME/.claude" ]; }; then
+          rm -f /home/vscode/.claude
           mkdir -p /home/vscode
           ln -s "$HOME/.claude" /home/vscode/.claude
           echo "Created symlink /home/vscode/.claude → $HOME/.claude"
@@ -91,5 +92,10 @@ tasks:
     status:
       - gh auth status
     cmds:
-      - echo "GitHub CLI not authenticated. Starting interactive login..."
-      - gh auth login
+      - |
+        if [ -t 0 ] && [ -t 1 ]; then
+          echo "GitHub CLI not authenticated. Starting interactive login..."
+          gh auth login
+        else
+          echo "GitHub CLI not authenticated. Run 'gh auth login' manually in an interactive shell."
+        fi

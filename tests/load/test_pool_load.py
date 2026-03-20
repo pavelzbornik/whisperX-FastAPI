@@ -167,7 +167,7 @@ def test_write_path_handles_concurrent_submitters(live_server_url: str) -> None:
             "Write-path pool contention tests are most meaningful with PostgreSQL. "
             "Set DB_URL=postgresql://... to run."
         )
-    subprocess.run(
+    result = subprocess.run(
         _locust_cmd(
             live_server_url,
             users=20,
@@ -181,8 +181,12 @@ def test_write_path_handles_concurrent_submitters(live_server_url: str) -> None:
         text=True,
         timeout=90,
     )
-    _assert_csv_failure_rate_under(_RESULTS_DIR / "write_test_stats.csv", max_rate=0.01)
-    _assert_csv_p95_under(_RESULTS_DIR / "write_test_stats.csv", threshold_ms=10000)
+    csv_path = _RESULTS_DIR / "write_test_stats.csv"
+    assert csv_path.exists(), (
+        f"Locust did not produce write_test_stats.csv:\n{result.stdout}\n{result.stderr}"
+    )
+    _assert_csv_failure_rate_under(csv_path, max_rate=0.01)
+    _assert_csv_p95_under(csv_path, threshold_ms=10000)
 
 
 @pytest.mark.load
@@ -226,7 +230,7 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
             "Pool-stability test requires PostgreSQL QueuePool. "
             "Set DB_URL=postgresql://... to run."
         )
-    subprocess.run(
+    result = subprocess.run(
         _locust_cmd(
             live_server_url,
             users=60,
@@ -239,5 +243,9 @@ def test_mixed_workload_db_pool_stability(live_server_url: str) -> None:
         text=True,
         timeout=120,
     )
-    _assert_csv_failure_rate_under(_RESULTS_DIR / "mixed_test_stats.csv", max_rate=0.01)
-    _assert_csv_p95_under(_RESULTS_DIR / "mixed_test_stats.csv", threshold_ms=5000)
+    csv_path = _RESULTS_DIR / "mixed_test_stats.csv"
+    assert csv_path.exists(), (
+        f"Locust did not produce mixed_test_stats.csv:\n{result.stdout}\n{result.stderr}"
+    )
+    _assert_csv_failure_rate_under(csv_path, max_rate=0.01)
+    _assert_csv_p95_under(csv_path, threshold_ms=5000)

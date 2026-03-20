@@ -22,7 +22,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python
 
 # Install UV for package management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.10 /uv /uvx /bin/
 
 WORKDIR /app
 
@@ -44,7 +44,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # Devcontainer mounts source as volume, so no COPY app/ needed
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --all-extras --no-install-project \
-    && uv pip install --system ctranslate2==4.6.0
+    && uv pip install ctranslate2==4.6.0
 
 # ---- Stage 3: production (default) ----
 # Lean image with only runtime dependencies
@@ -54,7 +54,7 @@ FROM base AS production
 # UV automatically selects CUDA 12.8 wheels on Linux
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project --extra postgres \
-    && uv pip install --system ctranslate2==4.6.0 \
+    && uv pip install ctranslate2==4.6.0 \
     && rm -rf /root/.cache /tmp/* /root/.uv /var/cache/* \
     && find /usr/local -type d -name '__pycache__' -exec rm -rf {} + 2>/dev/null || true \
     && find /usr/local -type f -name '*.pyc' -delete \
