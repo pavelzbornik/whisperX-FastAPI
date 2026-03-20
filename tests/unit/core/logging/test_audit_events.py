@@ -2,10 +2,12 @@
 
 from datetime import datetime, timezone
 
+import pytest
 
 from app.core.logging.audit_events import AuditEvent, AuditEventType
 
 
+@pytest.mark.unit
 class TestAuditEventType:
     """Test audit event type enum."""
 
@@ -23,6 +25,7 @@ class TestAuditEventType:
         assert AuditEventType.ERROR_OCCURRED.value == "error.occurred"
 
 
+@pytest.mark.unit
 class TestAuditEvent:
     """Test audit event dataclass."""
 

@@ -36,12 +36,18 @@ torch.load = _torch_load_compat
 import logging  # noqa: E402
 import os  # noqa: E402
 import time  # noqa: E402
+import uuid  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
 from dotenv import load_dotenv  # noqa: E402
-from fastapi import FastAPI, status  # noqa: E402
+from fastapi import FastAPI, Request, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
+from starlette.middleware.base import (  # noqa: E402
+    BaseHTTPMiddleware,
+    RequestResponseEndpoint,
+)
+from starlette.responses import Response as StarletteResponse  # noqa: E402
 
 # Load environment variables from .env early
 load_dotenv()
@@ -50,6 +56,12 @@ load_dotenv()
 from app.core.logging import configure_logging  # noqa: E402
 
 configure_logging()
+
+from app.core.logging.context import (  # noqa: E402
+    endpoint_var,
+    ip_address_var,
+    request_id_var,
+)
 
 # Get logger for application startup
 logger = logging.getLogger("app")
@@ -186,6 +198,34 @@ app.add_exception_handler(Exception, generic_error_handler)
 app.include_router(stt_router)
 app.include_router(task_router)
 app.include_router(service_router)
+
+
+class RequestContextMiddleware(BaseHTTPMiddleware):
+    """Set request-scoped context vars for structured logging."""
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> StarletteResponse:
+        """Populate context vars from the incoming request.
+
+        Args:
+            request: The incoming HTTP request.
+            call_next: The next middleware or route handler.
+
+        Returns:
+            The HTTP response.
+        """
+        rid = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request_id_var.set(rid)
+        ip_address_var.set(request.client.host if request.client else "unknown")
+        endpoint_var.set(request.url.path)
+
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = rid
+        return response
+
+
+app.add_middleware(RequestContextMiddleware)
 
 
 @app.get("/", include_in_schema=False)

@@ -25,18 +25,25 @@ def get_base_config() -> dict[str, Any]:
                 "datefmt": "%Y-%m-%d %H:%M:%S",
             },
         },
+        "filters": {
+            "request_context": {
+                "()": "app.core.logging.context.RequestContextFilter",
+            },
+        },
         "handlers": {
             "console": {
                 "class": "logging.StreamHandler",
                 "level": "DEBUG",
                 "formatter": "default",
                 "stream": "ext://sys.stdout",
+                "filters": ["request_context"],
             },
             "error_console": {
                 "class": "logging.StreamHandler",
                 "level": "ERROR",
                 "formatter": "detailed",
                 "stream": "ext://sys.stderr",
+                "filters": ["request_context"],
             },
         },
         "loggers": {

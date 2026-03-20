@@ -2,16 +2,19 @@
 
 from unittest.mock import patch
 
+import pytest
 
 from app.core.logging.audit_events import AuditEventType
 from app.core.logging.audit_logger import AuditLogger
+from app.core.logging.context import ip_address_var, request_id_var, user_id_var
 
 
+@pytest.mark.unit
 class TestAuditLogger:
     """Test audit logger functionality."""
 
-    def test_log_event(self) -> None:
-        """Test logging a generic audit event."""
+    def test_log_event_with_explicit_params(self) -> None:
+        """Test logging an event with explicit user/ip/request params."""
         with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
             AuditLogger.log_event(
                 event_type=AuditEventType.TASK_CREATED,
@@ -24,22 +27,41 @@ class TestAuditLogger:
                 details={"task_type": "transcription"},
             )
 
-            # Verify logger was called
             mock_logger.info.assert_called_once()
-            # Check the log message format string and arguments
             call_args = mock_logger.info.call_args
-            # Format string is call_args[0][0], arguments are call_args[0][1:]
-            assert call_args[0][1] == "create"  # action
-            assert call_args[0][2] == "task"  # resource_type
-            assert call_args[0][3] == "task-123"  # resource_id
-            # Check extra data
+            assert call_args[0][1] == "create"
+            assert call_args[0][2] == "task"
+            assert call_args[0][3] == "task-123"
             extra = call_args[1]["extra"]
             assert extra["event_type"] == "task.created"
             assert extra["user_id"] == "user-456"
             assert extra["ip_address"] == "192.168.1.1"
 
+    def test_log_event_reads_from_context(self) -> None:
+        """Test that context vars are used when explicit params are omitted."""
+        token_uid = user_id_var.set("ctx-user")
+        token_ip = ip_address_var.set("10.0.0.1")
+        token_rid = request_id_var.set("ctx-req-1")
+        try:
+            with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
+                AuditLogger.log_event(
+                    event_type=AuditEventType.TASK_CREATED,
+                    resource_type="task",
+                    resource_id="task-ctx",
+                    action="create",
+                )
+
+                extra = mock_logger.info.call_args[1]["extra"]
+                assert extra["user_id"] == "ctx-user"
+                assert extra["ip_address"] == "10.0.0.1"
+                assert extra["request_id"] == "ctx-req-1"
+        finally:
+            user_id_var.reset(token_uid)
+            ip_address_var.reset(token_ip)
+            request_id_var.reset(token_rid)
+
     def test_log_event_with_defaults(self) -> None:
-        """Test logging an event with default values."""
+        """Test logging an event with default values (no context set)."""
         with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
             AuditLogger.log_event(
                 event_type=AuditEventType.FILE_UPLOADED,
@@ -48,7 +70,6 @@ class TestAuditLogger:
                 action="upload",
             )
 
-            # Verify defaults were applied
             call_args = mock_logger.info.call_args
             extra = call_args[1]["extra"]
             assert extra["user_id"] == "anonymous"
@@ -62,9 +83,6 @@ class TestAuditLogger:
             AuditLogger.log_task_created(
                 task_id="task-999",
                 task_type="transcription",
-                user_id="user-123",
-                ip_address="10.0.0.1",
-                request_id="req-abc",
             )
 
             mock_logger.info.assert_called_once()
@@ -82,7 +100,6 @@ class TestAuditLogger:
             AuditLogger.log_task_completed(
                 task_id="task-888",
                 duration=45.5,
-                user_id="user-456",
             )
 
             mock_logger.info.assert_called_once()
@@ -96,7 +113,6 @@ class TestAuditLogger:
         with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
             AuditLogger.log_task_deleted(
                 task_id="task-777",
-                user_id="user-789",
                 reason="User requested deletion",
             )
 
@@ -124,8 +140,6 @@ class TestAuditLogger:
                 file_name="audio.mp3",
                 file_size=1024000,
                 content_type="audio/mpeg",
-                user_id="user-123",
-                ip_address="172.16.0.1",
             )
 
             mock_logger.info.assert_called_once()
@@ -154,8 +168,6 @@ class TestAuditLogger:
         with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
             AuditLogger.log_file_downloaded(
                 file_name="result.json",
-                user_id="user-789",
-                ip_address="192.168.1.100",
             )
 
             mock_logger.info.assert_called_once()
@@ -169,7 +181,6 @@ class TestAuditLogger:
         with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
             AuditLogger.log_file_deleted(
                 file_name="old_file.wav",
-                user_id="user-999",
             )
 
             mock_logger.info.assert_called_once()
@@ -181,7 +192,6 @@ class TestAuditLogger:
     def test_audit_events_always_at_info_level(self) -> None:
         """Test that all audit events are logged at INFO level."""
         with patch("app.core.logging.audit_logger.audit_logger") as mock_logger:
-            # Test all audit methods
             AuditLogger.log_task_created("task-1", "type1")
             AuditLogger.log_task_completed("task-2", 10.0)
             AuditLogger.log_task_deleted("task-3")
@@ -189,9 +199,7 @@ class TestAuditLogger:
             AuditLogger.log_file_downloaded("file2.mp3")
             AuditLogger.log_file_deleted("file3.mp3")
 
-            # All should call info() method
             assert mock_logger.info.call_count == 6
-            # None should call other levels
             assert mock_logger.debug.call_count == 0
             assert mock_logger.warning.call_count == 0
             assert mock_logger.error.call_count == 0

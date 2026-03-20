@@ -4,10 +4,12 @@ import logging
 import os
 from unittest.mock import patch
 
+import pytest
 
 from app.core.logging.config_builder import configure_logging, get_logging_config
 
 
+@pytest.mark.unit
 class TestGetLoggingConfig:
     """Test logging configuration selection."""
 
@@ -73,6 +75,7 @@ class TestGetLoggingConfig:
             assert "colored" in config["formatters"]
 
 
+@pytest.mark.unit
 class TestConfigureLogging:
     """Test logging configuration initialization."""
 

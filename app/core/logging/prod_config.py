@@ -41,6 +41,7 @@ def get_prod_config() -> dict[str, Any]:
         "filename": f"{logs_dir}/app.log",
         "maxBytes": 10485760,  # 10MB
         "backupCount": 5,
+        "filters": ["request_context"],
     }
 
     # Add audit log handler - separate file with longer retention
@@ -51,6 +52,7 @@ def get_prod_config() -> dict[str, Any]:
         "filename": f"{logs_dir}/audit.log",
         "maxBytes": 52428800,  # 50MB
         "backupCount": 10,  # Keep more audit logs for compliance
+        "filters": ["request_context"],
     }
 
     # Add file handler to app loggers

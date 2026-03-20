@@ -17,29 +17,18 @@ class TaskManagementService:
     """
 
     def __init__(self, repository: ITaskRepository) -> None:
-        """
-        Initialize the task management service.
+        """Initialize the task management service.
 
         Args:
             repository: Task repository for data persistence
         """
         self.repository = repository
 
-    async def create_task(
-        self,
-        task: Task,
-        user_id: str | None = None,
-        ip_address: str | None = None,
-        request_id: str | None = None,
-    ) -> str:
-        """
-        Create a new task in the repository.
+    async def create_task(self, task: Task) -> str:
+        """Create a new task in the repository.
 
         Args:
             task: The domain task entity to create
-            user_id: User identifier (optional)
-            ip_address: Client IP address (optional)
-            request_id: Request correlation ID (optional)
 
         Returns:
             The UUID of the created task
@@ -48,20 +37,15 @@ class TaskManagementService:
         identifier = await self.repository.add(task)
         logger.info("Task created with UUID: %s", identifier)
 
-        # Audit log the task creation
         AuditLogger.log_task_created(
             task_id=identifier,
             task_type=task.task_type or "unknown",
-            user_id=user_id,
-            ip_address=ip_address,
-            request_id=request_id,
         )
 
         return identifier
 
     async def get_task(self, identifier: str) -> Task | None:
-        """
-        Retrieve a task by its identifier.
+        """Retrieve a task by its identifier.
 
         Args:
             identifier: The UUID of the task to retrieve
@@ -80,8 +64,7 @@ class TaskManagementService:
         return task
 
     async def get_all_tasks(self) -> list[Task]:
-        """
-        Retrieve all tasks from the repository.
+        """Retrieve all tasks from the repository.
 
         Returns:
             List of all task domain entities
@@ -94,19 +77,12 @@ class TaskManagementService:
     async def delete_task(
         self,
         identifier: str,
-        user_id: str | None = None,
-        ip_address: str | None = None,
-        request_id: str | None = None,
         reason: str | None = None,
     ) -> bool:
-        """
-        Delete a task by its identifier.
+        """Delete a task by its identifier.
 
         Args:
             identifier: The UUID of the task to delete
-            user_id: User identifier (optional)
-            ip_address: Client IP address (optional)
-            request_id: Request correlation ID (optional)
             reason: Deletion reason (optional)
 
         Returns:
@@ -117,12 +93,8 @@ class TaskManagementService:
 
         if result:
             logger.info("Task deleted successfully: %s", identifier)
-            # Audit log the task deletion
             AuditLogger.log_task_deleted(
                 task_id=identifier,
-                user_id=user_id,
-                ip_address=ip_address,
-                request_id=request_id,
                 reason=reason,
             )
         else:
@@ -134,19 +106,12 @@ class TaskManagementService:
         self,
         identifier: str,
         update_data: dict[str, Any],
-        user_id: str | None = None,
-        ip_address: str | None = None,
-        request_id: str | None = None,
     ) -> None:
-        """
-        Update task status and related information.
+        """Update task status and related information.
 
         Args:
             identifier: The UUID of the task to update
             update_data: Dictionary of fields to update
-            user_id: User identifier (optional)
-            ip_address: Client IP address (optional)
-            request_id: Request correlation ID (optional)
         """
         logger.debug("Updating task %s with data: %s", identifier, update_data.keys())
         await self.repository.update(identifier, update_data)
@@ -158,7 +123,4 @@ class TaskManagementService:
             AuditLogger.log_task_completed(
                 task_id=identifier,
                 duration=duration,
-                user_id=user_id,
-                ip_address=ip_address,
-                request_id=request_id,
             )
