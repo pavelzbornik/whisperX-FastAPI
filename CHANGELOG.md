@@ -29,7 +29,6 @@
 
 ## [0.4.6](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.5...v0.4.6) (2026-03-13)
 
-
 ### Bug Fixes
 
 * correct YAML list indentation in uvicorn log config ([ea4dc46](https://github.com/pavelzbornik/whisperX-FastAPI/commit/ea4dc46949225e3f6876c77290cf464ed4255d43))

@@ -73,10 +73,14 @@ class MockTranscriptionService:
         self.transcribe_called = True
         self.transcribe_call_count += 1
         self.last_transcribe_params = {
+            "audio": audio,
             "task": task,
+            "asr_options": asr_options,
+            "vad_options": vad_options,
             "language": language,
             "model": model,
             "device": device,
+            "device_index": device_index,
             "batch_size": batch_size,
             "chunk_size": chunk_size,
             "compute_type": compute_type,
@@ -90,29 +94,29 @@ class MockTranscriptionService:
 
     def load_model(
         self,
-        model_name: str,
-        device: str,
-        device_index: int,
-        compute_type: str,
-        asr_options: dict[str, Any],
-        vad_options: dict[str, Any],
-        language: str,
-        task: str,
-        threads: int,
+        _model_name: str,
+        _device: str,
+        _device_index: int,
+        _compute_type: str,
+        _asr_options: dict[str, Any],
+        _vad_options: dict[str, Any],
+        _language: str,
+        _task: str,
+        _threads: int,
     ) -> None:
         """
         Mock model loading - does nothing.
 
         Args:
-            model_name: Model name
-            device: Device
-            device_index: Device index
-            compute_type: Compute type
-            asr_options: ASR options
-            vad_options: VAD options
-            language: Language
-            task: Task type
-            threads: Thread count
+            _model_name: Model name (unused in mock)
+            _device: Device (unused in mock)
+            _device_index: Device index (unused in mock)
+            _compute_type: Compute type (unused in mock)
+            _asr_options: ASR options (unused in mock)
+            _vad_options: VAD options (unused in mock)
+            _language: Language (unused in mock)
+            _task: Task type (unused in mock)
+            _threads: Thread count (unused in mock)
         """
         self.load_model_called = True
 

@@ -1,6 +1,6 @@
 """Main entry point for the FastAPI application."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, MutableMapping
 
 from app.core.warnings_filter import filter_warnings
 
@@ -34,13 +34,33 @@ def _torch_load_compat(*args: Any, **kwargs: Any) -> Any:
 torch.load = _torch_load_compat
 
 import logging  # noqa: E402
+import os  # noqa: E402
 import time  # noqa: E402
+import uuid  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
 from dotenv import load_dotenv  # noqa: E402
 from fastapi import FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
+from starlette.types import ASGIApp, Receive, Scope, Send  # noqa: E402
+
+# Load environment variables from .env early
+load_dotenv()
+
+# Initialize logging configuration as early as possible
+from app.core.logging import configure_logging  # noqa: E402
+
+configure_logging()
+
+from app.core.logging.context import (  # noqa: E402
+    endpoint_var,
+    ip_address_var,
+    request_id_var,
+)
+
+# Get logger for application startup
+logger = logging.getLogger("app")
 
 from app.api import service_router, stt_router, task_router  # noqa: E402
 from app.api.exception_handlers import (  # noqa: E402
@@ -50,7 +70,7 @@ from app.api.exception_handlers import (  # noqa: E402
     task_not_found_handler,
     validation_error_handler,
 )
-from app.core.config import Config  # noqa: E402
+from app.core.config import Config, get_settings  # noqa: E402
 from app.core.container import Container  # noqa: E402
 from app.core.exceptions import (  # noqa: E402
     DomainError,
@@ -61,8 +81,16 @@ from app.core.exceptions import (  # noqa: E402
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
 
-# Load environment variables from .env
-load_dotenv()
+# Log application startup information
+environment = os.getenv("ENVIRONMENT", "production").lower()
+log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+logger.info("Starting whisperX FastAPI application")
+logger.info("Environment: %s", environment)
+logger.info("Log level: %s", log_level)
+settings = get_settings()
+logger.info("Device: %s", settings.whisper.DEVICE)
+logger.info("Compute type: %s", settings.whisper.COMPUTE_TYPE)
+logger.info("Whisper model: %s", settings.whisper.WHISPER_MODEL)
 
 # Create dependency injection container
 container = Container()
@@ -84,17 +112,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     Args:
         app (FastAPI): The FastAPI application instance.
     """
-    logging.info("Application lifespan started - dependency container initialized")
+    logger.info("Application lifespan started - dependency container initialized")
 
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database connection established")
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
+    logger.info("OpenAPI schema and database schema documentation generated")
+
     yield
 
     # Clean up container on shutdown
-    logging.info("Shutting down application")
+    logger.info("Shutting down application")
     # Dispose both engine pools so connections are not reused across event loops
     # (e.g. between test modules that each create a TestClient context).
     # sync_engine uses QueuePool for PostgreSQL; disposing prevents connection leaks.
@@ -166,6 +197,60 @@ app.include_router(task_router)
 app.include_router(service_router)
 
 
+class RequestContextMiddleware:
+    """Pure ASGI middleware that sets request-scoped context vars.
+
+    Implemented as a raw ASGI middleware (not ``BaseHTTPMiddleware``) to
+    guarantee correct ``contextvars`` propagation to downstream handlers
+    and background tasks.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        """Initialise with the wrapped ASGI application.
+
+        Args:
+            app: The next ASGI application in the stack.
+        """
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Set context vars for HTTP requests, then call the inner app.
+
+        Args:
+            scope: ASGI connection scope.
+            receive: ASGI receive callable.
+            send: ASGI send callable.
+        """
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        rid = headers.get(b"x-request-id", b"").decode() or str(uuid.uuid4())
+        request_id_var.set(rid)
+
+        client = scope.get("client")
+        ip_address_var.set(client[0] if client else "unknown")
+        endpoint_var.set(scope.get("path", ""))
+
+        async def send_with_request_id(message: MutableMapping[str, Any]) -> None:
+            if message["type"] == "http.response.start":
+                existing_headers = list(message.get("headers", []))
+                filtered_headers = [
+                    (name, value)
+                    for name, value in existing_headers
+                    if name.lower() != b"x-request-id"
+                ]
+                filtered_headers.append((b"x-request-id", rid.encode()))
+                message["headers"] = filtered_headers
+            await send(message)
+
+        await self.app(scope, receive, send_with_request_id)
+
+
+app.add_middleware(RequestContextMiddleware)
+
+
 @app.get("/", include_in_schema=False)
 async def index() -> RedirectResponse:
     """Redirect to the documentation."""
@@ -224,7 +309,7 @@ async def readiness_check() -> JSONResponse:
             },
         )
     except Exception:
-        logging.exception("Readiness check failed:")
+        logger.exception("Readiness check failed:")
 
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
