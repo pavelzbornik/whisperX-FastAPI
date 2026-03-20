@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.7...v0.5.0) (2026-03-20)
+
+
+### Features
+
+* **docker:** multi-stage Dockerfile with dedicated dev stage ([507717e](https://github.com/pavelzbornik/whisperX-FastAPI/commit/507717e57f768c66714887f41f6b1c7aa9ebe0d2))
+
+
+### Bug Fixes
+
+* address PR review comments ([20a44e4](https://github.com/pavelzbornik/whisperX-FastAPI/commit/20a44e4437d4bcfc9a29e634673ed327de94edd1))
+* **ci:** always apply latest Docker tag on release events ([945e21f](https://github.com/pavelzbornik/whisperX-FastAPI/commit/945e21fd0cd6b12b1912037dd8837b7e5d585fb1))
+* pin attest-build-provenance to SHA and sync ruff to 0.15.7 ([48986d6](https://github.com/pavelzbornik/whisperX-FastAPI/commit/48986d6011bd83631aa967b820ba48a4dd1b7666))
+* **test:** use failure-rate threshold in write-path load test ([1a397ea](https://github.com/pavelzbornik/whisperX-FastAPI/commit/1a397ea2e04ee4a990fbcf91b463dd76dcd9ad5d))
+
 ## [0.4.7](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.6...v0.4.7) (2026-03-19)
 
 
