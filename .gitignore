@@ -15,3 +15,4 @@ pytest-report.xml
 docs/stories/
 .devcontainer/.env
 load_results/
+.task/
