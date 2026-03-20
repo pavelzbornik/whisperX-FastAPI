@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+vars:
+  CTRANSLATE2_VERSION: "4.6.0"
+  COVERAGE_THRESHOLD: "80"
+includes:
+  docker: ./taskfiles/Docker.yml
+  devcontainer: ./taskfiles/Devcontainer.yml
+tasks:
+  # === Dependency Management ===
+  deps:
+    desc: Install all dependencies (including dev extras)
+    cmds:
+      - uv sync --all-extras
+      - uv pip install ctranslate2=={{.CTRANSLATE2_VERSION}} --system
+    sources:
+      - pyproject.toml
+      - uv.lock
+  deps:prod:
+    desc: Install production dependencies only
+    cmds:
+      - uv sync --no-dev
+      - uv pip install ctranslate2=={{.CTRANSLATE2_VERSION}} --system
+  deps:lock:
+    desc: Regenerate uv.lock after editing pyproject.toml
+    cmds:
+      - uv lock
+      - uv sync --all-extras
+  # === Code Quality ===
+  lint:
+    desc: Run ruff linter with auto-fix
+    cmds:
+      - uv run ruff check --fix .
+  format:
+    desc: Format code with ruff
+    cmds:
+      - uv run ruff format .
+  typecheck:
+    desc: Run mypy type checking
+    cmds:
+      - uv run mypy app/
+  check:
+    desc: Run all code quality checks (lint + format + typecheck)
+    cmds:
+      - task: lint
+      - task: format
+      - task: typecheck
+  pre-commit:
+    desc: Run all pre-commit hooks
+    cmds:
+      - uv run pre-commit run --all-files
+  # === Testing ===
+  test:
+    desc: Run all tests with coverage
+    cmds:
+      - uv run pytest --cov=app --cov-report=term --cov-fail-under={{.COVERAGE_THRESHOLD}}
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - uv run pytest -m unit
+  test:fast:
+    desc: Run tests excluding slow and load markers
+    cmds:
+      - uv run pytest -m "not slow and not load"
+  test:ci:
+    desc: Run tests as CI does (with XML reports)
+    cmds:
+      - >-
+        uv run pytest -m "not load" --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under={{.COVERAGE_THRESHOLD}}
+  # === Application ===
+  run:
+    desc: Start the application locally with hot reload
+    cmds:
+      - uvicorn app.main:app --reload --log-config app/uvicorn_log_conf.yaml

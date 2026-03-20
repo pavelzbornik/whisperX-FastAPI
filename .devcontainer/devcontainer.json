@@ -11,7 +11,8 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/dhoeric/features/hadolint:1": {},
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers-extra/features/go-task:1": {}
   },
   "customizations": {
     "vscode": {
@@ -31,10 +32,9 @@
       ]
     }
   },
-  "postCreateCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-create.sh",
-  "postAttachCommand": "chmod +x /workspaces/whisperX-FastAPI/.devcontainer/post-attach.sh && /workspaces/whisperX-FastAPI/.devcontainer/post-attach.sh",
+  "postCreateCommand": "task devcontainer:setup",
+  "postAttachCommand": "task devcontainer:attach",
   "remoteUser": "root",
-  "envFile": "${localWorkspaceFolder}/.devcontainer/.env",
   "remoteEnv": {
     "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin",
     "UV_CACHE_DIR": "/workspaces/whisperX-FastAPI/.uv_cache",

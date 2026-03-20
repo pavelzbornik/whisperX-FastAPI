@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+tasks:
+  setup:
+    desc: Full devcontainer initial setup (postCreateCommand)
+    cmds:
+      - task: _fix-plugin-paths
+      - task: _verify-prereqs
+      - task: _wait-for-postgres
+      - task: :deps
+      - task: _setup-git-hooks
+      - task: _install-claude-code
+      - task: _setup-cclaude-alias
+      - task: _ensure-gh-auth
+  attach:
+    desc: DevContainer re-attach sync (postAttachCommand)
+    cmds:
+      - task: _fix-plugin-paths
+      - task: :deps
+  _verify-prereqs:
+    desc: Verify required tools are available
+    internal: true
+    cmds:
+      - echo "Verifying uv is in PATH..."
+      - which uv
+      - echo "Verifying Java installation..."
+      - java -version
+  _wait-for-postgres:
+    desc: Wait for PostgreSQL sidecar (skipped if TEST_DB_URL is unset)
+    internal: true
+    status:
+      - test -z "$TEST_DB_URL"
+    vars:
+      PG_TIMEOUT: 30
+    cmds:
+      - |
+        echo "Waiting for PostgreSQL (timeout: {{.PG_TIMEOUT}}s)..."
+        SECONDS=0
+        until pg_isready -h postgres -U postgres 2>/dev/null; do
+          if [ "$SECONDS" -ge "{{.PG_TIMEOUT}}" ]; then
+            echo "ERROR: PostgreSQL did not become ready within {{.PG_TIMEOUT}}s" >&2
+            exit 1
+          fi
+          sleep 1
+        done
+        echo "PostgreSQL is ready (${SECONDS}s)."
+  _setup-git-hooks:
+    desc: Initialize git and install pre-commit hooks
+    internal: true
+    cmds:
+      - git init
+      - uv run pre-commit install
+      - uv run pre-commit autoupdate || true
+      - uv run pre-commit run --all-files || true
+  _install-claude-code:
+    desc: Install Claude Code CLI via npm
+    internal: true
+    status:
+      - command -v claude
+    cmds:
+      - |
+        if ! command -v npm &>/dev/null; then
+          echo "WARNING: npm not found — skipping Claude Code CLI installation" >&2
+          exit 0
+        fi
+        npm install -g @anthropic-ai/claude-code
+  _fix-plugin-paths:
+    desc: Create symlink so plugin paths from other environments resolve
+    internal: true
+    cmds:
+      - |
+        # Plugin JSON files store absolute paths from whichever environment
+        # installed them. When ~/.claude is bind-mounted from Windows,
+        # paths like /home/vscode/.claude/... won't resolve as root.
+        # Symlink bridges the gap without modifying the shared JSON files.
+        if [ "$HOME" != "/home/vscode" ] && [ ! -e /home/vscode/.claude ]; then
+          mkdir -p /home/vscode
+          ln -s "$HOME/.claude" /home/vscode/.claude
+          echo "Created symlink /home/vscode/.claude → $HOME/.claude"
+        fi
+  _setup-cclaude-alias:
+    desc: Add cclaude alias to bashrc
+    internal: true
+    cmds:
+      - |
+        CCLAUDE_ALIAS='alias cclaude="IS_SANDBOX=1 claude --dangerously-skip-permissions"'
+        grep -qF 'alias cclaude' /root/.bashrc 2>/dev/null || echo "$CCLAUDE_ALIAS" >> /root/.bashrc || true
+  _ensure-gh-auth:
+    desc: Prompt for GitHub CLI authentication if needed
+    internal: true
+    status:
+      - gh auth status
+    cmds:
+      - echo "GitHub CLI not authenticated. Starting interactive login..."
+      - gh auth login

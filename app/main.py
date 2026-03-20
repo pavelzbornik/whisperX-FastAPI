@@ -11,13 +11,15 @@ filter_warnings()
 # These models are loaded from trusted HuggingFace sources, so we restore the
 # pre-2.6 default of weights_only=False for callers that don't set it explicitly.
 import functools  # noqa: E402
+from typing import Any  # noqa: E402
+
 import torch  # noqa: E402
 
 _original_torch_load = torch.load
 
 
 @functools.wraps(_original_torch_load)
-def _torch_load_compat(*args: object, **kwargs: object) -> object:
+def _torch_load_compat(*args: Any, **kwargs: Any) -> Any:
     """Wrap torch.load to default weights_only=False for trusted model files.
 
     PyTorch 2.6 treats weights_only=None as "not set" and defaults to True.

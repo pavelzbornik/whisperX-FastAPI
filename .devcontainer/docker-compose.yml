@@ -4,6 +4,9 @@ services:
       context: ..
       dockerfile: dockerfile
       target: dev
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - ..:/workspaces/whisperX-FastAPI:cached
     entrypoint: ["sleep", "infinity"]
