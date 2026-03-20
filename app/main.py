@@ -70,7 +70,7 @@ from app.api.exception_handlers import (  # noqa: E402
     task_not_found_handler,
     validation_error_handler,
 )
-from app.core.config import Config  # noqa: E402
+from app.core.config import Config, get_settings  # noqa: E402
 from app.core.container import Container  # noqa: E402
 from app.core.exceptions import (  # noqa: E402
     DomainError,
@@ -87,9 +87,10 @@ log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 logger.info("Starting whisperX FastAPI application")
 logger.info("Environment: %s", environment)
 logger.info("Log level: %s", log_level)
-logger.info("Device: %s", Config.DEVICE)
-logger.info("Compute type: %s", Config.COMPUTE_TYPE)
-logger.info("Whisper model: %s", Config.WHISPER_MODEL)
+settings = get_settings()
+logger.info("Device: %s", settings.whisper.DEVICE)
+logger.info("Compute type: %s", settings.whisper.COMPUTE_TYPE)
+logger.info("Whisper model: %s", settings.whisper.WHISPER_MODEL)
 
 # Create dependency injection container
 container = Container()
