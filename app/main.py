@@ -235,9 +235,14 @@ class RequestContextMiddleware:
 
         async def send_with_request_id(message: MutableMapping[str, Any]) -> None:
             if message["type"] == "http.response.start":
-                headers = list(message.get("headers", []))
-                headers.append((b"x-request-id", rid.encode()))
-                message["headers"] = headers
+                existing_headers = list(message.get("headers", []))
+                filtered_headers = [
+                    (name, value)
+                    for name, value in existing_headers
+                    if name.lower() != b"x-request-id"
+                ]
+                filtered_headers.append((b"x-request-id", rid.encode()))
+                message["headers"] = filtered_headers
             await send(message)
 
         await self.app(scope, receive, send_with_request_id)

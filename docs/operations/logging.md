@@ -302,7 +302,7 @@ filter {
 output {
   elasticsearch {
     hosts => ["elasticsearch:9200"]
-    index => "%{[@metadata][index]-%{+YYYY.MM.dd}"
+    index => "%{[@metadata][index]}-%{+YYYY.MM.dd}"
   }
 }
 ```

@@ -3,10 +3,10 @@
 import logging
 from typing import Any
 
-from pythonjsonlogger import jsonlogger
+from pythonjsonlogger.json import JsonFormatter
 
 
-class StructuredJsonFormatter(jsonlogger.JsonFormatter):
+class StructuredJsonFormatter(JsonFormatter):
     """JSON formatter for structured logging in production.
 
     Includes timestamp, level, logger name, message, request_id,

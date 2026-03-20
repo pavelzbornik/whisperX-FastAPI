@@ -126,11 +126,9 @@ class TestConfigureLogging:
     def test_configure_logging_logs_initialization(self) -> None:
         """Test that configure_logging logs initialization message."""
         with patch.dict(os.environ, {"ENVIRONMENT": "testing"}):
-            # Reconfigure to capture log
-            configure_logging()
-
-            logger = logging.getLogger("app")
-            with patch.object(logger, "info") as mock_info:
-                configure_logging()
-                # Should log the environment
-                mock_info.assert_called()
+            with patch("logging.config.dictConfig"):
+                logger = logging.getLogger("app")
+                with patch.object(logger, "info") as mock_info:
+                    configure_logging()
+                    # Should log the environment
+                    mock_info.assert_called()
