@@ -33,6 +33,7 @@ def setup_test_db(
     if not os.environ.get("DB_URL"):
         test_db_file = tmp_path_factory.mktemp("db_dir") / "test.db"
         os.environ["DB_URL"] = f"sqlite:///{test_db_file}"
+    os.environ["ENVIRONMENT"] = "testing"
     os.environ["DEVICE"] = "cpu"
     os.environ["COMPUTE_TYPE"] = "int8"
     os.environ["WHISPER_MODEL"] = "tiny"
