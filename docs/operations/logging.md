@@ -16,13 +16,14 @@ The application uses a consolidated, environment-aware logging system that provi
 
 ### Directory Structure
 
-```
+```text
 app/core/logging/
 ├── __init__.py                 # Module exports and logger instance
 ├── audit_events.py             # Audit event types and dataclass
 ├── audit_logger.py             # Audit logging facade
 ├── base_config.py              # Base logging configuration
 ├── config_builder.py           # Dynamic configuration builder
+├── context.py                  # Request-scoped context (contextvars)
 ├── dev_config.py               # Development environment config
 ├── formatters.py               # Custom log formatters
 ├── prod_config.py              # Production environment config
@@ -63,7 +64,7 @@ Optimized for local development:
 
 **Example output:**
 
-```
+```text
 14:30:15 - app.services.task_management_service - INFO - Task created with UUID: abc-123
 14:30:15 - audit - INFO - Audit: create on task/abc-123
 ```
@@ -110,7 +111,7 @@ Minimizes noise during test execution:
 ### Configuration Variables
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| --- | --- | --- |
 | `ENVIRONMENT` | `production` | Environment name: development, testing, production |
 | `LOG_LEVEL` | env-specific | Override log level: DEBUG, INFO, WARNING, ERROR |
 | `LOGS_DIR` | `logs` | Directory for log files (production only) |
@@ -133,7 +134,7 @@ export LOGS_DIR=/var/log/whisperx
 
 ## Audit Logging
 
-### Overview
+### Audit System
 
 The audit logging system provides a comprehensive trail of security-relevant events for compliance and troubleshooting.
 
@@ -158,7 +159,7 @@ class AuditEventType(str, Enum):
 Every audit event includes:
 
 | Field | Type | Description |
-|-------|------|-------------|
+| --- | --- | --- |
 | `event_type` | `AuditEventType` | Type of event |
 | `resource_type` | `str` | Resource being accessed (e.g., "task", "file") |
 | `resource_id` | `str` | Unique identifier for the resource |
@@ -176,13 +177,10 @@ Every audit event includes:
 ```python
 from app.core.logging.audit_logger import AuditLogger
 
-# Log task creation
+# Log task creation (user_id, ip_address, request_id come from request context)
 AuditLogger.log_task_created(
     task_id="task-123",
     task_type="transcription",
-    user_id="user-456",
-    ip_address="192.168.1.1",
-    request_id="req-789"
 )
 
 # Log file upload
@@ -190,7 +188,6 @@ AuditLogger.log_file_uploaded(
     file_name="audio.mp3",
     file_size=1024000,
     content_type="audio/mpeg",
-    user_id="user-456"
 )
 ```
 
@@ -200,23 +197,17 @@ AuditLogger.log_file_uploaded(
 from app.core.logging.audit_logger import AuditLogger
 
 class TaskManagementService:
-    def create_task(
-        self,
-        task: Task,
-        user_id: Optional[str] = None,
-        ip_address: Optional[str] = None,
-        request_id: Optional[str] = None,
-    ) -> str:
-        """Create a new task with audit logging."""
+    def create_task(self, task: Task) -> str:
+        """Create a new task with audit logging.
+
+        Request context (user_id, ip_address, request_id) is read
+        automatically from contextvars set by the middleware.
+        """
         identifier = self.repository.add(task)
 
-        # Audit log the creation
         AuditLogger.log_task_created(
             task_id=identifier,
             task_type=task.task_type,
-            user_id=user_id,
-            ip_address=ip_address,
-            request_id=request_id,
         )
 
         return identifier
@@ -247,7 +238,7 @@ class TaskManagementService:
 
 #### Development (Human-Readable)
 
-```
+```text
 14:30:00 - audit - INFO - Audit: create on task/abc-123
 ```
 
@@ -258,7 +249,7 @@ class TaskManagementService:
 When `ENVIRONMENT=production`, logs are written to files in the `LOGS_DIR` (default: `logs/`):
 
 | File | Purpose | Max Size | Backups | Retention |
-|------|---------|----------|---------|-----------|
+| --- | --- | --- | --- | --- |
 | `app.log` | Application logs | 10 MB | 5 | ~50 MB total |
 | `audit.log` | Audit trail | 50 MB | 10 | ~500 MB total |
 
