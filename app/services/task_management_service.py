@@ -147,9 +147,12 @@ class TaskManagementService:
             "duration": duration,
         }
         if additional_update_data is not None:
-            additional_update_data.pop("status", None)
-            additional_update_data.pop("duration", None)
-            update_data.update(additional_update_data)
+            extras = {
+                k: v
+                for k, v in additional_update_data.items()
+                if k not in ("status", "duration")
+            }
+            update_data.update(extras)
 
         logger.debug(
             "Marking task %s as completed with data: %s",
