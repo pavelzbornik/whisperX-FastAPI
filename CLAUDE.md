@@ -13,54 +13,58 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
+All developer commands are defined in `Taskfile.yml` (with includes in `taskfiles/`).
+Run `task --list` to see all available tasks. [go-task](https://taskfile.dev/) is
+installed automatically via the devcontainer feature.
+
 ### Install dependencies
 
 ```bash
-uv sync --all-extras   # includes dev tools (linters, tests)
-uv sync --no-dev       # production only
+task deps              # includes dev tools (linters, tests)
+task deps:prod         # production only
 ```
 
 ### Run locally
 
 ```bash
-uvicorn app.main:app --reload --log-config app/uvicorn_log_conf.yaml
+task run
 ```
 
 ### Run with Docker
 
 ```bash
-./start.sh             # quick restart with logs
-docker-compose up -d
+task docker:restart    # stop, start, follow logs
+task docker:up         # start in background
+task docker:down       # stop
+task docker:logs       # follow logs
 ```
 
 ### Test
 
 ```bash
-# All tests with coverage (CI requires ≥80%)
-uv run pytest --cov=app --cov-report=term --cov-fail-under=80
+task test              # all tests with coverage (CI requires ≥80%)
+task test:unit         # unit tests only
+task test:fast         # exclude slow and load markers
+task test:ci           # full CI command with XML reports
 
-# Single test file
+# Single test file (use uv directly)
 uv run pytest tests/unit/domain/entities/test_task.py
-
-# By marker (unit/integration/e2e/slow)
-uv run pytest -m unit
-uv run pytest -m "not slow"
 ```
 
 ### Lint and format
 
 ```bash
-uv run ruff check --fix .
-uv run ruff format .
-uv run mypy app/           # must show: Success: no issues found
-uv run pre-commit run --all-files
+task lint              # ruff check --fix
+task format            # ruff format
+task typecheck         # mypy app/
+task check             # all three sequentially
+task pre-commit        # run all pre-commit hooks
 ```
 
 ### Dependency changes
 
 ```bash
-uv lock                # regenerate uv.lock after editing pyproject.toml
-uv sync --all-extras   # test install
+task deps:lock         # regenerate uv.lock + sync
 ```
 
 ## Architecture

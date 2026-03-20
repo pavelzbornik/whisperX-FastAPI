@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+tasks:
+  up:
+    desc: Start production containers
+    cmds:
+      - docker compose up -d
+  down:
+    desc: Stop production containers
+    cmds:
+      - docker compose down
+  restart:
+    desc: Restart production containers and follow logs
+    cmds:
+      - docker compose down
+      - docker compose up -d
+      - docker compose logs -f
+  logs:
+    desc: Follow production container logs
+    cmds:
+      - docker compose logs -f
