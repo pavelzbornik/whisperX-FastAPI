@@ -122,7 +122,12 @@ class TaskManagementService:
 
         # If task is being marked as completed, audit log it
         if update_data.get("status") == "completed":
-            duration = update_data.get("duration", 0.0)
+            raw_duration = update_data.get("duration", 0.0)
+            duration = (
+                float(raw_duration)
+                if isinstance(raw_duration, int | float) and raw_duration >= 0
+                else 0.0
+            )
             AuditLogger.log_task_completed(
                 task_id=identifier,
                 duration=duration,
@@ -131,7 +136,7 @@ class TaskManagementService:
     async def mark_task_completed(
         self,
         identifier: str,
-        duration: float = 0.0,
+        duration: float = 0.0,  # clamped to 0.0 if negative
         additional_update_data: dict[str, Any] | None = None,
     ) -> None:
         """Mark a task as completed with guaranteed audit logging.
@@ -145,6 +150,7 @@ class TaskManagementService:
             duration: Task duration in seconds
             additional_update_data: Extra fields to update alongside status
         """
+        duration = max(0.0, duration)
         update_data: dict[str, Any] = {
             "status": "completed",
             "duration": duration,
