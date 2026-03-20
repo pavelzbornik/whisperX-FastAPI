@@ -28,10 +28,21 @@ class RequestContextFilter(logging.Filter):
         Returns:
             Always ``True`` — this filter never suppresses records.
         """
-        record.request_id = request_id_var.get()
-        record.user_id = user_id_var.get()
-        record.ip_address = ip_address_var.get()
-        record.endpoint = endpoint_var.get()
+        request_id = request_id_var.get()
+        if request_id is not None or not hasattr(record, "request_id"):
+            record.request_id = request_id
+
+        user_id = user_id_var.get()
+        if user_id is not None or not hasattr(record, "user_id"):
+            record.user_id = user_id
+
+        ip_address = ip_address_var.get()
+        if ip_address is not None or not hasattr(record, "ip_address"):
+            record.ip_address = ip_address
+
+        endpoint = endpoint_var.get()
+        if endpoint is not None or not hasattr(record, "endpoint"):
+            record.endpoint = endpoint
         return True
 
 

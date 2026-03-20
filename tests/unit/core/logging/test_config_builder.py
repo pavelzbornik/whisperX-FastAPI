@@ -100,6 +100,18 @@ class TestConfigureLogging:
                     # Should not create logs directory in development
                     mock_makedirs.assert_not_called()
 
+    def test_configure_logging_creates_logs_dir_for_staging(self) -> None:
+        """Test that configure_logging creates logs dir for staging (uses prod config)."""
+        with patch.dict(
+            os.environ, {"ENVIRONMENT": "staging", "LOGS_DIR": "/tmp/test_logs"}
+        ):
+            with patch("os.makedirs") as mock_makedirs:
+                with patch("logging.config.dictConfig"):
+                    configure_logging()
+                    mock_makedirs.assert_called_once_with(
+                        "/tmp/test_logs", exist_ok=True
+                    )
+
     def test_configure_logging_applies_config(self) -> None:
         """Test that configure_logging applies the logging configuration."""
         with patch.dict(os.environ, {"ENVIRONMENT": "testing"}):

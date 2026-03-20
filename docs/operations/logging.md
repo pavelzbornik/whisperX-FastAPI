@@ -343,17 +343,19 @@ config["handlers"]["google_cloud"] = {
 
 ## Querying Logs
 
-### Development (Text Logs)
+### Development (Console Logs)
+
+In development, logs are written to the console (stdout/stderr) only — no
+`logs/` directory is created. Use standard tools to filter output:
 
 ```bash
-# Tail application logs
-tail -f logs/app.log
+# Run the application and view logs directly in the terminal
+task run
 
-# Search for specific task
-grep "task-123" logs/app.log
-
-# Show errors only
-grep '"level":"ERROR"' logs/app.log
+# Filter console output in a separate terminal
+# (pipe stdout of the running process)
+#   ... 2>&1 | grep "task-123"
+#   ... 2>&1 | grep "ERROR"
 ```
 
 ### Production (JSON Logs)

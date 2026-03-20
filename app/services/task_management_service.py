@@ -124,3 +124,40 @@ class TaskManagementService:
                 task_id=identifier,
                 duration=duration,
             )
+
+    async def mark_task_completed(
+        self,
+        identifier: str,
+        duration: float = 0.0,
+        additional_update_data: dict[str, Any] | None = None,
+    ) -> None:
+        """Mark a task as completed with guaranteed audit logging.
+
+        Background processing services should call this method instead of
+        updating the repository directly to ensure task completion is
+        always audited consistently.
+
+        Args:
+            identifier: The UUID of the task to update
+            duration: Task duration in seconds
+            additional_update_data: Extra fields to update alongside status
+        """
+        update_data: dict[str, Any] = {
+            "status": "completed",
+            "duration": duration,
+        }
+        if additional_update_data is not None:
+            update_data.update(additional_update_data)
+
+        logger.debug(
+            "Marking task %s as completed with data: %s",
+            identifier,
+            update_data.keys(),
+        )
+        await self.repository.update(identifier, update_data)
+        logger.info("Task marked as completed: %s", identifier)
+
+        AuditLogger.log_task_completed(
+            task_id=identifier,
+            duration=duration,
+        )

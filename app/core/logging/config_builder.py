@@ -56,15 +56,15 @@ def configure_logging() -> None:
 
     This function should be called early in the application startup,
     before any logging occurs. It:
-    1. Creates the logs directory if needed (for production)
+    1. Creates the logs directory if needed (for production-like environments)
     2. Loads the appropriate configuration
     3. Applies the configuration using dictConfig
     """
-    # Create logs directory if it doesn't exist (for production)
+    # Create logs directory for environments that use file handlers
     logs_dir = os.getenv("LOGS_DIR", "logs")
     environment = os.getenv("ENVIRONMENT", "production").lower()
 
-    if environment == "production":
+    if environment not in ("development", "testing"):
         os.makedirs(logs_dir, exist_ok=True)
 
     # Get and apply configuration

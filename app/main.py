@@ -1,6 +1,6 @@
 """Main entry point for the FastAPI application."""
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, MutableMapping
 
 from app.core.warnings_filter import filter_warnings
 
@@ -40,14 +40,10 @@ import uuid  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
 from dotenv import load_dotenv  # noqa: E402
-from fastapi import FastAPI, Request, status  # noqa: E402
+from fastapi import FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
 from sqlalchemy import text  # noqa: E402
-from starlette.middleware.base import (  # noqa: E402
-    BaseHTTPMiddleware,
-    RequestResponseEndpoint,
-)
-from starlette.responses import Response as StarletteResponse  # noqa: E402
+from starlette.types import ASGIApp, Receive, Scope, Send  # noqa: E402
 
 # Load environment variables from .env early
 load_dotenv()
@@ -116,10 +112,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         app (FastAPI): The FastAPI application instance.
     """
     logger.info("Application lifespan started - dependency container initialized")
-    logger.info("Database connection established")
 
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database connection established")
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
@@ -200,29 +196,50 @@ app.include_router(task_router)
 app.include_router(service_router)
 
 
-class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Set request-scoped context vars for structured logging."""
+class RequestContextMiddleware:
+    """Pure ASGI middleware that sets request-scoped context vars.
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> StarletteResponse:
-        """Populate context vars from the incoming request.
+    Implemented as a raw ASGI middleware (not ``BaseHTTPMiddleware``) to
+    guarantee correct ``contextvars`` propagation to downstream handlers
+    and background tasks.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        """Initialise with the wrapped ASGI application.
 
         Args:
-            request: The incoming HTTP request.
-            call_next: The next middleware or route handler.
-
-        Returns:
-            The HTTP response.
+            app: The next ASGI application in the stack.
         """
-        rid = request.headers.get("X-Request-ID") or str(uuid.uuid4())
-        request_id_var.set(rid)
-        ip_address_var.set(request.client.host if request.client else "unknown")
-        endpoint_var.set(request.url.path)
+        self.app = app
 
-        response = await call_next(request)
-        response.headers["X-Request-ID"] = rid
-        return response
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Set context vars for HTTP requests, then call the inner app.
+
+        Args:
+            scope: ASGI connection scope.
+            receive: ASGI receive callable.
+            send: ASGI send callable.
+        """
+        if scope["type"] not in ("http", "websocket"):
+            await self.app(scope, receive, send)
+            return
+
+        headers = dict(scope.get("headers", []))
+        rid = headers.get(b"x-request-id", b"").decode() or str(uuid.uuid4())
+        request_id_var.set(rid)
+
+        client = scope.get("client")
+        ip_address_var.set(client[0] if client else "unknown")
+        endpoint_var.set(scope.get("path", ""))
+
+        async def send_with_request_id(message: MutableMapping[str, Any]) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((b"x-request-id", rid.encode()))
+                message["headers"] = headers
+            await send(message)
+
+        await self.app(scope, receive, send_with_request_id)
 
 
 app.add_middleware(RequestContextMiddleware)

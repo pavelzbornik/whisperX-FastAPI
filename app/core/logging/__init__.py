@@ -14,8 +14,8 @@ from app.core.logging.audit_logger import AuditLogger
 from app.core.logging.config_builder import configure_logging, get_logging_config
 from app.core.logging.context import RequestContextFilter, get_request_context
 
-# Get the logger for backward compatibility
-logger = logging.getLogger("whisperX")
+# Application-level logger — "whisperX" is reserved for the ML library itself
+logger = logging.getLogger("app")
 
 __all__ = [
     "AuditLogger",
