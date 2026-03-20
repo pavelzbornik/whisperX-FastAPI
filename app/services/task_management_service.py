@@ -109,6 +109,9 @@ class TaskManagementService:
     ) -> None:
         """Update task status and related information.
 
+        For completing tasks, prefer :meth:`mark_task_completed` which
+        guarantees accurate audit logging with duration data.
+
         Args:
             identifier: The UUID of the task to update
             update_data: Dictionary of fields to update
