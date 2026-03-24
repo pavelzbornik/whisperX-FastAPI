@@ -220,43 +220,45 @@ class FileService:
         filename, url_extension = FileService._try_parse_url_extension(url)
 
         try:
-            session = requests.Session()
-            session.max_redirects = 10
+            with requests.Session() as session:
+                session.max_redirects = 10
 
-            # Validate each redirect target against SSRF rules
-            def _check_redirect(
-                response: requests.Response, *args: object, **kwargs: object
-            ) -> None:  # noqa: ARG001
-                if response.is_redirect:
-                    location = response.headers.get("Location", "")
-                    if location:
-                        absolute_url = urljoin(str(response.url), location)
-                        validate_url(absolute_url)
+                # Validate each redirect target against SSRF rules
+                def _check_redirect(
+                    response: requests.Response, *args: object, **kwargs: object
+                ) -> None:  # noqa: ARG001
+                    if response.is_redirect:
+                        location = response.headers.get("Location", "")
+                        if location:
+                            absolute_url = urljoin(str(response.url), location)
+                            validate_url(absolute_url)
 
-            session.hooks["response"].append(_check_redirect)
+                session.hooks["response"].append(_check_redirect)
 
-            # codeql[py/full-ssrf] URL validated by validate_url() above
-            with session.get(url, stream=True, timeout=30) as response:
-                response.raise_for_status()
+                # codeql[py/full-ssrf] URL validated by validate_url() above
+                with session.get(url, stream=True, timeout=30) as response:
+                    response.raise_for_status()
 
-                # Resolve final filename and extension
-                final_filename, safe_suffix = FileService._resolve_extension(
-                    filename, response, url_extension
-                )
+                    # Resolve final filename and extension
+                    final_filename, safe_suffix = FileService._resolve_extension(
+                        filename, response, url_extension
+                    )
 
-                # Save the file to a temporary location
-                temp_audio_file = NamedTemporaryFile(suffix=safe_suffix, delete=False)
-                for chunk in response.iter_content(chunk_size=8192):
-                    temp_audio_file.write(chunk)
-                temp_audio_file.close()
+                    # Save the file to a temporary location
+                    temp_audio_file = NamedTemporaryFile(
+                        suffix=safe_suffix, delete=False
+                    )
+                    for chunk in response.iter_content(chunk_size=8192):
+                        temp_audio_file.write(chunk)
+                    temp_audio_file.close()
 
-                logger.info(
-                    "File downloaded successfully: %s -> %s",
-                    url,
-                    temp_audio_file.name,
-                )
+                    logger.info(
+                        "File downloaded successfully: %s -> %s",
+                        url,
+                        temp_audio_file.name,
+                    )
 
-                return temp_audio_file.name, final_filename
+                    return temp_audio_file.name, final_filename
 
         except requests.RequestException as e:
             logger.error("Failed to download file from URL %s: %s", url, str(e))

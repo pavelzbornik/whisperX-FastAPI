@@ -151,6 +151,8 @@ class TestFileService:
 
         mock_session = mock.MagicMock()
         mock_session.get.return_value = mock_response
+        mock_session.__enter__ = mock.MagicMock(return_value=mock_session)
+        mock_session.__exit__ = mock.MagicMock(return_value=False)
 
         with mock.patch("app.services.file_service.validate_url"):
             with mock.patch(
