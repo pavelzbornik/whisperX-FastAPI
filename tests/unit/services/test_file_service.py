@@ -116,18 +116,32 @@ class TestFileService:
             os.unlink(temp_file.name)
 
     def test_download_from_url_invalid_extension_raises_error(self) -> None:
-        """Test download_from_url raises error for invalid extension."""
-        # Mock the requests.get to avoid network calls
+        """Test download_from_url raises error for invalid extension before HTTP request."""
         import unittest.mock as mock
 
-        # Create a mock response with invalid extension
-        mock_response = mock.MagicMock()
-        mock_response.headers.get.return_value = None
+        from app.core.exceptions import UnsupportedFileExtensionError
 
-        with mock.patch("app.services.file_service.requests.get") as mock_get:
-            mock_get.return_value.__enter__.return_value = mock_response
+        with mock.patch("app.services.file_service.validate_url"):
+            with mock.patch("app.services.file_service.requests.get") as mock_get:
+                url = "https://example.com/test.txt"
+                with pytest.raises(UnsupportedFileExtensionError):
+                    FileService.download_from_url(url)
+                # requests.get should NOT have been called
+                mock_get.assert_not_called()
 
-            # Use a URL with invalid extension
-            url = "https://example.com/test.txt"
-            with pytest.raises(ValueError, match="Invalid file extension"):
-                FileService.download_from_url(url)
+    def test_download_from_url_ssrf_blocked_raises_error(self) -> None:
+        """Test download_from_url raises SsrfBlockedError for blocked URLs."""
+        import unittest.mock as mock
+
+        from app.core.exceptions import SsrfBlockedError
+
+        with mock.patch(
+            "app.services.file_service.validate_url",
+            side_effect=SsrfBlockedError(
+                url="http://127.0.0.1/test.mp3", reason="blocked"
+            ),
+        ):
+            with mock.patch("app.services.file_service.requests.get") as mock_get:
+                with pytest.raises(SsrfBlockedError):
+                    FileService.download_from_url("http://127.0.0.1/test.mp3")
+                mock_get.assert_not_called()

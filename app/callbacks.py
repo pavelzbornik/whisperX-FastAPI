@@ -10,6 +10,7 @@ from pydantic import HttpUrl
 
 from app.core.config import get_settings
 from app.core.logging import logger
+from app.core.url_validator import validate_url
 
 
 def validate_callback_url(callback_url: str) -> bool:
@@ -23,6 +24,7 @@ def validate_callback_url(callback_url: str) -> bool:
         bool: True if the URL is reachable, False otherwise
     """
     try:
+        validate_url(callback_url)
         with httpx.Client(
             timeout=float(get_settings().callback.CALLBACK_TIMEOUT)
         ) as client:
@@ -101,6 +103,9 @@ def post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
     max_retries = get_settings().callback.CALLBACK_MAX_RETRIES
 
     serialized_payload = _serialize_datetime(payload)
+
+    # Validate URL before sending callback (defense in depth — DNS could change)
+    validate_url(callback_url)
 
     for attempt in range(max_retries):
         try:

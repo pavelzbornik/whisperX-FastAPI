@@ -3,12 +3,15 @@
 import os
 import re
 from tempfile import NamedTemporaryFile
+from urllib.parse import urlparse
 
 import requests
 from fastapi import HTTPException, UploadFile
 
-from app.core.config import Config
+from app.core.config import get_settings
+from app.core.exceptions import FileDownloadError, UnsupportedFileExtensionError
 from app.core.logging import logger
+from app.core.url_validator import validate_url
 
 
 class FileService:
@@ -109,9 +112,53 @@ class FileService:
         return temp_file.name
 
     @staticmethod
-    def download_from_url(url: str) -> tuple[str, str]:
+    def _validate_url_extension(url: str) -> tuple[str, str]:
+        """Validate URL file extension before making an HTTP request.
+
+        Args:
+            url: The URL to validate
+
+        Returns:
+            Tuple of (filename, canonical_extension)
+
+        Raises:
+            UnsupportedFileExtensionError: If the file extension is not allowed
         """
-        Download a file from a URL to a temporary location.
+        # Extract filename from URL path
+        url_path = urlparse(url).path
+        filename = os.path.basename(url_path)
+        if filename:
+            filename = FileService.secure_filename(filename)
+
+        _, ext_candidate = os.path.splitext(filename)
+        ext_candidate = ext_candidate.lower().strip()
+
+        allowed = get_settings().whisper.ALLOWED_EXTENSIONS
+        extension_to_suffix = {ext.lower().lstrip("."): ext for ext in allowed}
+
+        if not ext_candidate or not ext_candidate.startswith("."):
+            raise UnsupportedFileExtensionError(
+                filename=filename or url,
+                extension=ext_candidate or "(none)",
+                allowed=allowed,
+            )
+
+        ext_clean = ext_candidate[1:]
+        if ext_clean not in extension_to_suffix:
+            raise UnsupportedFileExtensionError(
+                filename=filename,
+                extension=ext_candidate,
+                allowed=allowed,
+            )
+
+        return filename, extension_to_suffix[ext_clean]
+
+    @staticmethod
+    def download_from_url(url: str) -> tuple[str, str]:
+        """Download a file from a URL to a temporary location.
+
+        Validates the URL against SSRF rules and checks the file extension
+        BEFORE making any HTTP request.
 
         Args:
             url: URL of the file to download
@@ -120,43 +167,51 @@ class FileService:
             Tuple of (temp_file_path, original_filename)
 
         Raises:
-            ValueError: If the URL is invalid or file extension is not allowed
-            HTTPException: If download fails
+            SsrfBlockedError: If the URL is blocked by SSRF protection
+            UnsupportedFileExtensionError: If the file extension is not allowed
+            FileDownloadError: If the download fails
         """
         logger.info("Downloading file from URL: %s", url)
 
+        # Validate URL against SSRF rules BEFORE making any request
+        validate_url(url)
+
+        # Validate extension from URL BEFORE making any request
+        filename, safe_suffix = FileService._validate_url_extension(url)
+
         try:
-            with requests.get(url, stream=True, timeout=30) as response:
+            session = requests.Session()
+            session.max_redirects = 10
+
+            # Validate each redirect target against SSRF rules
+            def _check_redirect(
+                response: requests.Response, *args: object, **kwargs: object
+            ) -> None:  # noqa: ARG001
+                if response.is_redirect:
+                    location = response.headers.get("Location", "")
+                    if location:
+                        validate_url(location)
+
+            session.hooks["response"].append(_check_redirect)
+
+            with session.get(url, stream=True, timeout=30) as response:
                 response.raise_for_status()
 
                 # Check for filename in Content-Disposition header
                 content_disposition = response.headers.get("Content-Disposition")
                 if content_disposition and "filename=" in content_disposition:
-                    filename = content_disposition.split("filename=")[1].strip('"')
-                else:
-                    # Fall back to extracting from the URL path
-                    filename = os.path.basename(url)
-                    filename = FileService.secure_filename(filename)
-
-                # Get the file extension
-                _, ext_candidate = os.path.splitext(filename)
-                ext_candidate = ext_candidate.lower().strip()
-
-                # Validate extension format
-                if not ext_candidate or not ext_candidate.startswith("."):
-                    raise ValueError(f"Invalid file extension: {ext_candidate}")
-
-                ext_clean = ext_candidate[1:]  # remove leading dot for lookup
-
-                # Map to canonical extension from allowed set
-                extension_to_suffix = {
-                    ext.lower().lstrip("."): ext for ext in Config.ALLOWED_EXTENSIONS
-                }
-                if ext_clean not in extension_to_suffix:
-                    raise ValueError(f"Invalid file extension: {ext_candidate}")
-
-                # Use the canonical extension from allowed set
-                safe_suffix = extension_to_suffix[ext_clean]
+                    cd_filename = content_disposition.split("filename=")[1].strip('"')
+                    cd_filename = FileService.secure_filename(cd_filename)
+                    # Validate Content-Disposition extension too (defense in depth)
+                    _, cd_ext = os.path.splitext(cd_filename)
+                    allowed = get_settings().whisper.ALLOWED_EXTENSIONS
+                    extension_to_suffix = {
+                        ext.lower().lstrip("."): ext for ext in allowed
+                    }
+                    cd_ext_clean = cd_ext.lower().strip().lstrip(".")
+                    if cd_ext_clean in extension_to_suffix:
+                        filename = cd_filename
+                        safe_suffix = extension_to_suffix[cd_ext_clean]
 
                 # Save the file to a temporary location
                 temp_audio_file = NamedTemporaryFile(suffix=safe_suffix, delete=False)
@@ -174,7 +229,4 @@ class FileService:
 
         except requests.RequestException as e:
             logger.error("Failed to download file from URL %s: %s", url, str(e))
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to download file from URL: {str(e)}",
-            )
+            raise FileDownloadError(url=url, original_error=e)
