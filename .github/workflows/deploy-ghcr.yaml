@@ -2,15 +2,7 @@ name: Deploy to GHCR
 on:
   release:
     types: [published]
-# Elevated permissions for the reusable CI.yaml workflow:
-# - contents: write — CI lint job git operations
-# - pull-requests: write — CI lint job may comment on PRs
-# - security-events: write — CI build job uploads SARIF reports
-permissions:
-  contents: write
-  packages: write
-  pull-requests: write
-  security-events: write
+permissions: {}
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -18,6 +10,10 @@ jobs:
   ci:
     uses: ./.github/workflows/CI.yaml
     secrets: inherit
+    permissions:
+      contents: write # CI lint job git operations
+      pull-requests: write # CI lint/test/build PR failure comments
+      security-events: write # CI build job uploads SARIF reports
   deploy:
     name: Build and Push to GHCR
     runs-on: ubuntu-latest
