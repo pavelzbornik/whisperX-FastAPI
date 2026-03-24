@@ -65,6 +65,8 @@ class MockAlignmentService:
         self.align_called = True
         self.align_call_count += 1
         self.last_align_params = {
+            "transcript": transcript,
+            "audio": audio,
             "language_code": language_code,
             "device": device,
             "align_model": align_model,
@@ -78,15 +80,15 @@ class MockAlignmentService:
         return self.mock_result
 
     def load_model(
-        self, language_code: str, device: str, model_name: str | None = None
+        self, _language_code: str, _device: str, _model_name: str | None = None
     ) -> None:
         """
         Mock model loading - does nothing.
 
         Args:
-            language_code: Language code
-            device: Device
-            model_name: Model name
+            _language_code: Language code (unused in mock)
+            _device: Device (unused in mock)
+            _model_name: Model name (unused in mock)
         """
         self.load_model_called = True
 

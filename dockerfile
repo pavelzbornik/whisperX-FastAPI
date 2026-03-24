@@ -66,7 +66,6 @@ RUN uv run --no-sync python -c "import nltk; \
 
 # Layer 3: Application code (rebuilds on code changes — cheap)
 COPY app app/
-COPY app/gunicorn_logging.conf .
 
 EXPOSE 8000
 
@@ -74,4 +73,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl --fail http://localhost:8000/health || exit 1
 
-ENTRYPOINT ["uv", "run", "--no-sync", "gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "--log-config", "gunicorn_logging.conf", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]
+ENTRYPOINT ["uv", "run", "--no-sync", "gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "0", "app.main:app", "-k", "uvicorn.workers.UvicornWorker"]

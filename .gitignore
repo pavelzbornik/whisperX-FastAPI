@@ -16,3 +16,4 @@ docs/stories/
 .devcontainer/.env
 load_results/
 .task/
+logs/

@@ -60,6 +60,7 @@ class MockDiarizationService:
         self.diarize_called = True
         self.diarize_call_count += 1
         self.last_diarize_params = {
+            "audio": audio,
             "device": device,
             "min_speakers": min_speakers,
             "max_speakers": max_speakers,
@@ -70,13 +71,13 @@ class MockDiarizationService:
 
         return self.mock_result
 
-    def load_model(self, device: str, hf_token: str) -> None:
+    def load_model(self, _device: str, _hf_token: str) -> None:
         """
         Mock model loading - does nothing.
 
         Args:
-            device: Device
-            hf_token: HuggingFace token
+            _device: Device (unused in mock)
+            _hf_token: HuggingFace token (unused in mock)
         """
         self.load_model_called = True
 
