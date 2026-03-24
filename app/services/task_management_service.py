@@ -116,21 +116,25 @@ class TaskManagementService:
             identifier: The UUID of the task to update
             update_data: Dictionary of fields to update
         """
+        # Normalize duration before persisting so the DB and audit log agree
+        if update_data.get("status") == "completed":
+            raw_duration = update_data.get("duration", 0.0)
+            normalized_duration = (
+                float(raw_duration)
+                if isinstance(raw_duration, int | float) and raw_duration >= 0
+                else 0.0
+            )
+            update_data = {**update_data, "duration": normalized_duration}
+
         logger.debug("Updating task %s with data: %s", identifier, update_data.keys())
         await self.repository.update(identifier, update_data)
         logger.info("Task updated successfully: %s", identifier)
 
         # If task is being marked as completed, audit log it
         if update_data.get("status") == "completed":
-            raw_duration = update_data.get("duration", 0.0)
-            duration = (
-                float(raw_duration)
-                if isinstance(raw_duration, int | float) and raw_duration >= 0
-                else 0.0
-            )
             AuditLogger.log_task_completed(
                 task_id=identifier,
-                duration=duration,
+                duration=update_data["duration"],
             )
 
     async def mark_task_completed(

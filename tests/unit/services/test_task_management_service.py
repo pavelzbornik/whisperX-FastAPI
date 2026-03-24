@@ -128,7 +128,9 @@ class TestTaskManagementService:
 
         await service.update_task_status("test-uuid-123", update_data)
 
-        mock_repository.update.assert_awaited_once_with("test-uuid-123", update_data)
+        # Duration is normalized to 0.0 before persisting for completed tasks
+        expected = {**update_data, "duration": 0.0}
+        mock_repository.update.assert_awaited_once_with("test-uuid-123", expected)
 
     async def test_update_task_status_with_error(
         self, service: TaskManagementService, mock_repository: AsyncMock

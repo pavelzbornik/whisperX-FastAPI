@@ -2,6 +2,10 @@ name: Deploy to GHCR
 on:
   release:
     types: [published]
+# Elevated permissions for the reusable CI.yaml workflow:
+# - contents: write — CI lint job git operations
+# - pull-requests: write — CI lint job may comment on PRs
+# - security-events: write — CI build job uploads SARIF reports
 permissions:
   contents: write
   packages: write

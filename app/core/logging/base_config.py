@@ -105,6 +105,6 @@ def get_base_config() -> dict[str, Any]:
         },
         "root": {
             "level": "INFO",
-            "handlers": ["console", "error_console"],
+            "handlers": ["console"],
         },
     }
