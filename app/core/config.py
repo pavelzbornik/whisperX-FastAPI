@@ -113,8 +113,13 @@ class SsrfSettings(BaseSettings):
     """SSRF protection configuration settings.
 
     Controls URL validation for outbound HTTP requests to prevent
-    Server-Side Request Forgery attacks. All settings are configurable
-    via environment variables with the SSRF__ prefix.
+    Server-Side Request Forgery attacks.
+
+    Each option is configurable via an environment variable matching the
+    field name, for example:
+    - ``SSRF_PROTECTION_ENABLED``
+    - ``SSRF_ALLOWED_SCHEMES``
+    - ``SSRF_BLOCKED_NETWORKS``
     """
 
     SSRF_PROTECTION_ENABLED: bool = Field(

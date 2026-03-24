@@ -129,6 +129,29 @@ class TestValidateUrlPrivateIp:
             with pytest.raises(SsrfBlockedError, match="blocked IP range"):
                 validate_url("http://[fd00::1]/f.mp3", settings=ENABLED_SETTINGS)
 
+    def test_ipv4_mapped_ipv6_loopback_blocked(self) -> None:
+        """Test that IPv4-mapped IPv6 addresses are blocked."""
+        with patch(
+            "app.core.url_validator.socket.getaddrinfo",
+            return_value=_make_addrinfo("::ffff:127.0.0.1"),
+        ):
+            with pytest.raises(SsrfBlockedError, match="blocked IP range"):
+                validate_url(
+                    "http://[::ffff:127.0.0.1]/f.mp3", settings=ENABLED_SETTINGS
+                )
+
+    def test_ipv4_mapped_ipv6_metadata_blocked(self) -> None:
+        """Test that IPv4-mapped IPv6 cloud metadata is blocked."""
+        with patch(
+            "app.core.url_validator.socket.getaddrinfo",
+            return_value=_make_addrinfo("::ffff:169.254.169.254"),
+        ):
+            with pytest.raises(SsrfBlockedError, match="blocked IP range"):
+                validate_url(
+                    "http://[::ffff:169.254.169.254]/latest/meta-data/",
+                    settings=ENABLED_SETTINGS,
+                )
+
     def test_public_ip_allowed(self) -> None:
         """Test that public IPs are allowed."""
         with patch(

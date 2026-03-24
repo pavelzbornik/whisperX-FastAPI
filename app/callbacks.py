@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
 from app.core.config import get_settings
+from app.core.exceptions import SsrfBlockedError
 from app.core.logging import logger
 from app.core.url_validator import validate_url
 
@@ -22,9 +23,14 @@ def validate_callback_url(callback_url: str) -> bool:
 
     Returns:
         bool: True if the URL is reachable, False otherwise
+
+    Raises:
+        SsrfBlockedError: If the URL is blocked by SSRF protection
     """
+    # Let SSRF errors propagate — they should not be silently swallowed
+    validate_url(callback_url)
+
     try:
-        validate_url(callback_url)
         with httpx.Client(
             timeout=float(get_settings().callback.CALLBACK_TIMEOUT)
         ) as client:
@@ -71,11 +77,17 @@ def validate_callback_url_dependency(
 
     callback_url_str = str(callback_url)
 
-    if not validate_callback_url(callback_url_str):
+    try:
+        if not validate_callback_url(callback_url_str):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Callback URL is not reachable: {callback_url_str}",
+            )
+    except SsrfBlockedError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Callback URL is not reachable: {callback_url_str}",
-        )
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The provided callback URL is not allowed.",
+        ) from None
 
     return callback_url_str
 

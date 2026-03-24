@@ -115,20 +115,7 @@ class TestFileService:
             temp_file.close()
             os.unlink(temp_file.name)
 
-    def test_download_from_url_invalid_extension_raises_error(self) -> None:
-        """Test download_from_url raises error for invalid extension before HTTP request."""
-        import unittest.mock as mock
-
-        from app.core.exceptions import UnsupportedFileExtensionError
-
-        with mock.patch("app.services.file_service.validate_url"):
-            with mock.patch("app.services.file_service.requests.get") as mock_get:
-                url = "https://example.com/test.txt"
-                with pytest.raises(UnsupportedFileExtensionError):
-                    FileService.download_from_url(url)
-                # requests.get should NOT have been called
-                mock_get.assert_not_called()
-
+    @pytest.mark.unit
     def test_download_from_url_ssrf_blocked_raises_error(self) -> None:
         """Test download_from_url raises SsrfBlockedError for blocked URLs."""
         import unittest.mock as mock
@@ -141,7 +128,38 @@ class TestFileService:
                 url="http://127.0.0.1/test.mp3", reason="blocked"
             ),
         ):
-            with mock.patch("app.services.file_service.requests.get") as mock_get:
+            with mock.patch(
+                "app.services.file_service.requests.Session"
+            ) as mock_session:
                 with pytest.raises(SsrfBlockedError):
                     FileService.download_from_url("http://127.0.0.1/test.mp3")
-                mock_get.assert_not_called()
+                mock_session.return_value.get.assert_not_called()
+
+    @pytest.mark.unit
+    def test_download_from_url_no_extension_uses_content_disposition(self) -> None:
+        """Test download_from_url falls back to Content-Disposition for extensionless URLs."""
+        import unittest.mock as mock
+
+        mock_response = mock.MagicMock()
+        mock_response.headers = {
+            "Content-Disposition": 'attachment; filename="audio.mp3"'
+        }
+        mock_response.raise_for_status = mock.MagicMock()
+        mock_response.iter_content = mock.MagicMock(return_value=[b"fake audio"])
+        mock_response.__enter__ = mock.MagicMock(return_value=mock_response)
+        mock_response.__exit__ = mock.MagicMock(return_value=False)
+
+        mock_session = mock.MagicMock()
+        mock_session.get.return_value = mock_response
+
+        with mock.patch("app.services.file_service.validate_url"):
+            with mock.patch(
+                "app.services.file_service.requests.Session",
+                return_value=mock_session,
+            ):
+                path, filename = FileService.download_from_url(
+                    "https://cdn.example.com/download/abc123"
+                )
+                assert filename == "audio.mp3"
+                assert path.endswith(".mp3")
+                os.unlink(path)
