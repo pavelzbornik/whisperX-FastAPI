@@ -235,11 +235,7 @@ class FileService:
 
             session.hooks["response"].append(_check_redirect)
 
-            with (
-                session.get(  # CodeQL [py/full-ssrf] URL validated by validate_url() above
-                    url, stream=True, timeout=30
-                ) as response
-            ):
+            with session.get(url, stream=True, timeout=30) as response:
                 response.raise_for_status()
 
                 # Resolve final filename and extension
@@ -261,16 +257,6 @@ class FileService:
 
                 return temp_audio_file.name, final_filename
 
-        except requests.HTTPError as e:
-            logger.error("HTTP error downloading from URL %s: %s", url, str(e))
-            status_code = e.response.status_code if e.response is not None else 0
-            if 400 <= status_code < 500:
-                raise UnsupportedFileExtensionError(
-                    filename=filename or url,
-                    extension="(remote error)",
-                    allowed=get_settings().whisper.ALLOWED_EXTENSIONS,
-                ) from e
-            raise FileDownloadError(url=url, original_error=e) from e
         except requests.RequestException as e:
             logger.error("Failed to download file from URL %s: %s", url, str(e))
             raise FileDownloadError(url=url, original_error=e) from e
