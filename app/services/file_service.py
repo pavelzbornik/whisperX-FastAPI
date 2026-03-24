@@ -235,6 +235,7 @@ class FileService:
 
             session.hooks["response"].append(_check_redirect)
 
+            # codeql[py/full-ssrf] URL validated by validate_url() above
             with session.get(url, stream=True, timeout=30) as response:
                 response.raise_for_status()
 
