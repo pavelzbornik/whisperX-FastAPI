@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "whisperx-fastapi"
-version = "0.5.0"
+version = "0.5.1"
 description = "WhisperX REST API for audio transcription, alignment, and diarization"
 readme = "README.md"
 license = { text = "MIT" }

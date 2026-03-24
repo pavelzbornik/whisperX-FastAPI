@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.1](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.5.0...v0.5.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* address release PR review comments ([1076d1c](https://github.com/pavelzbornik/whisperX-FastAPI/commit/1076d1c1a8da77055d947f862f6f277403b50d0d))
+* address remaining PR [#461](https://github.com/pavelzbornik/whisperX-FastAPI/issues/461) review findings ([95ba984](https://github.com/pavelzbornik/whisperX-FastAPI/commit/95ba98472d03fd96d840af556c300e8a7affa8cc))
+* **ci:** expand deploy-ghcr permissions for reusable CI workflow ([d1b8df0](https://github.com/pavelzbornik/whisperX-FastAPI/commit/d1b8df02a7b18ee443cef56cfb2e8f0153bf631c))
+* **ci:** move write permissions from workflow level to job level ([280c6d3](https://github.com/pavelzbornik/whisperX-FastAPI/commit/280c6d3b964a68b73b81ef4a3bf226c4ad3e4dcd))
+* **ci:** remove dev from push trigger to avoid duplicate check runs ([58c54cf](https://github.com/pavelzbornik/whisperX-FastAPI/commit/58c54cf4dcea9d518320fbc69feb32ed31a8c91c))
+* **ci:** unify concurrency group for push and pull_request events ([830e463](https://github.com/pavelzbornik/whisperX-FastAPI/commit/830e4635ceddc97770efa9a8676afd7e8b4b0b77))
+* **deps:** upgrade aiohttp 3.13.1 → 3.13.3 and document mark_task_completed ([ff25da0](https://github.com/pavelzbornik/whisperX-FastAPI/commit/ff25da03279e572274ec1f9a78ca6dcb635f7099))
+* **deps:** upgrade pillow 12.0.0 → 12.1.1 to fix out-of-bounds write CVE ([16c7b71](https://github.com/pavelzbornik/whisperX-FastAPI/commit/16c7b71e833affd69bc0c2c2c483368aca9fd120))
+* **deps:** upgrade protobuf 6.33.0 → 6.33.6 (JSON recursion CVE) ([bdcd4fa](https://github.com/pavelzbornik/whisperX-FastAPI/commit/bdcd4fa15fe6d990f0f9fc67ba1357cbf6f9330c))
+* **deps:** upgrade vulnerable packages (starlette, filelock, fonttools, urllib3) ([feaa50c](https://github.com/pavelzbornik/whisperX-FastAPI/commit/feaa50c9a14068a71c719ecc52fb75e4925222ea))
+* remove deleted uvicorn_log_conf.yaml from Taskfile and validate audit duration ([d992a47](https://github.com/pavelzbornik/whisperX-FastAPI/commit/d992a4766d268a4ed879592c1ebdade7caa0cddd))
+* **test:** set ENVIRONMENT=testing in conftest to prevent logs/ dir creation ([9f87745](https://github.com/pavelzbornik/whisperX-FastAPI/commit/9f87745598412f1770f6165d13af268fc5c4157b))
+* track all API params in test mocks and prefix unused load_model args ([baecb5a](https://github.com/pavelzbornik/whisperX-FastAPI/commit/baecb5ac166d48cebef3f0ab8b0e026c75d50ccf)), closes [#253](https://github.com/pavelzbornik/whisperX-FastAPI/issues/253)
+
 ## [0.5.0](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.4.7...v0.5.0) (2026-03-20)
 
 
