@@ -2,6 +2,7 @@
 
 import contextlib
 import socket
+import threading
 import time
 from collections.abc import Generator
 from datetime import datetime
@@ -16,15 +17,31 @@ from app.core.exceptions import SsrfBlockedError
 from app.core.logging import logger
 from app.core.url_validator import validate_url
 
+# Thread-local storage for DNS pinning in httpx callbacks.
+_dns_pin_local = threading.local()
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _thread_aware_getaddrinfo(host: object, *args: object, **kwargs: object) -> object:
+    """Thread-aware getaddrinfo that uses pinned IP if set for this thread."""
+    pinned_ip = getattr(_dns_pin_local, "pinned_ip", None)
+    if pinned_ip:
+        host = pinned_ip
+    return _original_getaddrinfo(host, *args, **kwargs)  # type: ignore[arg-type]
+
+
+# Install once at import time — thread-safe via thread-local check.
+socket.getaddrinfo = _thread_aware_getaddrinfo  # type: ignore[assignment]
+
 
 @contextlib.contextmanager
 def _pinned_dns(pinned_ip: str | None) -> Generator[None, None, None]:
     """Context manager that pins DNS resolution to a validated IP.
 
-    Temporarily overrides socket.getaddrinfo to return the pinned IP
-    for any hostname lookup. This prevents DNS rebinding attacks while
-    preserving the original hostname for TLS SNI and certificate
-    verification.
+    Sets a thread-local pinned IP so that the thread-aware getaddrinfo
+    wrapper returns the pinned IP for any hostname lookup. Other threads
+    are not affected. The original hostname is preserved in the URL for
+    correct TLS SNI and certificate verification.
 
     Args:
         pinned_ip: IP to pin, or None to skip pinning.
@@ -33,18 +50,11 @@ def _pinned_dns(pinned_ip: str | None) -> Generator[None, None, None]:
         yield
         return
 
-    original_getaddrinfo = socket.getaddrinfo
-
-    def _patched(*args: object, **kwargs: object) -> object:
-        # Replace host (first arg) with pinned IP, keep everything else
-        new_args = (pinned_ip, *args[1:]) if args else args
-        return original_getaddrinfo(*new_args, **kwargs)  # type: ignore[arg-type]
-
-    socket.getaddrinfo = _patched  # type: ignore[assignment]
+    _dns_pin_local.pinned_ip = pinned_ip
     try:
         yield
     finally:
-        socket.getaddrinfo = original_getaddrinfo
+        _dns_pin_local.pinned_ip = None
 
 
 def validate_callback_url(callback_url: str) -> bool:

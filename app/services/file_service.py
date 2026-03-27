@@ -3,6 +3,7 @@
 import os
 import re
 import socket
+import threading
 from tempfile import NamedTemporaryFile
 from urllib.parse import urljoin, urlparse
 
@@ -16,13 +17,39 @@ from app.core.exceptions import FileDownloadError, UnsupportedFileExtensionError
 from app.core.logging import logger
 from app.core.url_validator import validate_url
 
+# Thread-local storage for DNS pinning. Each thread can independently
+# set a pinned IP without affecting other threads.
+_dns_pin_local = threading.local()
+
+
+def _thread_aware_create_connection(
+    address: tuple[str, int], *args: object, **kwargs: object
+) -> socket.socket:
+    """Create a connection using the thread-local pinned IP if set.
+
+    Falls back to the original create_connection for unpinned threads.
+    This replaces urllib3's create_connection globally once at import
+    time, making DNS pinning thread-safe without per-request patching.
+    """
+    pinned_ip = getattr(_dns_pin_local, "pinned_ip", None)
+    if pinned_ip:
+        _host, port = address
+        address = (pinned_ip, port)
+    return _original_create_connection(address, *args, **kwargs)  # type: ignore[arg-type]
+
+
+# Install the thread-aware wrapper once at import time.
+_original_create_connection = urllib3.util.connection.create_connection
+urllib3.util.connection.create_connection = _thread_aware_create_connection
+
 
 class _PinnedIPAdapter(HTTPAdapter):
     """HTTP adapter that pins DNS resolution to a validated IP.
 
-    Prevents DNS rebinding (TOCTOU) attacks by temporarily overriding
-    urllib3's create_connection to resolve to the pinned IP. The URL
-    hostname is preserved for correct TLS SNI and certificate verification.
+    Prevents DNS rebinding (TOCTOU) attacks by setting a thread-local
+    pinned IP during the request. The URL hostname is preserved for
+    correct TLS SNI and certificate verification. Thread-safe via
+    thread-local storage.
     """
 
     def __init__(self, pinned_ip: str) -> None:
@@ -39,15 +66,8 @@ class _PinnedIPAdapter(HTTPAdapter):
         cert: bytes | str | tuple[bytes | str, bytes | str] | None = None,
         proxies: object = None,
     ) -> requests.Response:
-        """Send request with pinned DNS resolution."""
-        original_create = urllib3.util.connection.create_connection
-        pinned_ip = self.pinned_ip
-
-        def _pinned(address: tuple[str, int], **kw: object) -> socket.socket:
-            _host, port = address
-            return original_create((pinned_ip, port), **kw)  # type: ignore[arg-type]
-
-        urllib3.util.connection.create_connection = _pinned  # type: ignore[assignment]
+        """Send request with thread-local pinned DNS resolution."""
+        _dns_pin_local.pinned_ip = self.pinned_ip
         try:
             return super().send(
                 request,
@@ -58,7 +78,7 @@ class _PinnedIPAdapter(HTTPAdapter):
                 proxies=proxies,  # type: ignore[arg-type]
             )
         finally:
-            urllib3.util.connection.create_connection = original_create
+            _dns_pin_local.pinned_ip = None
 
 
 class FileService:
