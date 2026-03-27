@@ -34,7 +34,7 @@ class TestValidateUrlScheme:
             result = validate_url(
                 "http://example.com/file.mp3", settings=ENABLED_SETTINGS
             )
-        assert result == "http://example.com/file.mp3"
+        assert result == ("http://example.com/file.mp3", "93.184.216.34")
 
     def test_https_allowed(self) -> None:
         """Test that https scheme is allowed."""
@@ -45,7 +45,7 @@ class TestValidateUrlScheme:
             result = validate_url(
                 "https://example.com/file.mp3", settings=ENABLED_SETTINGS
             )
-        assert result == "https://example.com/file.mp3"
+        assert result == ("https://example.com/file.mp3", "93.184.216.34")
 
     def test_file_scheme_blocked(self) -> None:
         """Test that file:// scheme is blocked."""
@@ -161,7 +161,7 @@ class TestValidateUrlPrivateIp:
             result = validate_url(
                 "http://example.com/file.mp3", settings=ENABLED_SETTINGS
             )
-        assert result == "http://example.com/file.mp3"
+        assert result == ("http://example.com/file.mp3", "93.184.216.34")
 
 
 @pytest.mark.unit
@@ -200,7 +200,7 @@ class TestValidateUrlConfiguration:
             return_value=_make_addrinfo("127.0.0.1"),
         ):
             result = validate_url("http://127.0.0.1/f.mp3", settings=DISABLED_SETTINGS)
-        assert result == "http://127.0.0.1/f.mp3"
+        assert result == ("http://127.0.0.1/f.mp3", None)
 
     def test_custom_blocked_networks(self) -> None:
         """Test that custom blocked networks are enforced."""
@@ -239,3 +239,42 @@ class TestValidateUrlExtensionBypass:
                     "http://169.254.169.254/latest/meta-data/iam/security-credentials/role.mp3",
                     settings=ENABLED_SETTINGS,
                 )
+
+
+@pytest.mark.unit
+class TestValidateUrlDnsPinning:
+    """Tests for DNS pinning (TOCTOU prevention)."""
+
+    def test_returns_pinned_ip(self) -> None:
+        """Test that validate_url returns the resolved IP for pinning."""
+        with patch(
+            "app.core.url_validator.socket.getaddrinfo",
+            return_value=_make_addrinfo("93.184.216.34"),
+        ):
+            url, pinned_ip = validate_url(
+                "http://example.com/file.mp3", settings=ENABLED_SETTINGS
+            )
+        assert url == "http://example.com/file.mp3"
+        assert pinned_ip == "93.184.216.34"
+
+    def test_returns_none_ip_when_disabled(self) -> None:
+        """Test that pinned IP is None when protection is disabled."""
+        url, pinned_ip = validate_url(
+            "http://127.0.0.1/f.mp3", settings=DISABLED_SETTINGS
+        )
+        assert pinned_ip is None
+
+    def test_returns_first_resolved_ip(self) -> None:
+        """Test that the first valid resolved IP is returned for pinning."""
+        multi_addrinfo = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80)),
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.35", 80)),
+        ]
+        with patch(
+            "app.core.url_validator.socket.getaddrinfo",
+            return_value=multi_addrinfo,
+        ):
+            _, pinned_ip = validate_url(
+                "http://example.com/file.mp3", settings=ENABLED_SETTINGS
+            )
+        assert pinned_ip == "93.184.216.34"

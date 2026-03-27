@@ -3,6 +3,7 @@
 import time
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import HTTPException, status
@@ -12,6 +13,34 @@ from app.core.config import get_settings
 from app.core.exceptions import SsrfBlockedError
 from app.core.logging import logger
 from app.core.url_validator import validate_url
+
+
+def _pin_url(url: str, pinned_ip: str | None) -> tuple[str, dict[str, str]]:
+    """Replace hostname with pinned IP in URL, returning Host header.
+
+    Args:
+        url: Original URL.
+        pinned_ip: Validated IP to pin, or None to skip pinning.
+
+    Returns:
+        Tuple of (pinned_url, extra_headers).
+    """
+    if not pinned_ip:
+        return url, {}
+
+    parsed = urlparse(url)
+    hostname = parsed.hostname
+    if not hostname:
+        return url, {}
+
+    ip_host = f"[{pinned_ip}]" if ":" in pinned_ip else pinned_ip
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    pinned = url.replace(
+        f"{parsed.scheme}://{parsed.netloc}",
+        f"{parsed.scheme}://{ip_host}:{port}",
+    )
+    port_suffix = f":{parsed.port}" if parsed.port else ""
+    return pinned, {"Host": f"{hostname}{port_suffix}"}
 
 
 def validate_callback_url(callback_url: str) -> bool:
@@ -28,13 +57,15 @@ def validate_callback_url(callback_url: str) -> bool:
         SsrfBlockedError: If the URL is blocked by SSRF protection
     """
     # Let SSRF errors propagate — they should not be silently swallowed
-    validate_url(callback_url)
+    _, pinned_ip = validate_url(callback_url)
 
     try:
+        pinned_url, headers = _pin_url(callback_url, pinned_ip)
         with httpx.Client(
-            timeout=float(get_settings().callback.CALLBACK_TIMEOUT)
+            timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
+            headers=headers,
         ) as client:
-            response = client.head(callback_url)
+            response = client.head(pinned_url)
             if response.status_code < 400 or response.status_code == 405:
                 return True
             else:
@@ -117,14 +148,16 @@ def post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
     serialized_payload = _serialize_datetime(payload)
 
     # Validate URL before sending callback (defense in depth — DNS could change)
-    validate_url(callback_url)
+    _, pinned_ip = validate_url(callback_url)
+    pinned_url, pin_headers = _pin_url(callback_url, pinned_ip)
 
     for attempt in range(max_retries):
         try:
             with httpx.Client(
-                timeout=float(get_settings().callback.CALLBACK_TIMEOUT)
+                timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
+                headers=pin_headers,
             ) as client:
-                response = client.post(callback_url, json=serialized_payload)
+                response = client.post(pinned_url, json=serialized_payload)
                 response.raise_for_status()
 
             logger.info(

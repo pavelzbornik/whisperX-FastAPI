@@ -3,6 +3,9 @@
 Validates URLs before outbound HTTP requests to prevent Server-Side
 Request Forgery attacks. Checks URL scheme, resolves the hostname,
 and verifies the resolved IP is not in a blocked network range.
+
+Returns a validated IP to pin into the HTTP request, preventing
+DNS rebinding (TOCTOU) attacks.
 """
 
 import ipaddress
@@ -36,15 +39,21 @@ def _check_ip_blocked(
     return None
 
 
-def validate_url(url: str, settings: SsrfSettings | None = None) -> str:
-    """Validate a URL against SSRF rules.
+def validate_url(
+    url: str, settings: SsrfSettings | None = None
+) -> tuple[str, str | None]:
+    """Validate a URL against SSRF rules and return a pinned IP.
+
+    Resolves the hostname once and returns the validated IP so callers
+    can pin the connection to that IP, preventing DNS rebinding attacks.
 
     Args:
         url: The URL to validate.
         settings: SSRF settings override. If None, loaded from get_settings().
 
     Returns:
-        The validated URL (unchanged).
+        Tuple of (validated_url, pinned_ip). pinned_ip is None when
+        SSRF protection is disabled.
 
     Raises:
         SsrfBlockedError: If the URL is blocked by SSRF rules.
@@ -53,7 +62,7 @@ def validate_url(url: str, settings: SsrfSettings | None = None) -> str:
         settings = get_settings().ssrf
 
     if not settings.SSRF_PROTECTION_ENABLED:
-        return url
+        return url, None
 
     parsed = urlparse(url)
 
@@ -94,6 +103,8 @@ def validate_url(url: str, settings: SsrfSettings | None = None) -> str:
         for cidr in settings.SSRF_BLOCKED_NETWORKS
     ]
 
+    validated_ip: str | None = None
+
     for _family, _type, _proto, _canonname, sockaddr in addrinfo:
         ip_str = sockaddr[0]
         try:
@@ -114,4 +125,8 @@ def validate_url(url: str, settings: SsrfSettings | None = None) -> str:
                 reason=f"URL resolves to blocked IP range ({ip} in {matched_network})",
             )
 
-    return url
+        # Use the first validated IP for pinning
+        if validated_ip is None:
+            validated_ip = str(ip)
+
+    return url, validated_ip

@@ -7,11 +7,54 @@ from urllib.parse import urljoin, urlparse
 
 import requests
 from fastapi import HTTPException, UploadFile
+from requests.adapters import HTTPAdapter
+from urllib3.util.connection import allowed_gai_family  # noqa: F401
 
 from app.core.config import get_settings
 from app.core.exceptions import FileDownloadError, UnsupportedFileExtensionError
 from app.core.logging import logger
 from app.core.url_validator import validate_url
+
+
+class _PinnedIPAdapter(HTTPAdapter):
+    """HTTP adapter that pins connections to a specific IP address.
+
+    Prevents DNS rebinding (TOCTOU) attacks by forcing urllib3 to
+    connect to the IP that was validated by validate_url(), instead
+    of re-resolving the hostname.
+    """
+
+    def __init__(self, pinned_ip: str) -> None:
+        """Initialize with the IP to pin connections to."""
+        self.pinned_ip = pinned_ip
+        super().__init__()
+
+    def send(
+        self,
+        request: requests.PreparedRequest,
+        *args: object,
+        **kwargs: object,
+    ) -> requests.Response:
+        """Replace hostname with pinned IP in the connection, preserving Host header."""
+        parsed = urlparse(str(request.url))
+        hostname = parsed.hostname
+
+        # Set Host header to original hostname (for virtual hosts and TLS/SNI)
+        if hostname and "Host" not in (request.headers or {}):
+            port_suffix = f":{parsed.port}" if parsed.port else ""
+            request.headers["Host"] = f"{hostname}{port_suffix}"
+
+        # Replace hostname with pinned IP in the URL
+        if hostname:
+            # For IPv6, wrap in brackets
+            ip_host = f"[{self.pinned_ip}]" if ":" in self.pinned_ip else self.pinned_ip
+            pinned_url = str(request.url).replace(
+                f"{parsed.scheme}://{parsed.netloc}",
+                f"{parsed.scheme}://{ip_host}:{parsed.port or (443 if parsed.scheme == 'https' else 80)}",
+            )
+            request.url = pinned_url
+
+        return super().send(request, *args, **kwargs)  # type: ignore[arg-type]
 
 
 class FileService:
@@ -214,7 +257,8 @@ class FileService:
         logger.info("Downloading file from URL: %s", url)
 
         # Validate URL against SSRF rules BEFORE making any request
-        validate_url(url)
+        # Returns a pinned IP to prevent DNS rebinding (TOCTOU) attacks
+        _, pinned_ip = validate_url(url)
 
         # Try to extract extension from URL (may be None for CDN/API URLs)
         filename, url_extension = FileService._try_parse_url_extension(url)
@@ -222,6 +266,12 @@ class FileService:
         try:
             with requests.Session() as session:
                 session.max_redirects = 10
+
+                # Pin connections to the validated IP to prevent DNS rebinding
+                if pinned_ip:
+                    adapter = _PinnedIPAdapter(pinned_ip)
+                    session.mount("http://", adapter)
+                    session.mount("https://", adapter)
 
                 # Validate each redirect target against SSRF rules
                 def _check_redirect(
@@ -231,7 +281,12 @@ class FileService:
                         location = response.headers.get("Location", "")
                         if location:
                             absolute_url = urljoin(str(response.url), location)
-                            validate_url(absolute_url)
+                            # Validate and get new pinned IP for redirect target
+                            _, redirect_ip = validate_url(absolute_url)
+                            if redirect_ip:
+                                adapter = _PinnedIPAdapter(redirect_ip)
+                                session.mount("http://", adapter)
+                                session.mount("https://", adapter)
 
                 session.hooks["response"].append(_check_redirect)
 
