@@ -1,9 +1,11 @@
 """Callback functionality."""
 
+import contextlib
+import socket
 import time
+from collections.abc import Generator
 from datetime import datetime
 from typing import Any
-from urllib.parse import urlparse
 
 import httpx
 from fastapi import HTTPException, status
@@ -15,32 +17,34 @@ from app.core.logging import logger
 from app.core.url_validator import validate_url
 
 
-def _pin_url(url: str, pinned_ip: str | None) -> tuple[str, dict[str, str]]:
-    """Replace hostname with pinned IP in URL, returning Host header.
+@contextlib.contextmanager
+def _pinned_dns(pinned_ip: str | None) -> Generator[None, None, None]:
+    """Context manager that pins DNS resolution to a validated IP.
+
+    Temporarily overrides socket.getaddrinfo to return the pinned IP
+    for any hostname lookup. This prevents DNS rebinding attacks while
+    preserving the original hostname for TLS SNI and certificate
+    verification.
 
     Args:
-        url: Original URL.
-        pinned_ip: Validated IP to pin, or None to skip pinning.
-
-    Returns:
-        Tuple of (pinned_url, extra_headers).
+        pinned_ip: IP to pin, or None to skip pinning.
     """
     if not pinned_ip:
-        return url, {}
+        yield
+        return
 
-    parsed = urlparse(url)
-    hostname = parsed.hostname
-    if not hostname:
-        return url, {}
+    original_getaddrinfo = socket.getaddrinfo
 
-    ip_host = f"[{pinned_ip}]" if ":" in pinned_ip else pinned_ip
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    pinned = url.replace(
-        f"{parsed.scheme}://{parsed.netloc}",
-        f"{parsed.scheme}://{ip_host}:{port}",
-    )
-    port_suffix = f":{parsed.port}" if parsed.port else ""
-    return pinned, {"Host": f"{hostname}{port_suffix}"}
+    def _patched(*args: object, **kwargs: object) -> object:
+        # Replace host (first arg) with pinned IP, keep everything else
+        new_args = (pinned_ip, *args[1:]) if args else args
+        return original_getaddrinfo(*new_args, **kwargs)  # type: ignore[arg-type]
+
+    socket.getaddrinfo = _patched  # type: ignore[assignment]
+    try:
+        yield
+    finally:
+        socket.getaddrinfo = original_getaddrinfo
 
 
 def validate_callback_url(callback_url: str) -> bool:
@@ -60,12 +64,13 @@ def validate_callback_url(callback_url: str) -> bool:
     _, pinned_ip = validate_url(callback_url)
 
     try:
-        pinned_url, headers = _pin_url(callback_url, pinned_ip)
-        with httpx.Client(
-            timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
-            headers=headers,
-        ) as client:
-            response = client.head(pinned_url)
+        with (
+            _pinned_dns(pinned_ip),
+            httpx.Client(
+                timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
+            ) as client,
+        ):
+            response = client.head(callback_url)
             if response.status_code < 400 or response.status_code == 405:
                 return True
             else:
@@ -149,15 +154,16 @@ def post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
 
     # Validate URL before sending callback (defense in depth — DNS could change)
     _, pinned_ip = validate_url(callback_url)
-    pinned_url, pin_headers = _pin_url(callback_url, pinned_ip)
 
     for attempt in range(max_retries):
         try:
-            with httpx.Client(
-                timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
-                headers=pin_headers,
-            ) as client:
-                response = client.post(pinned_url, json=serialized_payload)
+            with (
+                _pinned_dns(pinned_ip),
+                httpx.Client(
+                    timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
+                ) as client,
+            ):
+                response = client.post(callback_url, json=serialized_payload)
                 response.raise_for_status()
 
             logger.info(

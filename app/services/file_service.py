@@ -2,13 +2,14 @@
 
 import os
 import re
+import socket
 from tempfile import NamedTemporaryFile
 from urllib.parse import urljoin, urlparse
 
 import requests
+import urllib3.util.connection
 from fastapi import HTTPException, UploadFile
 from requests.adapters import HTTPAdapter
-from urllib3.util.connection import allowed_gai_family  # noqa: F401
 
 from app.core.config import get_settings
 from app.core.exceptions import FileDownloadError, UnsupportedFileExtensionError
@@ -17,11 +18,11 @@ from app.core.url_validator import validate_url
 
 
 class _PinnedIPAdapter(HTTPAdapter):
-    """HTTP adapter that pins connections to a specific IP address.
+    """HTTP adapter that pins DNS resolution to a validated IP.
 
-    Prevents DNS rebinding (TOCTOU) attacks by forcing urllib3 to
-    connect to the IP that was validated by validate_url(), instead
-    of re-resolving the hostname.
+    Prevents DNS rebinding (TOCTOU) attacks by temporarily overriding
+    urllib3's create_connection to resolve to the pinned IP. The URL
+    hostname is preserved for correct TLS SNI and certificate verification.
     """
 
     def __init__(self, pinned_ip: str) -> None:
@@ -32,29 +33,32 @@ class _PinnedIPAdapter(HTTPAdapter):
     def send(
         self,
         request: requests.PreparedRequest,
-        *args: object,
-        **kwargs: object,
+        stream: bool = False,
+        timeout: float | tuple[float, float] | tuple[float, None] | None = None,
+        verify: bool | str = True,
+        cert: bytes | str | tuple[bytes | str, bytes | str] | None = None,
+        proxies: object = None,
     ) -> requests.Response:
-        """Replace hostname with pinned IP in the connection, preserving Host header."""
-        parsed = urlparse(str(request.url))
-        hostname = parsed.hostname
+        """Send request with pinned DNS resolution."""
+        original_create = urllib3.util.connection.create_connection
+        pinned_ip = self.pinned_ip
 
-        # Set Host header to original hostname (for virtual hosts and TLS/SNI)
-        if hostname and "Host" not in (request.headers or {}):
-            port_suffix = f":{parsed.port}" if parsed.port else ""
-            request.headers["Host"] = f"{hostname}{port_suffix}"
+        def _pinned(address: tuple[str, int], **kw: object) -> socket.socket:
+            _host, port = address
+            return original_create((pinned_ip, port), **kw)  # type: ignore[arg-type]
 
-        # Replace hostname with pinned IP in the URL
-        if hostname:
-            # For IPv6, wrap in brackets
-            ip_host = f"[{self.pinned_ip}]" if ":" in self.pinned_ip else self.pinned_ip
-            pinned_url = str(request.url).replace(
-                f"{parsed.scheme}://{parsed.netloc}",
-                f"{parsed.scheme}://{ip_host}:{parsed.port or (443 if parsed.scheme == 'https' else 80)}",
+        urllib3.util.connection.create_connection = _pinned  # type: ignore[assignment]
+        try:
+            return super().send(
+                request,
+                stream=stream,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                proxies=proxies,  # type: ignore[arg-type]
             )
-            request.url = pinned_url
-
-        return super().send(request, *args, **kwargs)  # type: ignore[arg-type]
+        finally:
+            urllib3.util.connection.create_connection = original_create
 
 
 class FileService:
