@@ -81,16 +81,15 @@ def process_audio_task(
             gpu_semaphore.acquire()
 
         try:
-            # Transition from queued → processing (skip if already processing)
+            # Transition queued → processing and record start time
             start_time = datetime.now(tz=timezone.utc)
-            if use_gpu_semaphore:
-                repository.update(
-                    identifier=identifier,
-                    update_data={
-                        "status": TaskStatus.processing,
-                        "start_time": start_time,
-                    },
-                )
+            repository.update(
+                identifier=identifier,
+                update_data={
+                    "status": TaskStatus.processing,
+                    "start_time": start_time,
+                },
+            )
             logger.info("Starting %s task for identifier %s", task_type, identifier)
 
             result = audio_processor()
