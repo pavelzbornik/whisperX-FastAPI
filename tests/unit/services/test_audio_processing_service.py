@@ -54,21 +54,15 @@ class TestAudioProcessingService:
             task_type="transcription",
         )
 
-        # Verify: first call transitions to processing, second marks completed
-        assert mock_repository.update.call_count == 2
-
-        processing_call = mock_repository.update.call_args_list[0]
-        assert processing_call[1]["identifier"] == "test-123"
-        assert processing_call[1]["update_data"]["status"] == "processing"
-
-        completed_call = mock_repository.update.call_args_list[1]
-        assert completed_call[1]["identifier"] == "test-123"
-        assert completed_call[1]["update_data"]["status"] == "completed"
-        assert completed_call[1]["update_data"]["result"] == {
+        # Verify: single update marks completed (no semaphore = no status transition)
+        mock_processor.assert_called_once()
+        mock_repository.update.assert_called_once()
+        update_call = mock_repository.update.call_args
+        assert update_call[1]["identifier"] == "test-123"
+        assert update_call[1]["update_data"]["status"] == "completed"
+        assert update_call[1]["update_data"]["result"] == {
             "segments": [{"text": "hello"}]
         }
-
-        mock_processor.assert_called_once()
         mock_session.close.assert_called_once()
 
     @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
@@ -103,10 +97,10 @@ class TestAudioProcessingService:
             task_type="diarization",
         )
 
-        # Verify: second update call has the completed result
-        assert mock_repository.update.call_count == 2
-        completed_call = mock_repository.update.call_args_list[1]
-        result = completed_call[1]["update_data"]["result"]
+        # Verify: single update has the completed result (no semaphore = no status transition)
+        mock_repository.update.assert_called_once()
+        update_call = mock_repository.update.call_args
+        result = update_call[1]["update_data"]["result"]
         # Should be a list of dicts, not a DataFrame
         assert isinstance(result, list)
         assert len(result) == 2
@@ -134,16 +128,12 @@ class TestAudioProcessingService:
             task_type="transcription",
         )
 
-        # Verify: first call transitions to processing, second marks failed
-        assert mock_repository.update.call_count == 2
-
-        processing_call = mock_repository.update.call_args_list[0]
-        assert processing_call[1]["update_data"]["status"] == "processing"
-
-        failed_call = mock_repository.update.call_args_list[1]
-        assert failed_call[1]["identifier"] == "test-789"
-        assert failed_call[1]["update_data"]["status"] == "failed"
-        assert "error" in failed_call[1]["update_data"]
+        # Verify: single update marks failed (no semaphore = no status transition)
+        mock_repository.update.assert_called_once()
+        update_call = mock_repository.update.call_args
+        assert update_call[1]["identifier"] == "test-789"
+        assert update_call[1]["update_data"]["status"] == "failed"
+        assert "error" in update_call[1]["update_data"]
         mock_session.close.assert_called_once()
 
     @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
@@ -167,9 +157,9 @@ class TestAudioProcessingService:
             task_type="alignment",
         )
 
-        # Verify timing was recorded in the completed update call
-        completed_call = mock_repository.update.call_args_list[1]
-        update_data = completed_call[1]["update_data"]
+        # Verify timing was recorded
+        update_call = mock_repository.update.call_args
+        update_data = update_call[1]["update_data"]
         assert "start_time" in update_data
         assert "end_time" in update_data
         assert "duration" in update_data
@@ -309,9 +299,11 @@ class TestGpuSemaphoreIntegration:
         mock_repository_class.return_value = mock_repository
 
         barrier = threading.Event()
+        task1_acquired = threading.Event()
         task2_started = threading.Event()
 
         def slow_processor() -> dict[str, str]:
+            task1_acquired.set()
             barrier.wait(timeout=5)
             return {"text": "done"}
 
@@ -331,10 +323,8 @@ class TestGpuSemaphoreIntegration:
         )
         t1.start()
 
-        # Give t1 time to acquire the semaphore
-        import time
-
-        time.sleep(0.1)
+        # Wait for task 1 to acquire the semaphore (deterministic signal)
+        assert task1_acquired.wait(timeout=5), "Task 1 did not acquire semaphore"
 
         # Start second task — should be blocked
         t2 = threading.Thread(
@@ -354,9 +344,13 @@ class TestGpuSemaphoreIntegration:
         # Release task 1
         barrier.set()
         t1.join(timeout=5)
+        if t1.is_alive():
+            pytest.fail("Timeout waiting for task-1 thread to finish")
 
         # Now task 2 should complete
         t2.join(timeout=5)
+        if t2.is_alive():
+            pytest.fail("Timeout waiting for task-2 thread to finish")
         assert task2_started.is_set()
 
         get_gpu_semaphore.cache_clear()

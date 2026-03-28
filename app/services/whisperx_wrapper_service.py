@@ -297,10 +297,13 @@ def process_audio_common(
     session = SyncSessionLocal()
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
-    gpu_semaphore = get_gpu_semaphore()
+    # Only gate on the semaphore when using CUDA — CPU deployments don't risk OOM
+    use_semaphore = params.whisper_model_params.device == Device.cuda
+    gpu_semaphore = get_gpu_semaphore() if use_semaphore else None
     try:
-        logger.info("Task %s waiting for GPU slot", params.identifier)
-        gpu_semaphore.acquire()
+        if gpu_semaphore is not None:
+            logger.info("Task %s waiting for GPU slot", params.identifier)
+            gpu_semaphore.acquire()
         try:
             # Transition from queued → processing
             start_time = datetime.now(tz=timezone.utc)
@@ -439,8 +442,9 @@ def process_audio_common(
             )
 
         finally:
-            gpu_semaphore.release()
-            logger.info("GPU slot released for task %s", params.identifier)
+            if gpu_semaphore is not None:
+                gpu_semaphore.release()
+                logger.info("GPU slot released for task %s", params.identifier)
 
     finally:
         try:

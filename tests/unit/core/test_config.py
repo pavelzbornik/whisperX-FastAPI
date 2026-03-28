@@ -181,16 +181,12 @@ class TestMaxConcurrentGpuTasks:
 
     def test_default_value_is_one(self) -> None:
         """Test that default MAX_CONCURRENT_GPU_TASKS is 1."""
-        with patch.dict(
-            os.environ,
-            {
-                "DEVICE": "cpu",
-                "COMPUTE_TYPE": "int8",
-            },
-            clear=False,
-        ):
-            # Remove any existing env var override
-            os.environ.pop("MAX_CONCURRENT_GPU_TASKS", None)
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+        }
+        with patch.dict(os.environ, env, clear=True):
             settings = Settings()
             assert settings.MAX_CONCURRENT_GPU_TASKS == 1
 

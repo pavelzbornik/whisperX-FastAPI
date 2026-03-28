@@ -81,15 +81,16 @@ def process_audio_task(
             gpu_semaphore.acquire()
 
         try:
-            # Transition from queued → processing
+            # Transition from queued → processing (skip if already processing)
             start_time = datetime.now(tz=timezone.utc)
-            repository.update(
-                identifier=identifier,
-                update_data={
-                    "status": TaskStatus.processing,
-                    "start_time": start_time,
-                },
-            )
+            if use_gpu_semaphore:
+                repository.update(
+                    identifier=identifier,
+                    update_data={
+                        "status": TaskStatus.processing,
+                        "start_time": start_time,
+                    },
+                )
             logger.info("Starting %s task for identifier %s", task_type, identifier)
 
             result = audio_processor()
@@ -197,7 +198,7 @@ def process_transcribe(
         transcribe_task,
         identifier,
         "transcription",
-        use_gpu_semaphore=True,
+        use_gpu_semaphore=model_params.device == Device.cuda,
     )
 
 
@@ -231,7 +232,7 @@ def process_diarize(
         diarize_task,
         identifier,
         "diarization",
-        use_gpu_semaphore=True,
+        use_gpu_semaphore=device == Device.cuda,
     )
 
 
@@ -270,7 +271,7 @@ def process_alignment(
         align_task,
         identifier,
         "transcription_alignment",
-        use_gpu_semaphore=True,
+        use_gpu_semaphore=device == Device.cuda,
     )
 
 
