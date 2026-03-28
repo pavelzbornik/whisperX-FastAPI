@@ -419,6 +419,7 @@ class TaskType(str, Enum):
 class TaskStatus(str, Enum):
     """Enum for task status."""
 
+    queued = "queued"
     processing = "processing"
     completed = "completed"
     failed = "failed"
