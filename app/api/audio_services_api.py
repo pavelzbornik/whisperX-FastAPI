@@ -5,7 +5,6 @@ Alignment, diarization, and combining transcripts with diarization results.
 """
 
 import json
-from datetime import datetime, timezone
 from uuid import uuid4
 
 import pandas as pd
@@ -391,10 +390,9 @@ async def combine(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=None,
         task_type=TaskType.combine_transcript_diarization,
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)
