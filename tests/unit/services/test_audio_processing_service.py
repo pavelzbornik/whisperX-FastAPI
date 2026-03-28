@@ -250,19 +250,14 @@ class TestGpuSemaphoreIntegration:
 
     @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
     @patch("app.services.audio_processing_service.SyncSessionLocal")
-    @patch("app.core.gpu_semaphore.get_settings")
+    @patch("app.core.gpu_semaphore.get_gpu_semaphore")
     def test_gpu_semaphore_not_used_for_cpu_tasks(
         self,
-        mock_get_settings: Mock,
+        mock_get_gpu_semaphore: Mock,
         mock_session_local: Mock,
         mock_repository_class: Mock,
     ) -> None:
-        """Test GPU semaphore is not acquired when use_gpu_semaphore=False."""
-        from app.core.gpu_semaphore import get_gpu_semaphore
-
-        get_gpu_semaphore.cache_clear()
-        mock_get_settings.return_value = MagicMock(MAX_CONCURRENT_GPU_TASKS=1)
-
+        """Test GPU semaphore is never called when use_gpu_semaphore=False."""
         mock_session = MagicMock()
         mock_session_local.return_value = mock_session
         mock_repository = MagicMock()
@@ -270,18 +265,14 @@ class TestGpuSemaphoreIntegration:
 
         mock_processor = Mock(return_value={"result": "data"})
 
-        # Default use_gpu_semaphore=False — semaphore should not be acquired
+        # Default use_gpu_semaphore=False — get_gpu_semaphore should never be called
         process_audio_task(
             audio_processor=mock_processor,
             identifier="test-cpu",
             task_type="combine_transcript&diarization",
         )
 
-        # Semaphore should still be fully available (never acquired)
-        sem = get_gpu_semaphore()
-        assert sem.acquire(blocking=False)
-        sem.release()
-        get_gpu_semaphore.cache_clear()
+        mock_get_gpu_semaphore.assert_not_called()
 
     @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
     @patch("app.services.audio_processing_service.SyncSessionLocal")
