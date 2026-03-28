@@ -192,10 +192,13 @@ class TestMaxConcurrentGpuTasks:
 
     def test_env_var_override(self) -> None:
         """Test setting MAX_CONCURRENT_GPU_TASKS via environment variable."""
-        with patch.dict(
-            os.environ,
-            {"MAX_CONCURRENT_GPU_TASKS": "4"},
-        ):
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+            "MAX_CONCURRENT_GPU_TASKS": "4",
+        }
+        with patch.dict(os.environ, env, clear=True):
             settings = Settings()
             assert settings.MAX_CONCURRENT_GPU_TASKS == 4
 
@@ -203,10 +206,13 @@ class TestMaxConcurrentGpuTasks:
         """Test that MAX_CONCURRENT_GPU_TASKS rejects 0."""
         from pydantic import ValidationError as PydanticValidationError
 
-        with patch.dict(
-            os.environ,
-            {"MAX_CONCURRENT_GPU_TASKS": "0"},
-        ):
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+            "MAX_CONCURRENT_GPU_TASKS": "0",
+        }
+        with patch.dict(os.environ, env, clear=True):
             with pytest.raises(PydanticValidationError):
                 Settings()
 
@@ -214,10 +220,13 @@ class TestMaxConcurrentGpuTasks:
         """Test that MAX_CONCURRENT_GPU_TASKS rejects negative values."""
         from pydantic import ValidationError as PydanticValidationError
 
-        with patch.dict(
-            os.environ,
-            {"MAX_CONCURRENT_GPU_TASKS": "-1"},
-        ):
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+            "MAX_CONCURRENT_GPU_TASKS": "-1",
+        }
+        with patch.dict(os.environ, env, clear=True):
             with pytest.raises(PydanticValidationError):
                 Settings()
 
