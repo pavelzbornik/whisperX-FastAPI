@@ -47,7 +47,8 @@
       "description": "PyTorch ecosystem — hard ceiling, manual review only",
       "matchPackageNames": [
         "torch",
-        "torchaudio"
+        "torchaudio",
+        "torchcodec"
       ],
       "groupName": "PyTorch ecosystem",
       "allowedVersions": "<=2.8.0",
