@@ -128,6 +128,11 @@ class Settings(BaseSettings):
         default=False,
         description="Development mode flag",
     )
+    MAX_CONCURRENT_GPU_TASKS: int = Field(
+        default=1,
+        ge=1,
+        description="Maximum number of GPU tasks allowed to run concurrently",
+    )
 
     # Nested settings
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)

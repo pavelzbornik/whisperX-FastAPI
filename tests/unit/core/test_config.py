@@ -3,6 +3,8 @@
 import os
 from unittest.mock import patch
 
+import pytest
+
 from app.core.config import (
     DatabaseSettings,
     LoggingSettings,
@@ -172,6 +174,61 @@ class TestSettings:
             assert settings.database.DB_URL == "postgresql://test"
             assert settings.whisper.WHISPER_MODEL == WhisperModel.base
             assert settings.logging.LOG_LEVEL == "DEBUG"
+
+
+class TestMaxConcurrentGpuTasks:
+    """Test MAX_CONCURRENT_GPU_TASKS setting."""
+
+    def test_default_value_is_one(self) -> None:
+        """Test that default MAX_CONCURRENT_GPU_TASKS is 1."""
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+        }
+        with patch.dict(os.environ, env, clear=True):
+            settings = Settings()
+            assert settings.MAX_CONCURRENT_GPU_TASKS == 1
+
+    def test_env_var_override(self) -> None:
+        """Test setting MAX_CONCURRENT_GPU_TASKS via environment variable."""
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+            "MAX_CONCURRENT_GPU_TASKS": "4",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            settings = Settings()
+            assert settings.MAX_CONCURRENT_GPU_TASKS == 4
+
+    def test_rejects_zero(self) -> None:
+        """Test that MAX_CONCURRENT_GPU_TASKS rejects 0."""
+        from pydantic import ValidationError as PydanticValidationError
+
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+            "MAX_CONCURRENT_GPU_TASKS": "0",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(PydanticValidationError):
+                Settings()
+
+    def test_rejects_negative(self) -> None:
+        """Test that MAX_CONCURRENT_GPU_TASKS rejects negative values."""
+        from pydantic import ValidationError as PydanticValidationError
+
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "DB_URL": os.environ.get("DB_URL", "sqlite:///records.db"),
+            "MAX_CONCURRENT_GPU_TASKS": "-1",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(PydanticValidationError):
+                Settings()
 
 
 class TestGetSettings:

@@ -5,7 +5,6 @@ Alignment, diarization, and combining transcripts with diarization results.
 """
 
 import json
-from datetime import datetime, timezone
 from uuid import uuid4
 
 import pandas as pd
@@ -114,7 +113,7 @@ async def transcribe(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
@@ -124,7 +123,6 @@ async def transcribe(
             "asr_options": asr_options_params.model_dump(),
             "vad_options": vad_options_params.model_dump(),
         },
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)
@@ -220,7 +218,7 @@ async def align(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         language=transcript_data.language,
@@ -229,7 +227,6 @@ async def align(
             **align_params.model_dump(),
             "device": device,
         },
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)
@@ -292,7 +289,7 @@ async def diarize(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=file.filename,
         audio_duration=get_audio_duration(audio),
         task_type=TaskType.diarization,
@@ -300,7 +297,6 @@ async def diarize(
             **diarize_params.model_dump(),
             "device": device,
         },
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)
@@ -394,10 +390,9 @@ async def combine(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=None,
         task_type=TaskType.combine_transcript_diarization,
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)

@@ -201,3 +201,35 @@ class TestTaskEntity:
         assert not task.is_completed()
         assert task.is_failed()
         assert task.error == "Something went wrong"
+
+    def test_mark_as_queued(self) -> None:
+        """Test marking a task as queued."""
+        task = TaskFactory(status="pending")
+        task.mark_as_queued()
+        assert task.status == "queued"
+        assert task.is_queued()
+
+    def test_is_queued_returns_true_for_queued_task(self) -> None:
+        """Test is_queued returns True for queued tasks."""
+        task = TaskFactory(status="queued")
+        assert task.is_queued() is True
+
+    def test_is_queued_returns_false_for_non_queued_task(self) -> None:
+        """Test is_queued returns False for non-queued tasks."""
+        assert TaskFactory(status="pending").is_queued() is False
+        assert TaskFactory(status="processing").is_queued() is False
+        assert TaskFactory(status="completed").is_queued() is False
+
+    def test_queued_to_processing_transition(self) -> None:
+        """Test full lifecycle: queued -> processing -> completed."""
+        task = TaskFactory(status="queued")
+        assert task.is_queued()
+
+        task.mark_as_processing(datetime.now(timezone.utc))
+        assert task.is_processing()
+        assert not task.is_queued()
+
+        task.mark_as_completed(
+            {"result": "data"}, duration=3.0, end_time=datetime.now(timezone.utc)
+        )
+        assert task.is_completed()

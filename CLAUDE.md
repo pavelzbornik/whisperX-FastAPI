@@ -106,6 +106,7 @@ COMPUTE_TYPE=float16             # float16/float32/int8 — MUST be int8 when DE
 LOG_LEVEL=INFO
 ENVIRONMENT=production
 DB_URL=sqlite:///records.db
+MAX_CONCURRENT_GPU_TASKS=1          # max simultaneous GPU tasks (prevents OOM)
 ```
 
 **Critical:** When `DEVICE=cpu`, `COMPUTE_TYPE` is auto-corrected to `int8`. Tests set

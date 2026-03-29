@@ -291,136 +291,160 @@ def process_audio_common(
     )
     speaker_svc = speaker_service or WhisperXSpeakerAssignmentService()
 
+    from app.core.gpu_semaphore import get_gpu_semaphore
+
     # Create repository for this background task (sync — runs in thread pool)
     session = SyncSessionLocal()
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
+    # Only gate on the semaphore when using CUDA — CPU deployments don't risk OOM
+    use_semaphore = params.whisper_model_params.device == Device.cuda
+    gpu_semaphore = get_gpu_semaphore() if use_semaphore else None
     try:
-        start_time = datetime.now(tz=timezone.utc)
-        logger.info(
-            "Starting speech-to-text processing for identifier: %s",
-            params.identifier,
-        )
+        if gpu_semaphore is not None:
+            logger.info("Task %s waiting for GPU slot", params.identifier)
+            gpu_semaphore.acquire()
+        try:
+            # Transition from queued → processing
+            start_time = datetime.now(tz=timezone.utc)
+            repository.update(
+                identifier=params.identifier,
+                update_data={
+                    "status": TaskStatus.processing,
+                    "start_time": start_time,
+                },
+            )
+            logger.info(
+                "Starting speech-to-text processing for identifier: %s",
+                params.identifier,
+            )
 
-        logger.debug(
-            "Transcription parameters - task: %s, language: %s, batch_size: %d, chunk_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
-            params.whisper_model_params.task.value,
-            params.whisper_model_params.language,
-            params.whisper_model_params.batch_size,
-            params.whisper_model_params.chunk_size,
-            params.whisper_model_params.model.value,
-            params.whisper_model_params.device.value,
-            params.whisper_model_params.device_index,
-            params.whisper_model_params.compute_type.value,
-            params.whisper_model_params.threads,
-        )
+            logger.debug(
+                "Transcription parameters - task: %s, language: %s, batch_size: %d, chunk_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
+                params.whisper_model_params.task.value,
+                params.whisper_model_params.language,
+                params.whisper_model_params.batch_size,
+                params.whisper_model_params.chunk_size,
+                params.whisper_model_params.model.value,
+                params.whisper_model_params.device.value,
+                params.whisper_model_params.device_index,
+                params.whisper_model_params.compute_type.value,
+                params.whisper_model_params.threads,
+            )
 
-        segments_before_alignment = transcription_svc.transcribe(
-            audio=params.audio,
-            task=params.whisper_model_params.task.value,
-            asr_options=params.asr_options.model_dump(),
-            vad_options=params.vad_options.model_dump(),
-            language=params.whisper_model_params.language,
-            batch_size=params.whisper_model_params.batch_size,
-            chunk_size=params.whisper_model_params.chunk_size,
-            model=params.whisper_model_params.model.value,
-            device=params.whisper_model_params.device.value,
-            device_index=params.whisper_model_params.device_index,
-            compute_type=params.whisper_model_params.compute_type.value,
-            threads=params.whisper_model_params.threads,
-        )
+            segments_before_alignment = transcription_svc.transcribe(
+                audio=params.audio,
+                task=params.whisper_model_params.task.value,
+                asr_options=params.asr_options.model_dump(),
+                vad_options=params.vad_options.model_dump(),
+                language=params.whisper_model_params.language,
+                batch_size=params.whisper_model_params.batch_size,
+                chunk_size=params.whisper_model_params.chunk_size,
+                model=params.whisper_model_params.model.value,
+                device=params.whisper_model_params.device.value,
+                device_index=params.whisper_model_params.device_index,
+                compute_type=params.whisper_model_params.compute_type.value,
+                threads=params.whisper_model_params.threads,
+            )
 
-        logger.debug(
-            "Alignment parameters - align_model: %s, interpolate_method: %s, return_char_alignments: %s, language_code: %s",
-            params.alignment_params.align_model,
-            params.alignment_params.interpolate_method,
-            params.alignment_params.return_char_alignments,
-            segments_before_alignment["language"],
-        )
-        segments_transcript = alignment_svc.align(
-            transcript=segments_before_alignment["segments"],
-            audio=params.audio,
-            language_code=segments_before_alignment["language"],
-            device=params.whisper_model_params.device.value,
-            align_model=params.alignment_params.align_model,
-            interpolate_method=params.alignment_params.interpolate_method,
-            return_char_alignments=params.alignment_params.return_char_alignments,
-        )
-        transcript = AlignedTranscription(**segments_transcript)
-        # removing words within each segment that have missing start, end, or score values
-        filtered_transcript = filter_aligned_transcription(transcript)
-        transcript_dict = filtered_transcript.model_dump()
+            logger.debug(
+                "Alignment parameters - align_model: %s, interpolate_method: %s, return_char_alignments: %s, language_code: %s",
+                params.alignment_params.align_model,
+                params.alignment_params.interpolate_method,
+                params.alignment_params.return_char_alignments,
+                segments_before_alignment["language"],
+            )
+            segments_transcript = alignment_svc.align(
+                transcript=segments_before_alignment["segments"],
+                audio=params.audio,
+                language_code=segments_before_alignment["language"],
+                device=params.whisper_model_params.device.value,
+                align_model=params.alignment_params.align_model,
+                interpolate_method=params.alignment_params.interpolate_method,
+                return_char_alignments=params.alignment_params.return_char_alignments,
+            )
+            transcript = AlignedTranscription(**segments_transcript)
+            # removing words within each segment that have missing start, end, or score values
+            filtered_transcript = filter_aligned_transcription(transcript)
+            transcript_dict = filtered_transcript.model_dump()
 
-        logger.debug(
-            "Diarization parameters - device: %s, min_speakers: %s, max_speakers: %s",
-            params.whisper_model_params.device.value,
-            params.diarization_params.min_speakers,
-            params.diarization_params.max_speakers,
-        )
-        diarization_segments = diarization_svc.diarize(
-            audio=params.audio,
-            device=params.whisper_model_params.device.value,
-            min_speakers=params.diarization_params.min_speakers,
-            max_speakers=params.diarization_params.max_speakers,
-        )
+            logger.debug(
+                "Diarization parameters - device: %s, min_speakers: %s, max_speakers: %s",
+                params.whisper_model_params.device.value,
+                params.diarization_params.min_speakers,
+                params.diarization_params.max_speakers,
+            )
+            diarization_segments = diarization_svc.diarize(
+                audio=params.audio,
+                device=params.whisper_model_params.device.value,
+                min_speakers=params.diarization_params.min_speakers,
+                max_speakers=params.diarization_params.max_speakers,
+            )
 
-        logger.debug("Starting to combine transcript with diarization results")
-        result = speaker_svc.assign_speakers(diarization_segments, transcript_dict)
+            logger.debug("Starting to combine transcript with diarization results")
+            result = speaker_svc.assign_speakers(diarization_segments, transcript_dict)
 
-        logger.debug("Completed combining transcript with diarization results")
+            logger.debug("Completed combining transcript with diarization results")
 
-        end_time = datetime.now(tz=timezone.utc)
-        duration = (end_time - start_time).total_seconds()
-        logger.info(
-            "Completed speech-to-text processing for identifier: %s. Duration: %ss",
-            params.identifier,
-            duration,
-        )
+            end_time = datetime.now(tz=timezone.utc)
+            duration = (end_time - start_time).total_seconds()
+            logger.info(
+                "Completed speech-to-text processing for identifier: %s. Duration: %ss",
+                params.identifier,
+                duration,
+            )
 
-        repository.update(
-            identifier=params.identifier,
-            update_data={
-                "status": TaskStatus.completed,
-                "result": result,
-                "duration": duration,
-                "start_time": start_time,
-                "end_time": end_time,
-            },
-        )
+            repository.update(
+                identifier=params.identifier,
+                update_data={
+                    "status": TaskStatus.completed,
+                    "result": result,
+                    "duration": duration,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                },
+            )
 
-    except (RuntimeError, ValueError, KeyError) as e:
-        logger.error(
-            "Speech-to-text processing failed for identifier: %s. Error: %s",
-            params.identifier,
-            str(e),
-        )
-        repository.update(
-            identifier=params.identifier,
-            update_data={
-                "status": TaskStatus.failed,
-                "error": str(e),
-            },
-        )
+        except (RuntimeError, ValueError, KeyError) as e:
+            logger.error(
+                "Speech-to-text processing failed for identifier: %s. Error: %s",
+                params.identifier,
+                str(e),
+            )
+            repository.update(
+                identifier=params.identifier,
+                update_data={
+                    "status": TaskStatus.failed,
+                    "error": str(e),
+                },
+            )
 
-    except MemoryError as e:
-        logger.error(
-            f"Task failed for identifier {params.identifier} due to out of memory. Error: {str(e)}"
-        )
-        repository.update(
-            identifier=params.identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
+        except MemoryError as e:
+            logger.error(
+                "Task failed for identifier %s due to out of memory. Error: %s",
+                params.identifier,
+                str(e),
+            )
+            repository.update(
+                identifier=params.identifier,
+                update_data={"status": TaskStatus.failed, "error": str(e)},
+            )
 
-    except Exception as e:
-        logger.error(
-            "Speech-to-text processing failed for identifier: %s with unexpected error. Error: %s",
-            params.identifier,
-            str(e),
-        )
-        repository.update(
-            identifier=params.identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
+        except Exception as e:
+            logger.error(
+                "Speech-to-text processing failed for identifier: %s with unexpected error. Error: %s",
+                params.identifier,
+                str(e),
+            )
+            repository.update(
+                identifier=params.identifier,
+                update_data={"status": TaskStatus.failed, "error": str(e)},
+            )
+
+        finally:
+            if gpu_semaphore is not None:
+                gpu_semaphore.release()
+                logger.info("GPU slot released for task %s", params.identifier)
 
     finally:
         try:

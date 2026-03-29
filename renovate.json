@@ -8,10 +8,12 @@
   "baseBranches": [
     "dev"
   ],
+  "mode": "enabled",
   "schedule": [
-    "before 6am on the first Monday of the month"
+    "before 6am on the first day of the month"
   ],
   "timezone": "UTC",
+  "dependencyDashboardApproval": false,
   "prConcurrentLimit": 10,
   "prHourlyLimit": 0,
   "labels": [
@@ -30,9 +32,6 @@
       "dependencies"
     ]
   },
-  "uv": {
-    "enabled": true
-  },
   "docker": {
     "enabled": true
   },
@@ -45,14 +44,14 @@
   },
   "packageRules": [
     {
-      "description": "PyTorch ecosystem \u2014 hard ceiling, manual review only",
+      "description": "PyTorch ecosystem — hard ceiling, manual review only",
       "matchPackageNames": [
         "torch",
         "torchaudio"
       ],
       "groupName": "PyTorch ecosystem",
       "allowedVersions": "<=2.8.0",
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "pytorch"
@@ -62,13 +61,13 @@
       ]
     },
     {
-      "description": "torchvision \u2014 hard ceiling matching pyproject.toml constraint, manual review only",
+      "description": "torchvision — hard ceiling matching pyproject.toml constraint, manual review only",
       "matchPackageNames": [
         "torchvision"
       ],
       "groupName": "PyTorch ecosystem",
       "allowedVersions": "<=0.23.0",
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "pytorch"
@@ -78,33 +77,33 @@
       ]
     },
     {
-      "description": "huggingface-hub \u2014 critical pyannote.audio compat constraint",
+      "description": "huggingface-hub — critical pyannote.audio compat constraint",
       "matchPackageNames": [
         "huggingface-hub"
       ],
       "allowedVersions": "<0.36.0",
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "ml-compat"
       ]
     },
     {
-      "description": "ML core libraries \u2014 manual review",
+      "description": "ML core libraries — manual review",
       "matchPackageNames": [
         "whisperx",
         "numba",
         "ctranslate2"
       ],
       "groupName": "ML core libraries",
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "ml-core"
       ]
     },
     {
-      "description": "FastAPI ecosystem \u2014 minor+patch auto-merge",
+      "description": "FastAPI ecosystem — minor+patch auto-merge",
       "matchPackageNames": [
         "fastapi",
         "uvicorn",
@@ -119,15 +118,15 @@
         "minor",
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "fastapi"
       ]
     },
     {
-      "description": "FastAPI ecosystem \u2014 major manual review",
+      "description": "FastAPI ecosystem — major manual review",
       "matchPackageNames": [
         "fastapi",
         "uvicorn",
@@ -141,14 +140,14 @@
       "matchUpdateTypes": [
         "major"
       ],
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "fastapi"
       ]
     },
     {
-      "description": "Database stack \u2014 minor+patch auto-merge",
+      "description": "Database stack — minor+patch auto-merge",
       "matchPackageNames": [
         "sqlalchemy",
         "aiosqlite",
@@ -160,15 +159,15 @@
         "minor",
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "database"
       ]
     },
     {
-      "description": "Database stack \u2014 major manual review",
+      "description": "Database stack — major manual review",
       "matchPackageNames": [
         "sqlalchemy",
         "aiosqlite",
@@ -179,14 +178,14 @@
       "matchUpdateTypes": [
         "major"
       ],
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "database"
       ]
     },
     {
-      "description": "Dev tools \u2014 minor+patch auto-merge as one group",
+      "description": "Dev tools — minor+patch auto-merge as one group",
       "matchPackageNames": [
         "ruff",
         "mypy",
@@ -204,20 +203,20 @@
         "setuptools",
         "wheel"
       ],
-      "groupName": "Dev and utility tools",
+      "groupName": "Dev tools",
       "matchUpdateTypes": [
         "minor",
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "dev-tools"
       ]
     },
     {
-      "description": "Runtime utility libraries \u2014 minor+patch auto-merge",
+      "description": "Runtime utility libraries — minor+patch auto-merge",
       "matchPackageNames": [
         "dependency-injector",
         "tqdm",
@@ -228,15 +227,15 @@
         "minor",
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "runtime-utils"
       ]
     },
     {
-      "description": "Runtime utility libraries \u2014 major manual review",
+      "description": "Runtime utility libraries — major manual review",
       "matchPackageNames": [
         "dependency-injector",
         "tqdm",
@@ -246,14 +245,14 @@
       "matchUpdateTypes": [
         "major"
       ],
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "runtime-utils"
       ]
     },
     {
-      "description": "nvidia/cuda base image \u2014 ignore, never update",
+      "description": "nvidia/cuda base image — ignore, never update",
       "matchDatasources": [
         "docker"
       ],
@@ -263,22 +262,22 @@
       "enabled": false
     },
     {
-      "description": "Docker images (non-CUDA) \u2014 patch auto-merge",
+      "description": "Docker images (non-CUDA) — patch auto-merge",
       "matchDatasources": [
         "docker"
       ],
       "matchUpdateTypes": [
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "docker"
       ]
     },
     {
-      "description": "Docker images (non-CUDA) \u2014 minor/major manual review",
+      "description": "Docker images (non-CUDA) — minor/major manual review",
       "matchDatasources": [
         "docker"
       ],
@@ -286,14 +285,14 @@
         "minor",
         "major"
       ],
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "docker"
       ]
     },
     {
-      "description": "GitHub Actions \u2014 minor+patch auto-merge (SHA-pinned)",
+      "description": "GitHub Actions — minor+patch auto-merge (SHA-pinned)",
       "matchManagers": [
         "github-actions"
       ],
@@ -302,8 +301,8 @@
         "minor",
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "github-actions"
@@ -311,14 +310,14 @@
       "pinDigests": true
     },
     {
-      "description": "GitHub Actions major \u2014 manual review",
+      "description": "GitHub Actions major — manual review",
       "matchManagers": [
         "github-actions"
       ],
       "matchUpdateTypes": [
         "major"
       ],
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "github-actions"
@@ -326,7 +325,7 @@
       "pinDigests": true
     },
     {
-      "description": "Pre-commit hooks \u2014 minor+patch auto-merge",
+      "description": "Pre-commit hooks — minor+patch auto-merge",
       "matchManagers": [
         "pre-commit"
       ],
@@ -335,22 +334,22 @@
         "minor",
         "patch"
       ],
-      "autoMerge": true,
-      "autoMergeType": "squash",
+      "automerge": true,
+      "automergeType": "squash",
       "labels": [
         "dependencies",
         "pre-commit"
       ]
     },
     {
-      "description": "Pre-commit hooks major \u2014 manual review",
+      "description": "Pre-commit hooks major — manual review",
       "matchManagers": [
         "pre-commit"
       ],
       "matchUpdateTypes": [
         "major"
       ],
-      "autoMerge": false,
+      "automerge": false,
       "labels": [
         "dependencies",
         "pre-commit"

@@ -11,14 +11,17 @@ third-party ML library. The domain layer must be importable with no heavy depend
 
 `Task` is a plain Python dataclass with state-transition methods:
 
-| Method | Guard (raises if violated) |
+| Method | Description |
 | --- | --- |
-| `mark_as_processing()` | task must be pending |
-| `mark_as_completed(result)` | task must be processing |
-| `mark_as_failed(error)` | task must be processing |
+| `mark_as_queued()` | Set status to queued (waiting for GPU slot) |
+| `mark_as_processing()` | Set status to processing (GPU slot acquired) |
+| `mark_as_completed(result)` | Set status to completed with result data |
+| `mark_as_failed(error)` | Set status to failed with error message |
+
+Lifecycle: `queued` → `processing` → `completed` / `failed`
 
 Always check predicates before transitioning:
-`is_pending()`, `is_processing()`, `is_completed()`, `is_failed()`.
+`is_queued()`, `is_processing()`, `is_completed()`, `is_failed()`.
 
 Do not manipulate `status` directly — always go through the methods above.
 

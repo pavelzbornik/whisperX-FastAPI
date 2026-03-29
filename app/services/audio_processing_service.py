@@ -56,6 +56,7 @@ def process_audio_task(
     audio_processor: Callable[[], Any],
     identifier: str,
     task_type: str,
+    use_gpu_semaphore: bool = False,
 ) -> None:
     """
     Process an audio task.
@@ -64,62 +65,94 @@ def process_audio_task(
         audio_processor: Parameterless callable that returns the processing result.
         identifier (str): The task identifier.
         task_type (str): The type of the task.
+        use_gpu_semaphore: Whether to acquire the GPU semaphore before processing.
     """
+    from app.core.gpu_semaphore import get_gpu_semaphore
+
     # Create repository for this background task (sync — runs in thread pool)
     session = SyncSessionLocal()
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
+    gpu_semaphore = get_gpu_semaphore() if use_gpu_semaphore else None
+
     try:
-        start_time = datetime.now(tz=timezone.utc)
-        logger.info(f"Starting {task_type} task for identifier {identifier}")
+        if gpu_semaphore is not None:
+            logger.info("Task %s waiting for GPU slot", identifier)
+            gpu_semaphore.acquire()
 
-        result = audio_processor()
+        try:
+            # Transition queued → processing and record start time
+            start_time = datetime.now(tz=timezone.utc)
+            repository.update(
+                identifier=identifier,
+                update_data={
+                    "status": TaskStatus.processing,
+                    "start_time": start_time,
+                },
+            )
+            logger.info("Starting %s task for identifier %s", task_type, identifier)
 
-        if task_type == "diarization":
-            result = result.drop(columns=["segment"]).to_dict(orient="records")
+            result = audio_processor()
 
-        end_time = datetime.now(tz=timezone.utc)
-        duration = (end_time - start_time).total_seconds()
-        logger.info(
-            f"Completed {task_type} task for identifier {identifier}. Duration: {duration}s"
-        )
+            if task_type == "diarization":
+                result = result.drop(columns=["segment"]).to_dict(orient="records")
 
-        repository.update(
-            identifier=identifier,
-            update_data={
-                "status": TaskStatus.completed,
-                "result": result,
-                "duration": duration,
-                "start_time": start_time,
-                "end_time": end_time,
-            },
-        )
+            end_time = datetime.now(tz=timezone.utc)
+            duration = (end_time - start_time).total_seconds()
+            logger.info(
+                "Completed %s task for identifier %s. Duration: %ss",
+                task_type,
+                identifier,
+                duration,
+            )
 
-    except (
-        ValueError,
-        TypeError,
-        RuntimeError,
-        MemoryError,
-        TranscriptionFailedError,
-        DiarizationFailedError,
-        AudioProcessingError,
-        InsufficientMemoryError,
-    ) as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier}. Error: {str(e)}"
-        )
-        repository.update(
-            identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
-    except Exception as e:
-        logger.error(
-            f"Task {task_type} failed for identifier {identifier} with unexpected error. Error: {str(e)}"
-        )
-        repository.update(
-            identifier=identifier,
-            update_data={"status": TaskStatus.failed, "error": str(e)},
-        )
+            repository.update(
+                identifier=identifier,
+                update_data={
+                    "status": TaskStatus.completed,
+                    "result": result,
+                    "duration": duration,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                },
+            )
+
+        except (
+            ValueError,
+            TypeError,
+            RuntimeError,
+            MemoryError,
+            TranscriptionFailedError,
+            DiarizationFailedError,
+            AudioProcessingError,
+            InsufficientMemoryError,
+        ) as e:
+            logger.error(
+                "Task %s failed for identifier %s. Error: %s",
+                task_type,
+                identifier,
+                str(e),
+            )
+            repository.update(
+                identifier=identifier,
+                update_data={"status": TaskStatus.failed, "error": str(e)},
+            )
+        except Exception as e:
+            logger.error(
+                "Task %s failed for identifier %s with unexpected error. Error: %s",
+                task_type,
+                identifier,
+                str(e),
+            )
+            repository.update(
+                identifier=identifier,
+                update_data={"status": TaskStatus.failed, "error": str(e)},
+            )
+        finally:
+            if gpu_semaphore is not None:
+                gpu_semaphore.release()
+                logger.info("GPU slot released for task %s", identifier)
+
     finally:
         session.close()
 
@@ -164,6 +197,7 @@ def process_transcribe(
         transcribe_task,
         identifier,
         "transcription",
+        use_gpu_semaphore=model_params.device == Device.cuda,
     )
 
 
@@ -197,6 +231,7 @@ def process_diarize(
         diarize_task,
         identifier,
         "diarization",
+        use_gpu_semaphore=device == Device.cuda,
     )
 
 
@@ -235,6 +270,7 @@ def process_alignment(
         align_task,
         identifier,
         "transcription_alignment",
+        use_gpu_semaphore=device == Device.cuda,
     )
 
 

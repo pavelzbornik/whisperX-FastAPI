@@ -78,6 +78,11 @@ class Task:
         self.end_time = datetime.now(timezone.utc)
         self.updated_at = datetime.now(timezone.utc)
 
+    def mark_as_queued(self) -> None:
+        """Mark the task as queued, waiting for a GPU slot."""
+        self.status = "queued"
+        self.updated_at = datetime.now(timezone.utc)
+
     def mark_as_processing(self, start_time: datetime) -> None:
         """
         Mark the task as processing.
@@ -88,6 +93,15 @@ class Task:
         self.status = "processing"
         self.start_time = start_time
         self.updated_at = datetime.now(timezone.utc)
+
+    def is_queued(self) -> bool:
+        """
+        Check if task is queued waiting for a GPU slot.
+
+        Returns:
+            True if task status is 'queued', False otherwise
+        """
+        return self.status == "queued"
 
     def is_processing(self) -> bool:
         """
