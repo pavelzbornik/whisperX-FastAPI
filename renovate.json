@@ -47,11 +47,26 @@
       "description": "PyTorch ecosystem — hard ceiling, manual review only",
       "matchPackageNames": [
         "torch",
-        "torchaudio",
-        "torchcodec"
+        "torchaudio"
       ],
       "groupName": "PyTorch ecosystem",
       "allowedVersions": "<=2.8.0",
+      "automerge": false,
+      "labels": [
+        "dependencies",
+        "pytorch"
+      ],
+      "reviewers": [
+        "pavelzbornik"
+      ]
+    },
+    {
+      "description": "torchcodec — strict 1:1 PyTorch version coupling, manual review only",
+      "matchPackageNames": [
+        "torchcodec"
+      ],
+      "groupName": "PyTorch ecosystem",
+      "allowedVersions": "<=0.7.0",
       "automerge": false,
       "labels": [
         "dependencies",

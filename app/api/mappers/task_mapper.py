@@ -33,7 +33,7 @@ class TaskMapper:
 
         return Task(
             uuid=task_uuid,
-            status="processing",  # New tasks start in processing state
+            status="queued",  # New tasks start in queued state
             task_type=dto.task_type,
             file_name=dto.file_name,
             url=dto.url,
