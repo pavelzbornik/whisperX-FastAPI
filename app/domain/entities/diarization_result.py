@@ -32,7 +32,7 @@ class DiarizationResult:
             columns=["segment"], errors="ignore"
         ).to_dict(orient="records")
 
-        if self.speaker_embeddings:
+        if self.speaker_embeddings is not None:
             return {
                 "segments": segments_list,
                 "speaker_embeddings": self.speaker_embeddings,

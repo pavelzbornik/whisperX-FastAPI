@@ -54,6 +54,18 @@ class SpeakerSearchRequest(BaseModel):
     )
 
 
+class SpeakerIdentifyRequest(BaseModel):
+    """Request schema for identifying a speaker."""
+
+    embedding: list[float] = Field(description="Query embedding vector")
+    threshold: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Minimum cosine similarity threshold",
+    )
+
+
 class SpeakerSearchResult(BaseModel):
     """A single search result with similarity score."""
 

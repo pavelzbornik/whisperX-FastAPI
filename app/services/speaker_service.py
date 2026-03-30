@@ -155,6 +155,8 @@ class SpeakerService:
         results: list[tuple[SpeakerEmbedding, float]] = []
         for speaker in all_embeddings:
             vec = np.array(speaker.embedding, dtype=np.float64)
+            if query.shape != vec.shape:
+                continue
             vec_norm = np.linalg.norm(vec)
             if vec_norm == 0:
                 continue

@@ -68,7 +68,7 @@ def _identify_and_store_speakers(
         return diarization_result
 
     speaker_repo = SyncSQLAlchemySpeakerEmbeddingRepository(session)
-    known_speakers = speaker_repo.get_all()
+    known_speakers = speaker_repo.get_all() if identify else []
 
     label_map: dict[str, str] = {}
     new_speakers: list[SpeakerEmbedding] = []
@@ -80,16 +80,19 @@ def _identify_and_store_speakers(
             continue
 
         best_match: tuple[SpeakerEmbedding, float] | None = None
-        for known in known_speakers:
-            vec = np.array(known.embedding, dtype=np.float64)
-            vec_norm = np.linalg.norm(vec)
-            if vec_norm == 0:
-                continue
-            similarity = float(np.dot(query, vec) / (query_norm * vec_norm))
-            if similarity >= threshold and (
-                best_match is None or similarity > best_match[1]
-            ):
-                best_match = (known, similarity)
+        if identify:
+            for known in known_speakers:
+                vec = np.array(known.embedding, dtype=np.float64)
+                if query.shape != vec.shape:
+                    continue
+                vec_norm = np.linalg.norm(vec)
+                if vec_norm == 0:
+                    continue
+                similarity = float(np.dot(query, vec) / (query_norm * vec_norm))
+                if similarity >= threshold and (
+                    best_match is None or similarity > best_match[1]
+                ):
+                    best_match = (known, similarity)
 
         if best_match is not None:
             label_map[speaker_label] = best_match[0].speaker_label
@@ -340,7 +343,8 @@ def process_diarize(
             min_speakers=diarize_params.min_speakers,
             max_speakers=diarize_params.max_speakers,
             return_embeddings=diarize_params.return_embeddings
-            or diarize_params.identify_speakers,
+            or diarize_params.identify_speakers
+            or diarize_params.auto_store_speakers,
         )
 
     process_audio_task(

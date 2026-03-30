@@ -404,7 +404,7 @@ class DiarizationParams(BaseModel):
     auto_store_speakers: bool = Field(
         Query(
             False,
-            description="Automatically store new speaker embeddings in the database (requires identify_speakers=true)",
+            description="Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)",
         )
     )
 

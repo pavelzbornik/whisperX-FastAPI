@@ -8,6 +8,7 @@ from app.api.dependencies import get_speaker_service
 from app.api.mappers.speaker_mapper import SpeakerMapper
 from app.api.schemas.speaker_schemas import (
     CreateSpeakerRequest,
+    SpeakerIdentifyRequest,
     SpeakerResponse,
     SpeakerSearchRequest,
     SpeakerSearchResponse,
@@ -58,7 +59,8 @@ async def list_speakers(
 ) -> list[SpeakerResponse]:
     """List speaker embeddings with optional task filter and pagination."""
     if task_id:
-        speakers = await speaker_service.get_by_task(task_id)
+        all_task_speakers = await speaker_service.get_by_task(task_id)
+        speakers = all_task_speakers[offset : offset + limit]
     else:
         speakers = await speaker_service.list_all(limit=limit, offset=offset)
     return [SpeakerMapper.to_response(s) for s in speakers]
@@ -186,7 +188,7 @@ async def search_speakers(
     name="Identify speaker",
 )
 async def identify_speaker(
-    request: SpeakerSearchRequest,
+    request: SpeakerIdentifyRequest,
     speaker_service: SpeakerService = Depends(get_speaker_service),
 ) -> JSONResponse:
     """Identify the best-matching speaker above threshold."""

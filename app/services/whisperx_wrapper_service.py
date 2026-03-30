@@ -377,6 +377,7 @@ def process_audio_common(
             need_embeddings = (
                 params.diarization_params.return_embeddings
                 or params.diarization_params.identify_speakers
+                or params.diarization_params.auto_store_speakers
             )
             diarization_result = diarization_svc.diarize(
                 audio=params.audio,
