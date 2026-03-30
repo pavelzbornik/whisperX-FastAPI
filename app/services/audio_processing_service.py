@@ -73,9 +73,9 @@ def process_audio_task(
     session = SyncSessionLocal()
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
-    gpu_semaphore = get_gpu_semaphore() if use_gpu_semaphore else None
-
     try:
+        gpu_semaphore = get_gpu_semaphore() if use_gpu_semaphore else None
+
         if gpu_semaphore is not None:
             logger.info("Task %s waiting for GPU slot", identifier)
             gpu_semaphore.acquire()

@@ -13,8 +13,8 @@ third-party ML library. The domain layer must be importable with no heavy depend
 
 | Method | Description |
 | --- | --- |
-| `mark_as_queued()` | Set status to queued (waiting for GPU slot) |
-| `mark_as_processing()` | Set status to processing (GPU slot acquired) |
+| `mark_as_queued()` | Set status to queued (accepted, waiting to be processed) |
+| `mark_as_processing()` | Set status to processing (task execution started) |
 | `mark_as_completed(result)` | Set status to completed with result data |
 | `mark_as_failed(error)` | Set status to failed with error message |
 

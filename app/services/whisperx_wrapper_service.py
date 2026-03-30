@@ -299,8 +299,8 @@ def process_audio_common(
 
     # Only gate on the semaphore when using CUDA — CPU deployments don't risk OOM
     use_semaphore = params.whisper_model_params.device == Device.cuda
-    gpu_semaphore = get_gpu_semaphore() if use_semaphore else None
     try:
+        gpu_semaphore = get_gpu_semaphore() if use_semaphore else None
         if gpu_semaphore is not None:
             logger.info("Task %s waiting for GPU slot", params.identifier)
             gpu_semaphore.acquire()
