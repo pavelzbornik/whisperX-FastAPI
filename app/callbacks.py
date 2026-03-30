@@ -1,6 +1,10 @@
 """Callback functionality."""
 
+import contextlib
+import socket
+import threading
 import time
+from collections.abc import Generator
 from datetime import datetime
 from typing import Any
 
@@ -9,7 +13,48 @@ from fastapi import HTTPException, status
 from pydantic import HttpUrl
 
 from app.core.config import get_settings
+from app.core.exceptions import SsrfBlockedError
 from app.core.logging import logger
+from app.core.url_validator import validate_url
+
+# Thread-local storage for DNS pinning in httpx callbacks.
+_dns_pin_local = threading.local()
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _thread_aware_getaddrinfo(host: object, *args: object, **kwargs: object) -> object:
+    """Thread-aware getaddrinfo that uses pinned IP if set for this thread."""
+    pinned_ip = getattr(_dns_pin_local, "pinned_ip", None)
+    if pinned_ip:
+        host = pinned_ip
+    return _original_getaddrinfo(host, *args, **kwargs)  # type: ignore[arg-type]
+
+
+# Install once at import time — thread-safe via thread-local check.
+socket.getaddrinfo = _thread_aware_getaddrinfo  # type: ignore[assignment]
+
+
+@contextlib.contextmanager
+def _pinned_dns(pinned_ip: str | None) -> Generator[None, None, None]:
+    """Context manager that pins DNS resolution to a validated IP.
+
+    Sets a thread-local pinned IP so that the thread-aware getaddrinfo
+    wrapper returns the pinned IP for any hostname lookup. Other threads
+    are not affected. The original hostname is preserved in the URL for
+    correct TLS SNI and certificate verification.
+
+    Args:
+        pinned_ip: IP to pin, or None to skip pinning.
+    """
+    if not pinned_ip:
+        yield
+        return
+
+    _dns_pin_local.pinned_ip = pinned_ip
+    try:
+        yield
+    finally:
+        _dns_pin_local.pinned_ip = None
 
 
 def validate_callback_url(callback_url: str) -> bool:
@@ -21,11 +66,20 @@ def validate_callback_url(callback_url: str) -> bool:
 
     Returns:
         bool: True if the URL is reachable, False otherwise
+
+    Raises:
+        SsrfBlockedError: If the URL is blocked by SSRF protection
     """
+    # Let SSRF errors propagate — they should not be silently swallowed
+    _, pinned_ip = validate_url(callback_url)
+
     try:
-        with httpx.Client(
-            timeout=float(get_settings().callback.CALLBACK_TIMEOUT)
-        ) as client:
+        with (
+            _pinned_dns(pinned_ip),
+            httpx.Client(
+                timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
+            ) as client,
+        ):
             response = client.head(callback_url)
             if response.status_code < 400 or response.status_code == 405:
                 return True
@@ -69,11 +123,17 @@ def validate_callback_url_dependency(
 
     callback_url_str = str(callback_url)
 
-    if not validate_callback_url(callback_url_str):
+    try:
+        if not validate_callback_url(callback_url_str):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Callback URL is not reachable: {callback_url_str}",
+            )
+    except SsrfBlockedError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Callback URL is not reachable: {callback_url_str}",
-        )
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The provided callback URL is not allowed.",
+        ) from None
 
     return callback_url_str
 
@@ -102,11 +162,17 @@ def post_task_callback(callback_url: str, payload: dict[str, Any]) -> None:
 
     serialized_payload = _serialize_datetime(payload)
 
+    # Validate URL before sending callback (defense in depth — DNS could change)
+    _, pinned_ip = validate_url(callback_url)
+
     for attempt in range(max_retries):
         try:
-            with httpx.Client(
-                timeout=float(get_settings().callback.CALLBACK_TIMEOUT)
-            ) as client:
+            with (
+                _pinned_dns(pinned_ip),
+                httpx.Client(
+                    timeout=float(get_settings().callback.CALLBACK_TIMEOUT),
+                ) as client,
+            ):
                 response = client.post(callback_url, json=serialized_payload)
                 response.raise_for_status()
 

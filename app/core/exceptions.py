@@ -468,6 +468,29 @@ class InsufficientMemoryError(InfrastructureError):
         )
 
 
+# SSRF-related exceptions
+
+
+class SsrfBlockedError(ValidationError):
+    """URL blocked by SSRF protection."""
+
+    def __init__(self, url: str, reason: str) -> None:
+        """
+        Initialize the SSRF blocked error.
+
+        Args:
+            url: The URL that was blocked
+            reason: Reason the URL was blocked
+        """
+        super().__init__(
+            message=f"URL blocked by SSRF protection: {reason}",
+            code="SSRF_BLOCKED",
+            user_message="The provided URL is not allowed.",
+            url=url,
+            reason=reason,
+        )
+
+
 # File-related exceptions
 
 
