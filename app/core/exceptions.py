@@ -209,7 +209,7 @@ class TaskNotFoundError(DomainError):
 class SpeakerNotFoundError(DomainError):
     """Speaker embedding with given identifier not found."""
 
-    def __init__(self, identifier: str, correlation_id: Optional[str] = None) -> None:
+    def __init__(self, identifier: str, correlation_id: str | None = None) -> None:
         """
         Initialize the speaker not found error.
 
