@@ -127,3 +127,52 @@ groups auto-merge after CI passes.
 
 **PyTorch wheels:** `uv.lock` is platform-specific (CUDA on Linux x86\_64, CPU on
 macOS/Windows). Never manually edit `uv.lock`.
+
+## Testing — TDD Process
+
+Follow Test-Driven Development for all new features and bug fixes:
+
+### TDD Workflow
+
+1. **Write failing tests first** — before writing any implementation code, write tests
+   that define the expected behavior. Run them to confirm they fail.
+2. **Implement the minimum code** to make the tests pass — no more, no less.
+3. **Refactor** — clean up the implementation while keeping tests green.
+4. **Repeat** for each new behavior or code path.
+
+### Coverage Rules
+
+- All new code must have tests written **before** implementation
+- Run `task test` after every change — ensure coverage ≥80% overall
+- Target >80% coverage on new code specifically (SonarCloud new code gate)
+- Check coverage gaps proactively: `uv run pytest --cov=app --cov-report=term-missing`
+- Never commit untested code paths — if you wrote it, test it first
+
+### Test Organization
+
+- Unit tests (`tests/unit/`) for isolated logic — mock all external deps
+- E2e tests (`tests/e2e/`) for API endpoints — test full request/response cycle
+- Integration tests (`tests/integration/`) for real DB or service interaction
+- Use factories (`tests/factories/`) over inline object construction
+- Use mocks (`tests/mocks/`) — extend existing mocks rather than adding conditional logic
+
+### When Fixing Bugs
+
+1. Write a test that reproduces the bug (must fail)
+2. Fix the bug
+3. Confirm the test passes
+4. Check no regressions: `task test`
+
+## Data Integrity
+
+- When modifying file contents (especially Markdown/YAML frontmatter), validate that
+  existing fields are preserved
+- Never replace entire file contents when only a section needs updating
+- For batch operations, process in small batches with validation between each
+
+## PR Workflow
+
+- Before creating a PR, run: `task check` (lint + format + typecheck) and `task test`
+- Address style violations proactively — check for unused imports, consistent naming
+  (`str | None` not `Optional[str]`), and docstrings on public methods
+- Verify coverage meets threshold before pushing, not after CI fails

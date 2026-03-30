@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(jq -r '.tool_input.file_path // empty'); if [ -n \"$file\" ] && echo \"$file\" | grep -q '\\.py$'; then cd \"$CLAUDE_PROJECT_DIR\" && uv run ruff check --fix \"$file\" 2>/dev/null; uv run ruff format \"$file\" 2>/dev/null; fi",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
