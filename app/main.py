@@ -67,6 +67,7 @@ from app.api.exception_handlers import (  # noqa: E402
     domain_error_handler,
     generic_error_handler,
     infrastructure_error_handler,
+    speaker_not_found_handler,
     task_not_found_handler,
     validation_error_handler,
 )
@@ -75,6 +76,7 @@ from app.core.container import Container  # noqa: E402
 from app.core.exceptions import (  # noqa: E402
     DomainError,
     InfrastructureError,
+    SpeakerNotFoundError,
     TaskNotFoundError,
     ValidationError,
 )
@@ -186,6 +188,7 @@ app = FastAPI(
 
 # Register exception handlers
 app.add_exception_handler(TaskNotFoundError, task_not_found_handler)
+app.add_exception_handler(SpeakerNotFoundError, speaker_not_found_handler)
 app.add_exception_handler(ValidationError, validation_error_handler)
 app.add_exception_handler(DomainError, domain_error_handler)
 app.add_exception_handler(InfrastructureError, infrastructure_error_handler)

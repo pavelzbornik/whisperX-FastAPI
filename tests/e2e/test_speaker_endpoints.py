@@ -121,12 +121,12 @@ class TestSpeakerEndpoints:
 
     def test_identify_speaker_no_match(self, client: TestClient) -> None:
         """Test identify returns 404 when no match above threshold."""
+        # Use an orthogonal embedding that won't match any existing speaker
         identify_resp = client.post(
             "/speakers/identify",
-            json={"embedding": [1.0, 0.0, 0.0], "threshold": 0.99},
+            json={"embedding": [0.0, 0.0, 0.0, 1.0], "threshold": 0.99},
         )
-        # Either 404 (no speakers) or low similarity
-        assert identify_resp.status_code in (200, 404)
+        assert identify_resp.status_code == 404
 
     def test_create_speaker_with_task_uuid(self, client: TestClient) -> None:
         """Test creating a speaker linked to a task."""
@@ -184,7 +184,7 @@ class TestSpeakerEndpoints:
         assert response.status_code == 404
 
     def test_update_empty_body(self, client: TestClient) -> None:
-        """Test updating with no fields returns 400."""
+        """Test updating with no fields returns 422."""
         create_resp = client.post(
             "/speakers",
             json={"speaker_label": "Temp", "embedding": [0.1]},
@@ -192,4 +192,4 @@ class TestSpeakerEndpoints:
         uuid = create_resp.json()["uuid"]
 
         response = client.put(f"/speakers/{uuid}", json={})
-        assert response.status_code == 400
+        assert response.status_code == 422

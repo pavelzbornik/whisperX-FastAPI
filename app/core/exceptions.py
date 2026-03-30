@@ -206,6 +206,26 @@ class TaskNotFoundError(DomainError):
         )
 
 
+class SpeakerNotFoundError(DomainError):
+    """Speaker embedding with given identifier not found."""
+
+    def __init__(self, identifier: str, correlation_id: Optional[str] = None) -> None:
+        """
+        Initialize the speaker not found error.
+
+        Args:
+            identifier: The speaker UUID that was not found
+            correlation_id: Optional correlation ID for tracing
+        """
+        super().__init__(
+            message=f"Speaker with identifier '{identifier}' not found",
+            code="SPEAKER_NOT_FOUND",
+            user_message="The requested speaker could not be found. Please check the speaker ID.",
+            correlation_id=correlation_id,
+            identifier=identifier,
+        )
+
+
 class TaskAlreadyCompletedError(DomainError):
     """Attempted to modify a completed task."""
 

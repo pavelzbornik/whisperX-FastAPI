@@ -77,3 +77,23 @@ class SpeakerSearchResponse(BaseModel):
     """Response schema for speaker search."""
 
     results: list[SpeakerSearchResult]
+
+
+class SpeakerCreatedResponse(BaseModel):
+    """Response schema for speaker creation."""
+
+    uuid: str
+    message: str = "Speaker created"
+
+
+class SpeakerMessageResponse(BaseModel):
+    """Response schema for speaker operations that return a message."""
+
+    message: str
+
+
+class SpeakerIdentifyResponse(BaseModel):
+    """Response schema for speaker identification."""
+
+    speaker: SpeakerResponse
+    similarity: float
