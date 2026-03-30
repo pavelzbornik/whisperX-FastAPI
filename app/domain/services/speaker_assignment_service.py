@@ -21,6 +21,7 @@ class ISpeakerAssignmentService(Protocol):
         self,
         diarization_segments: pd.DataFrame,
         transcript: dict[str, Any],
+        speaker_embeddings: dict[str, list[float]] | None = None,
     ) -> dict[str, Any]:
         """
         Assign speaker labels to transcript words based on diarization.
@@ -29,10 +30,13 @@ class ISpeakerAssignmentService(Protocol):
             diarization_segments: DataFrame with speaker segments
                 (columns: start, end, speaker)
             transcript: Aligned transcript dictionary with word-level timestamps
+            speaker_embeddings: Optional mapping of speaker labels to embedding
+                vectors, included in the result if provided
 
         Returns:
             Dictionary containing transcript with speaker labels assigned:
                 - segments: List of segments with speaker information
                 - word_segments: Words with assigned speakers
+                - speaker_embeddings: (if provided) mapping of speaker IDs to vectors
         """
         ...

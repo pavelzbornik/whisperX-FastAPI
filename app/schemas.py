@@ -389,6 +389,24 @@ class DiarizationParams(BaseModel):
     max_speakers: int | None = Field(
         Query(None, description="Maximum number of speakers to in audio file")
     )
+    return_embeddings: bool = Field(
+        Query(
+            False,
+            description="Include speaker embedding vectors in the task result",
+        )
+    )
+    identify_speakers: bool = Field(
+        Query(
+            False,
+            description="Match speakers against the local speaker database and replace generic labels with known names",
+        )
+    )
+    auto_store_speakers: bool = Field(
+        Query(
+            False,
+            description="Automatically store new speaker embeddings in the database (requires identify_speakers=true)",
+        )
+    )
 
 
 class SpeechToTextProcessingParams(BaseModel):

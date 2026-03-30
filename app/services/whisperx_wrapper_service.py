@@ -374,15 +374,41 @@ def process_audio_common(
                 params.diarization_params.min_speakers,
                 params.diarization_params.max_speakers,
             )
-            diarization_segments = diarization_svc.diarize(
+            need_embeddings = (
+                params.diarization_params.return_embeddings
+                or params.diarization_params.identify_speakers
+            )
+            diarization_result = diarization_svc.diarize(
                 audio=params.audio,
                 device=params.whisper_model_params.device.value,
                 min_speakers=params.diarization_params.min_speakers,
                 max_speakers=params.diarization_params.max_speakers,
+                return_embeddings=need_embeddings,
             )
 
+            # Identify speakers against local DB if requested
+            if (
+                params.diarization_params.identify_speakers
+                or params.diarization_params.auto_store_speakers
+            ):
+                from app.services.audio_processing_service import (
+                    _identify_and_store_speakers,
+                )
+
+                diarization_result = _identify_and_store_speakers(
+                    diarization_result=diarization_result,
+                    identifier=params.identifier,
+                    session=session,
+                    identify=params.diarization_params.identify_speakers,
+                    auto_store=params.diarization_params.auto_store_speakers,
+                )
+
             logger.debug("Starting to combine transcript with diarization results")
-            result = speaker_svc.assign_speakers(diarization_segments, transcript_dict)
+            result = speaker_svc.assign_speakers(
+                diarization_result.segments,
+                transcript_dict,
+                speaker_embeddings=diarization_result.speaker_embeddings,
+            )
 
             logger.debug("Completed combining transcript with diarization results")
 
