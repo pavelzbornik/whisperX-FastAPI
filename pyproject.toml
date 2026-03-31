@@ -68,7 +68,7 @@ dev = [
     "pytest==9.0.2",
     "pytest-asyncio>=0.24.0",
     "pytest-cov==7.1.0",
-    "ruff==0.15.7",
+    "ruff==0.15.8",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]
