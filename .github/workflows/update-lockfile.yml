@@ -27,7 +27,7 @@ jobs:
       - name: Regenerate uv.lock
         run: uv lock
       - name: Commit updated uv.lock
-        uses: stefanzweifel/git-auto-commit-action@4fc4bbf34c756a23fa53d40bc01e8ddd276d51b9
+        uses: stefanzweifel/git-auto-commit-action@f53a62c26ed5971dd2ed8768e4142f08c767ea37
         with:
           commit_message: "ci: update uv.lock"
           file_pattern: uv.lock
