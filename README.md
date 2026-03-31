@@ -7,7 +7,7 @@
 ![Dependency Status](https://img.shields.io/librariesio/github/pavelzbornik/whisperX-FastAPI)
 
 <!-- BADGES:START -->
-![Python](https://img.shields.io/badge/Python-3.11-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
 ![CUDA](https://img.shields.io/badge/CUDA-12.8-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.135.1-green.svg)
 ![whisperx](https://img.shields.io/badge/whisperx-3.8.2-green.svg)

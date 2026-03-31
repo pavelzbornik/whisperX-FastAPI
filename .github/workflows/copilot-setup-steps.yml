@@ -25,7 +25,7 @@ jobs:
       - name: Common setup
         uses: ./.github/actions/setup
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Cache Hugging Face and Torch models
         uses: actions/cache@565629816435f6c0b50676926c9b05c254113c0c
         with:

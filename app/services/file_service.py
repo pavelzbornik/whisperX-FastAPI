@@ -2,13 +2,83 @@
 
 import os
 import re
+import socket
+import threading
 from tempfile import NamedTemporaryFile
+from urllib.parse import urljoin, urlparse
 
 import requests
+import urllib3.util.connection
 from fastapi import HTTPException, UploadFile
+from requests.adapters import HTTPAdapter
 
-from app.core.config import Config
+from app.core.config import get_settings
+from app.core.exceptions import FileDownloadError, UnsupportedFileExtensionError
 from app.core.logging import logger
+from app.core.url_validator import validate_url
+
+# Thread-local storage for DNS pinning. Each thread can independently
+# set a pinned IP without affecting other threads.
+_dns_pin_local = threading.local()
+
+
+def _thread_aware_create_connection(
+    address: tuple[str, int], *args: object, **kwargs: object
+) -> socket.socket:
+    """Create a connection using the thread-local pinned IP if set.
+
+    Falls back to the original create_connection for unpinned threads.
+    This replaces urllib3's create_connection globally once at import
+    time, making DNS pinning thread-safe without per-request patching.
+    """
+    pinned_ip = getattr(_dns_pin_local, "pinned_ip", None)
+    if pinned_ip:
+        _host, port = address
+        address = (pinned_ip, port)
+    return _original_create_connection(address, *args, **kwargs)  # type: ignore[arg-type]
+
+
+# Install the thread-aware wrapper once at import time.
+_original_create_connection = urllib3.util.connection.create_connection
+urllib3.util.connection.create_connection = _thread_aware_create_connection
+
+
+class _PinnedIPAdapter(HTTPAdapter):
+    """HTTP adapter that pins DNS resolution to a validated IP.
+
+    Prevents DNS rebinding (TOCTOU) attacks by setting a thread-local
+    pinned IP during the request. The URL hostname is preserved for
+    correct TLS SNI and certificate verification. Thread-safe via
+    thread-local storage.
+    """
+
+    def __init__(self, pinned_ip: str) -> None:
+        """Initialize with the IP to pin connections to."""
+        self.pinned_ip = pinned_ip
+        super().__init__()
+
+    def send(
+        self,
+        request: requests.PreparedRequest,
+        stream: bool = False,
+        timeout: float | tuple[float, float] | tuple[float, None] | None = None,
+        verify: bool | str = True,
+        cert: bytes | str | tuple[bytes | str, bytes | str] | None = None,
+        proxies: object = None,
+    ) -> requests.Response:
+        """Send request with thread-local pinned DNS resolution."""
+        _dns_pin_local.pinned_ip = self.pinned_ip
+        try:
+            return super().send(
+                request,
+                stream=stream,
+                timeout=timeout,
+                verify=verify,
+                cert=cert,
+                proxies=proxies,  # type: ignore[arg-type]
+            )
+        finally:
+            _dns_pin_local.pinned_ip = None
 
 
 class FileService:
@@ -109,9 +179,93 @@ class FileService:
         return temp_file.name
 
     @staticmethod
-    def download_from_url(url: str) -> tuple[str, str]:
+    def _try_parse_url_extension(url: str) -> tuple[str, str | None]:
+        """Try to extract a valid file extension from a URL path.
+
+        Args:
+            url: The URL to extract the extension from
+
+        Returns:
+            Tuple of (filename, canonical_extension_or_None).
+            Extension is None if the URL has no recognizable extension,
+            allowing Content-Disposition fallback after download.
         """
-        Download a file from a URL to a temporary location.
+        url_path = urlparse(url).path
+        filename = os.path.basename(url_path)
+        if filename:
+            try:
+                filename = FileService.secure_filename(filename)
+            except ValueError:
+                return "", None
+
+        _, ext_candidate = os.path.splitext(filename)
+        ext_candidate = ext_candidate.lower().strip()
+
+        if not ext_candidate or not ext_candidate.startswith("."):
+            return filename, None
+
+        allowed = get_settings().whisper.ALLOWED_EXTENSIONS
+        extension_to_suffix = {ext.lower().lstrip("."): ext for ext in allowed}
+        ext_clean = ext_candidate[1:]
+
+        if ext_clean not in extension_to_suffix:
+            return filename, None
+
+        return filename, extension_to_suffix[ext_clean]
+
+    @staticmethod
+    def _resolve_extension(
+        filename: str,
+        response: requests.Response,
+        url_extension: str | None,
+    ) -> tuple[str, str]:
+        """Resolve the final filename and extension from URL and response headers.
+
+        Args:
+            filename: Filename extracted from URL path
+            response: HTTP response to check Content-Disposition
+            url_extension: Extension from URL, or None
+
+        Returns:
+            Tuple of (final_filename, canonical_extension)
+
+        Raises:
+            UnsupportedFileExtensionError: If no valid extension found
+        """
+        allowed = get_settings().whisper.ALLOWED_EXTENSIONS
+        extension_to_suffix = {ext.lower().lstrip("."): ext for ext in allowed}
+
+        # Try Content-Disposition header first
+        content_disposition = response.headers.get("Content-Disposition")
+        if content_disposition and "filename=" in content_disposition:
+            cd_filename = content_disposition.split("filename=")[1].strip('"')
+            try:
+                cd_filename = FileService.secure_filename(cd_filename)
+            except ValueError:
+                pass
+            else:
+                _, cd_ext = os.path.splitext(cd_filename)
+                cd_ext_clean = cd_ext.lower().strip().lstrip(".")
+                if cd_ext_clean in extension_to_suffix:
+                    return cd_filename, extension_to_suffix[cd_ext_clean]
+
+        # Fall back to URL extension
+        if url_extension:
+            return filename, url_extension
+
+        # No valid extension found from either source
+        raise UnsupportedFileExtensionError(
+            filename=filename or "(unknown)",
+            extension="(none)",
+            allowed=allowed,
+        )
+
+    @staticmethod
+    def download_from_url(url: str) -> tuple[str, str]:
+        """Download a file from a URL to a temporary location.
+
+        Validates the URL against SSRF rules before making any HTTP request.
+        File extension is resolved from the URL path or Content-Disposition header.
 
         Args:
             url: URL of the file to download
@@ -120,61 +274,71 @@ class FileService:
             Tuple of (temp_file_path, original_filename)
 
         Raises:
-            ValueError: If the URL is invalid or file extension is not allowed
-            HTTPException: If download fails
+            SsrfBlockedError: If the URL is blocked by SSRF protection
+            UnsupportedFileExtensionError: If the file extension is not allowed
+            FileDownloadError: If the download fails
         """
         logger.info("Downloading file from URL: %s", url)
 
+        # Validate URL against SSRF rules BEFORE making any request
+        # Returns a pinned IP to prevent DNS rebinding (TOCTOU) attacks
+        _, pinned_ip = validate_url(url)
+
+        # Try to extract extension from URL (may be None for CDN/API URLs)
+        filename, url_extension = FileService._try_parse_url_extension(url)
+
         try:
-            with requests.get(url, stream=True, timeout=30) as response:
-                response.raise_for_status()
+            with requests.Session() as session:
+                session.max_redirects = 10
 
-                # Check for filename in Content-Disposition header
-                content_disposition = response.headers.get("Content-Disposition")
-                if content_disposition and "filename=" in content_disposition:
-                    filename = content_disposition.split("filename=")[1].strip('"')
-                else:
-                    # Fall back to extracting from the URL path
-                    filename = os.path.basename(url)
-                    filename = FileService.secure_filename(filename)
+                # Pin connections to the validated IP to prevent DNS rebinding
+                if pinned_ip:
+                    adapter = _PinnedIPAdapter(pinned_ip)
+                    session.mount("http://", adapter)
+                    session.mount("https://", adapter)
 
-                # Get the file extension
-                _, ext_candidate = os.path.splitext(filename)
-                ext_candidate = ext_candidate.lower().strip()
+                # Validate each redirect target against SSRF rules
+                def _check_redirect(
+                    response: requests.Response, *args: object, **kwargs: object
+                ) -> None:  # noqa: ARG001
+                    if response.is_redirect:
+                        location = response.headers.get("Location", "")
+                        if location:
+                            absolute_url = urljoin(str(response.url), location)
+                            # Validate and get new pinned IP for redirect target
+                            _, redirect_ip = validate_url(absolute_url)
+                            if redirect_ip:
+                                adapter = _PinnedIPAdapter(redirect_ip)
+                                session.mount("http://", adapter)
+                                session.mount("https://", adapter)
 
-                # Validate extension format
-                if not ext_candidate or not ext_candidate.startswith("."):
-                    raise ValueError(f"Invalid file extension: {ext_candidate}")
+                session.hooks["response"].append(_check_redirect)
 
-                ext_clean = ext_candidate[1:]  # remove leading dot for lookup
+                # codeql[py/full-ssrf] URL validated by validate_url() above
+                with session.get(url, stream=True, timeout=30) as response:
+                    response.raise_for_status()
 
-                # Map to canonical extension from allowed set
-                extension_to_suffix = {
-                    ext.lower().lstrip("."): ext for ext in Config.ALLOWED_EXTENSIONS
-                }
-                if ext_clean not in extension_to_suffix:
-                    raise ValueError(f"Invalid file extension: {ext_candidate}")
+                    # Resolve final filename and extension
+                    final_filename, safe_suffix = FileService._resolve_extension(
+                        filename, response, url_extension
+                    )
 
-                # Use the canonical extension from allowed set
-                safe_suffix = extension_to_suffix[ext_clean]
+                    # Save the file to a temporary location
+                    temp_audio_file = NamedTemporaryFile(
+                        suffix=safe_suffix, delete=False
+                    )
+                    for chunk in response.iter_content(chunk_size=8192):
+                        temp_audio_file.write(chunk)
+                    temp_audio_file.close()
 
-                # Save the file to a temporary location
-                temp_audio_file = NamedTemporaryFile(suffix=safe_suffix, delete=False)
-                for chunk in response.iter_content(chunk_size=8192):
-                    temp_audio_file.write(chunk)
-                temp_audio_file.close()
+                    logger.info(
+                        "File downloaded successfully: %s -> %s",
+                        url,
+                        temp_audio_file.name,
+                    )
 
-                logger.info(
-                    "File downloaded successfully: %s -> %s",
-                    url,
-                    temp_audio_file.name,
-                )
-
-                return temp_audio_file.name, filename
+                    return temp_audio_file.name, final_filename
 
         except requests.RequestException as e:
             logger.error("Failed to download file from URL %s: %s", url, str(e))
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to download file from URL: {str(e)}",
-            )
+            raise FileDownloadError(url=url, original_error=e) from e

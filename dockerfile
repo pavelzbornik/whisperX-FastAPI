@@ -1,8 +1,8 @@
 # ---- Stage 1: base ----
 # Shared foundation for both dev and production stages
-FROM nvidia/cuda:13.0.1-base-ubuntu22.04 AS base
+FROM nvidia/cuda:13.0.1-base-ubuntu24.04 AS base
 
-ENV PYTHON_VERSION=3.11
+ENV PYTHON_VERSION=3.12
 ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
 
 # Install system dependencies and clean up in the same layer
@@ -10,10 +10,11 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y update \
     && apt-get -y install --no-install-recommends \
-    python3.11 \
+    python3.12 \
+    libpython3.12 \
     git \
-    ffmpeg=7:4.4.2-0ubuntu0.22.04.1 \
-    libcudnn9-cuda-12=9.8.0.87-1 \
+    ffmpeg \
+    libcudnn9-cuda-12 \
     libatomic1 \
     curl \
     && apt-get clean \

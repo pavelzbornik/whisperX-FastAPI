@@ -305,6 +305,9 @@ async def readiness_check() -> JSONResponse:
             content={
                 "status": "ok",
                 "database": "connected",
+                "gpu": {
+                    "max_concurrent_tasks": settings.MAX_CONCURRENT_GPU_TASKS,
+                },
                 "message": "Application is ready to accept requests",
             },
         )
@@ -316,6 +319,9 @@ async def readiness_check() -> JSONResponse:
             content={
                 "status": "error",
                 "database": "disconnected",
+                "gpu": {
+                    "max_concurrent_tasks": settings.MAX_CONCURRENT_GPU_TASKS,
+                },
                 "message": "Application is not ready due to an internal error.",
             },
         )

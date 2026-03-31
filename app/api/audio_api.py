@@ -5,7 +5,6 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
-from datetime import datetime, timezone
 from uuid import uuid4
 
 from fastapi import (
@@ -99,7 +98,7 @@ async def speech_to_text(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=file.filename,
         audio_duration=audio_duration,
         language=model_params.language,
@@ -112,7 +111,6 @@ async def speech_to_text(
             **diarize_params.model_dump(),
         },
         callback_url=callback_url,
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)
@@ -184,7 +182,7 @@ async def speech_to_text_url(
     # Create domain task
     task = DomainTask(
         uuid=str(uuid4()),
-        status=TaskStatus.processing,
+        status=TaskStatus.queued,
         file_name=filename,
         audio_duration=get_audio_duration(audio),
         language=model_params.language,
@@ -198,7 +196,6 @@ async def speech_to_text_url(
         },
         url=url,
         callback_url=callback_url,
-        start_time=datetime.now(tz=timezone.utc),
     )
 
     identifier = await repository.add(task)

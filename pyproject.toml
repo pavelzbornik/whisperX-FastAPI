@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
@@ -45,6 +46,8 @@ dependencies = [
     "torchaudio<=2.8.0",
     "torchvision<=0.23.0",
     "setuptools>=78.1.1",
+    # torchcodec has strict 1:1 PyTorch version coupling; 0.7.0 matches torch <=2.8.0
+    "torchcodec==0.7.0",
     # whisperx 3.8.2 uses deprecated use_auth_token parameter removed in 0.36.0
     "huggingface-hub<0.36.0",
     "python-json-logger>=4.0.0",
@@ -130,7 +133,7 @@ exclude_lines = [
 ignore_errors = true
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

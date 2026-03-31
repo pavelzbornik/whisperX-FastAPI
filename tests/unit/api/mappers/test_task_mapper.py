@@ -34,7 +34,7 @@ class TestTaskMapper:
         domain_task = TaskMapper.to_domain(dto, uuid=task_uuid)
 
         assert domain_task.uuid == task_uuid
-        assert domain_task.status == "processing"
+        assert domain_task.status == "queued"
         assert domain_task.task_type == "transcription"
         assert domain_task.file_name == "test.mp3"
         assert domain_task.url is None
@@ -57,7 +57,7 @@ class TestTaskMapper:
 
         assert domain_task.uuid is not None
         assert len(domain_task.uuid) > 0
-        assert domain_task.status == "processing"
+        assert domain_task.status == "queued"
         assert domain_task.task_type == "diarization"
 
     def test_to_response(self) -> None:

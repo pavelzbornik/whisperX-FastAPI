@@ -6,7 +6,7 @@
 
 **Repository Stats:**
 
-- **Primary Language:** Python 3.11
+- **Primary Language:** Python 3.12
 - **Framework:** FastAPI 0.117+
 - **ML Library:** whisperx 3.7.2
 - **Package Manager:** `uv` (Astral's fast Python package manager)
@@ -397,7 +397,7 @@ The CI runs on PRs and pushes to `main`/`dev` branches when these paths change:
    - Comments on PR if fails with link to logs
 
 2. **`test`** (20 min timeout):
-   - Python 3.11 matrix
+   - Python 3.12 matrix
    - Runs with `DEVICE=cpu`, `COMPUTE_TYPE=int8`
    - Requires ≥80% coverage
    - Uploads test report (JUnit XML) and coverage report (XML) as artifacts
@@ -435,7 +435,7 @@ All CI jobs use `.github/actions/setup/action.yaml`:
 steps:
   - Install system deps: ffmpeg, libblas3
   - Install uv (with cache enabled)
-  - Set up Python 3.11
+  - Set up Python 3.12
   - Run: uv sync --all-extras
 ```
 

@@ -15,7 +15,7 @@ class Task:
 
     Attributes:
         uuid: Unique identifier for the task
-        status: Current status of the task (processing, completed, failed)
+        status: Current status of the task (queued, processing, completed, failed)
         task_type: Type/category of the task
         result: JSON data representing the result of the task
         file_name: Name of the file associated with the task
@@ -78,6 +78,11 @@ class Task:
         self.end_time = datetime.now(timezone.utc)
         self.updated_at = datetime.now(timezone.utc)
 
+    def mark_as_queued(self) -> None:
+        """Mark the task as queued, waiting to be processed."""
+        self.status = "queued"
+        self.updated_at = datetime.now(timezone.utc)
+
     def mark_as_processing(self, start_time: datetime) -> None:
         """
         Mark the task as processing.
@@ -88,6 +93,15 @@ class Task:
         self.status = "processing"
         self.start_time = start_time
         self.updated_at = datetime.now(timezone.utc)
+
+    def is_queued(self) -> bool:
+        """
+        Check if task is queued waiting to be processed.
+
+        Returns:
+            True if task status is 'queued', False otherwise
+        """
+        return self.status == "queued"
 
     def is_processing(self) -> bool:
         """

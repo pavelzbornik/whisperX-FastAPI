@@ -1,5 +1,6 @@
 """Unit tests for audio processing service."""
 
+import threading
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -53,13 +54,17 @@ class TestAudioProcessingService:
             task_type="transcription",
         )
 
-        # Verify
+        # Verify: first update transitions to processing, second marks completed
         mock_processor.assert_called_once()
-        mock_repository.update.assert_called_once()
-        update_call = mock_repository.update.call_args
-        assert update_call[1]["identifier"] == "test-123"
-        assert update_call[1]["update_data"]["status"] == "completed"
-        assert update_call[1]["update_data"]["result"] == {
+        assert mock_repository.update.call_count == 2
+
+        processing_call = mock_repository.update.call_args_list[0]
+        assert processing_call[1]["update_data"]["status"] == "processing"
+
+        completed_call = mock_repository.update.call_args_list[1]
+        assert completed_call[1]["identifier"] == "test-123"
+        assert completed_call[1]["update_data"]["status"] == "completed"
+        assert completed_call[1]["update_data"]["result"] == {
             "segments": [{"text": "hello"}]
         }
         mock_session.close.assert_called_once()
@@ -96,10 +101,10 @@ class TestAudioProcessingService:
             task_type="diarization",
         )
 
-        # Verify
-        mock_repository.update.assert_called_once()
-        update_call = mock_repository.update.call_args
-        result = update_call[1]["update_data"]["result"]
+        # Verify: second update has the completed result
+        assert mock_repository.update.call_count == 2
+        completed_call = mock_repository.update.call_args_list[1]
+        result = completed_call[1]["update_data"]["result"]
         # Should be a list of dicts, not a DataFrame
         assert isinstance(result, list)
         assert len(result) == 2
@@ -127,12 +132,13 @@ class TestAudioProcessingService:
             task_type="transcription",
         )
 
-        # Verify task was marked as failed
-        mock_repository.update.assert_called_once()
-        update_call = mock_repository.update.call_args
-        assert update_call[1]["identifier"] == "test-789"
-        assert update_call[1]["update_data"]["status"] == "failed"
-        assert "error" in update_call[1]["update_data"]
+        # Verify: first update transitions to processing, second marks failed
+        assert mock_repository.update.call_count == 2
+
+        failed_call = mock_repository.update.call_args_list[1]
+        assert failed_call[1]["identifier"] == "test-789"
+        assert failed_call[1]["update_data"]["status"] == "failed"
+        assert "error" in failed_call[1]["update_data"]
         mock_session.close.assert_called_once()
 
     @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
@@ -156,11 +162,191 @@ class TestAudioProcessingService:
             task_type="alignment",
         )
 
-        # Verify timing was recorded
-        update_call = mock_repository.update.call_args
-        update_data = update_call[1]["update_data"]
+        # Verify timing was recorded in the completed update
+        completed_call = mock_repository.update.call_args_list[1]
+        update_data = completed_call[1]["update_data"]
         assert "start_time" in update_data
         assert "end_time" in update_data
         assert "duration" in update_data
         assert isinstance(update_data["duration"], float)
         assert update_data["duration"] >= 0
+
+
+@pytest.mark.unit
+class TestGpuSemaphoreIntegration:
+    """Tests for GPU semaphore integration in audio processing service."""
+
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
+    @patch("app.core.gpu_semaphore.get_settings")
+    def test_gpu_semaphore_acquired_and_released(
+        self,
+        mock_get_settings: Mock,
+        mock_session_local: Mock,
+        mock_repository_class: Mock,
+    ) -> None:
+        """Test GPU semaphore is acquired and released for GPU tasks."""
+        from app.core.gpu_semaphore import get_gpu_semaphore
+
+        get_gpu_semaphore.cache_clear()
+        mock_get_settings.return_value = MagicMock(MAX_CONCURRENT_GPU_TASKS=1)
+
+        mock_session = MagicMock()
+        mock_session_local.return_value = mock_session
+        mock_repository = MagicMock()
+        mock_repository_class.return_value = mock_repository
+
+        mock_processor = Mock(return_value={"text": "hello"})
+
+        process_audio_task(
+            audio_processor=mock_processor,
+            identifier="test-gpu",
+            task_type="transcription",
+            use_gpu_semaphore=True,
+        )
+
+        # Semaphore should be available again (was released)
+        sem = get_gpu_semaphore()
+        assert sem.acquire(blocking=False)
+        sem.release()
+
+        mock_processor.assert_called_once()
+        get_gpu_semaphore.cache_clear()
+
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
+    @patch("app.core.gpu_semaphore.get_settings")
+    def test_gpu_semaphore_released_on_error(
+        self,
+        mock_get_settings: Mock,
+        mock_session_local: Mock,
+        mock_repository_class: Mock,
+    ) -> None:
+        """Test GPU semaphore is released even when processor raises."""
+        from app.core.gpu_semaphore import get_gpu_semaphore
+
+        get_gpu_semaphore.cache_clear()
+        mock_get_settings.return_value = MagicMock(MAX_CONCURRENT_GPU_TASKS=1)
+
+        mock_session = MagicMock()
+        mock_session_local.return_value = mock_session
+        mock_repository = MagicMock()
+        mock_repository_class.return_value = mock_repository
+
+        mock_processor = Mock(side_effect=RuntimeError("GPU error"))
+
+        process_audio_task(
+            audio_processor=mock_processor,
+            identifier="test-gpu-error",
+            task_type="transcription",
+            use_gpu_semaphore=True,
+        )
+
+        # Semaphore should be available again despite the error
+        sem = get_gpu_semaphore()
+        assert sem.acquire(blocking=False)
+        sem.release()
+        get_gpu_semaphore.cache_clear()
+
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
+    @patch("app.core.gpu_semaphore.get_gpu_semaphore")
+    def test_gpu_semaphore_not_used_for_cpu_tasks(
+        self,
+        mock_get_gpu_semaphore: Mock,
+        mock_session_local: Mock,
+        mock_repository_class: Mock,
+    ) -> None:
+        """Test GPU semaphore is never called when use_gpu_semaphore=False."""
+        mock_session = MagicMock()
+        mock_session_local.return_value = mock_session
+        mock_repository = MagicMock()
+        mock_repository_class.return_value = mock_repository
+
+        mock_processor = Mock(return_value={"result": "data"})
+
+        # Default use_gpu_semaphore=False — get_gpu_semaphore should never be called
+        process_audio_task(
+            audio_processor=mock_processor,
+            identifier="test-cpu",
+            task_type="combine_transcript&diarization",
+        )
+
+        mock_get_gpu_semaphore.assert_not_called()
+
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
+    @patch("app.core.gpu_semaphore.get_settings")
+    def test_gpu_semaphore_blocks_concurrent_tasks(
+        self,
+        mock_get_settings: Mock,
+        mock_session_local: Mock,
+        mock_repository_class: Mock,
+    ) -> None:
+        """Test GPU semaphore blocks when all slots are taken."""
+        from app.core.gpu_semaphore import get_gpu_semaphore
+
+        get_gpu_semaphore.cache_clear()
+        mock_get_settings.return_value = MagicMock(MAX_CONCURRENT_GPU_TASKS=1)
+
+        mock_session = MagicMock()
+        mock_session_local.return_value = mock_session
+        mock_repository = MagicMock()
+        mock_repository_class.return_value = mock_repository
+
+        barrier = threading.Event()
+        task1_acquired = threading.Event()
+        task2_started = threading.Event()
+
+        def slow_processor() -> dict[str, str]:
+            task1_acquired.set()
+            barrier.wait(timeout=5)
+            return {"text": "done"}
+
+        def fast_processor() -> dict[str, str]:
+            task2_started.set()
+            return {"text": "done"}
+
+        # Start first task that holds the semaphore
+        t1 = threading.Thread(
+            target=process_audio_task,
+            kwargs={
+                "audio_processor": slow_processor,
+                "identifier": "task-1",
+                "task_type": "transcription",
+                "use_gpu_semaphore": True,
+            },
+        )
+        t1.start()
+
+        # Wait for task 1 to acquire the semaphore (deterministic signal)
+        assert task1_acquired.wait(timeout=5), "Task 1 did not acquire semaphore"
+
+        # Start second task — should be blocked
+        t2 = threading.Thread(
+            target=process_audio_task,
+            kwargs={
+                "audio_processor": fast_processor,
+                "identifier": "task-2",
+                "task_type": "transcription",
+                "use_gpu_semaphore": True,
+            },
+        )
+        t2.start()
+
+        # Task 2 should NOT have started yet
+        assert not task2_started.wait(timeout=0.3)
+
+        # Release task 1
+        barrier.set()
+        t1.join(timeout=5)
+        if t1.is_alive():
+            pytest.fail("Timeout waiting for task-1 thread to finish")
+
+        # Now task 2 should complete
+        t2.join(timeout=5)
+        if t2.is_alive():
+            pytest.fail("Timeout waiting for task-2 thread to finish")
+        assert task2_started.is_set()
+
+        get_gpu_semaphore.cache_clear()
