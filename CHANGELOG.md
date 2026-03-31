@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.6.0](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.5.1...v0.6.0) (2026-03-31)
+
+
+### Features
+
+* add MAX_CONCURRENT_GPU_TASKS setting to prevent CUDA OOM errors ([ee91f70](https://github.com/pavelzbornik/whisperX-FastAPI/commit/ee91f70aa250d5419ace12619d8e4c64d273292d)), closes [#466](https://github.com/pavelzbornik/whisperX-FastAPI/issues/466)
+* add MAX_CONCURRENT_GPU_TASKS to prevent CUDA OOM ([83e70ae](https://github.com/pavelzbornik/whisperX-FastAPI/commit/83e70aececdb06dc3d4abe2c0fee5958098c7452))
+
+
+### Bug Fixes
+
+* address PR review feedback from Copilot ([0bee57d](https://github.com/pavelzbornik/whisperX-FastAPI/commit/0bee57dd5843cfdbc52306641cffdc7c06a12cb9))
+* address PR review feedback from Copilot, CodeRabbit, and Devin ([8211211](https://github.com/pavelzbornik/whisperX-FastAPI/commit/8211211950124ea69d08bcd30f5fe4a9a8c1be68))
+* always transition task status to processing before execution ([0599847](https://github.com/pavelzbornik/whisperX-FastAPI/commit/059984779b6d9345f103b3a31b8c85543fed5b3e))
+* isolate env in MAX_CONCURRENT_GPU_TASKS config tests ([1534a3d](https://github.com/pavelzbornik/whisperX-FastAPI/commit/1534a3d2cd4af6e56ea297a3bc58fd29f71fd298))
+* resolve torchcodec FFmpeg compatibility (Ubuntu 24.04 + Python 3.12) ([9a1ed24](https://github.com/pavelzbornik/whisperX-FastAPI/commit/9a1ed241ff05dd779682a7a3bd659ae98bf68c38))
+* resolve torchcodec FFmpeg compatibility by upgrading to Ubuntu 24.04 ([dddf669](https://github.com/pavelzbornik/whisperX-FastAPI/commit/dddf6692921aa7583b15439e7c0c032189364450)), closes [#465](https://github.com/pavelzbornik/whisperX-FastAPI/issues/465)
+* **security:** add CodeQL inline suppression for validated SSRF request ([e9dac65](https://github.com/pavelzbornik/whisperX-FastAPI/commit/e9dac6574886f87653e30de1b58066b465359c12))
+* **security:** add DNS pinning to prevent TOCTOU rebinding attacks ([fa46447](https://github.com/pavelzbornik/whisperX-FastAPI/commit/fa464474d9b31e4600202bfab36096d0dddcc1b2))
+* **security:** add SSRF protection to URL download and callback endpoints ([910e0ff](https://github.com/pavelzbornik/whisperX-FastAPI/commit/910e0fff98ebd8f0cde317e239b503246a54c89e))
+* **security:** add SSRF protection to URL download and callback endpoints ([ef78fe2](https://github.com/pavelzbornik/whisperX-FastAPI/commit/ef78fe2001deede5354031e4200d41c6a7e8cbfc))
+* **security:** address PR review feedback for SSRF protection ([3fd21b8](https://github.com/pavelzbornik/whisperX-FastAPI/commit/3fd21b8da212b878727a3c87b08048f3581bab54))
+* **security:** make DNS pinning thread-safe via thread-local storage ([8bc522c](https://github.com/pavelzbornik/whisperX-FastAPI/commit/8bc522c67480c4251ac1f5287b3be9f97db064ad))
+* **security:** use FileDownloadError for all remote HTTP failures ([1ea3634](https://github.com/pavelzbornik/whisperX-FastAPI/commit/1ea3634425ddb75c59235edcbc7928b9e594e1d5))
+* **security:** use Session context manager to prevent connection leaks ([c535740](https://github.com/pavelzbornik/whisperX-FastAPI/commit/c535740a0f32c7a838ec95a6a494a35bca7c2aab))
+* **security:** use socket-level DNS pinning to preserve TLS/SNI ([52e25ab](https://github.com/pavelzbornik/whisperX-FastAPI/commit/52e25abde9009570ad91347745535e82f133f035))
+* strengthen CPU-path semaphore test assertion ([0010474](https://github.com/pavelzbornik/whisperX-FastAPI/commit/001047432fc8c4ba54510c3ce596008e551f801b))
+* update SonarQube Python version to 3.12 ([7f8bc7c](https://github.com/pavelzbornik/whisperX-FastAPI/commit/7f8bc7c0d5842857d085d28087b698dd09b017e9))
+* use queued status for combine endpoint for lifecycle consistency ([c034ab5](https://github.com/pavelzbornik/whisperX-FastAPI/commit/c034ab5d066bf3383dbc2267bbe64e33f9d0ca69))
+
+
+### Documentation
+
+* add TDD process, data integrity, and PR workflow rules to CLAUDE.md ([0a426d5](https://github.com/pavelzbornik/whisperX-FastAPI/commit/0a426d5479ed8c00a041171174effb407a6e56c0))
+* update domain CLAUDE.md state machine for queued status ([aa8186c](https://github.com/pavelzbornik/whisperX-FastAPI/commit/aa8186c62e03bf506ae1294f01dc6512fd5eda78))
+
 ## [0.5.1](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.5.0...v0.5.1) (2026-03-24)
 
 
