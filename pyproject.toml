@@ -30,8 +30,8 @@ classifiers = [
 dependencies = [
     "colorlog==6.10.1",
     "dependency-injector>=4.41.0",
-    "fastapi==0.135.1",
-    "gunicorn==25.1.0",
+    "fastapi==0.135.2",
+    "gunicorn==25.3.0",
     "httpx==0.28.1",
     "numba==0.64.0",
     "pydantic-settings>=2.0.0",
@@ -67,8 +67,8 @@ dev = [
     "pre-commit==4.5.1",
     "pytest==9.0.2",
     "pytest-asyncio>=0.24.0",
-    "pytest-cov==7.0.0",
-    "ruff==0.15.7",
+    "pytest-cov==7.1.0",
+    "ruff==0.15.8",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]

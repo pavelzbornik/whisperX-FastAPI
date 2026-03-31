@@ -128,7 +128,7 @@ jobs:
           name: coverage-report-${{ matrix.python-version }}
           path: coverage.xml
       - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarqube-scan-action@9598b8a83feef37de07f549027fab50ecffe6a6e
+        uses: SonarSource/sonarqube-scan-action@3988e54db2467c7e9583a4af619c3f5647d6b8ad
         continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -207,7 +207,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8016837eba79c3b51bf2025379f48b6fc50f1236
+        uses: docker/setup-buildx-action@e35beed76f4e80e9b1116ca47dfa5939a88dd8ff
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
@@ -315,7 +315,7 @@ jobs:
           name: trivy-results
           path: trivy-results.txt
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@fd1ca02d0ddf5bf468c79e6ffb6ffb24f0ecba37
+        uses: github/codeql-action/upload-sarif@c618c9bddbf8ce520050acf14e9bb6c220e22931
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
