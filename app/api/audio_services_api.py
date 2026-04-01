@@ -5,6 +5,7 @@ Alignment, diarization, and combining transcripts with diarization results.
 """
 
 import json
+from typing import Annotated
 from uuid import uuid4
 
 import pandas as pd
@@ -24,23 +25,18 @@ from app.api.constants import (
     TASK_SCHEDULED_LOG_FORMAT,
 )
 from app.api.dependencies import (
-    get_alignment_service,
-    get_diarization_service,
-    get_file_service,
-    get_speaker_assignment_service,
-    get_task_repository,
-    get_transcription_service,
+    AlignmentServiceDependency,
+    DiarizationServiceDependency,
+    FileServiceDependency,
+    SpeakerAssignmentServiceDependency,
+    TaskRepositoryDependency,
+    TranscriptionServiceDependency,
 )
 from app.audio import get_audio_duration, process_audio_file
 from app.core.config import Config
 from app.core.exceptions import FileValidationError, ValidationError
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
-from app.domain.repositories.task_repository import ITaskRepository
-from app.domain.services.alignment_service import IAlignmentService
-from app.domain.services.diarization_service import IDiarizationService
-from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
-from app.domain.services.transcription_service import ITranscriptionService
 from app.files import ALLOWED_EXTENSIONS
 from app.schemas import (
     AlignedTranscription,
@@ -62,7 +58,6 @@ from app.services import (
     process_speaker_assignment,
     process_transcribe,
 )
-from app.services.file_service import FileService
 from app.transcript import filter_aligned_transcription
 
 service_router = APIRouter()
@@ -75,13 +70,13 @@ service_router = APIRouter()
 )
 async def transcribe(
     background_tasks: BackgroundTasks,
-    model_params: WhisperModelParams = Depends(),
-    asr_options_params: ASROptions = Depends(),
-    vad_options_params: VADOptions = Depends(),
+    model_params: Annotated[WhisperModelParams, Depends()],
+    asr_options_params: Annotated[ASROptions, Depends()],
+    vad_options_params: Annotated[VADOptions, Depends()],
+    repository: TaskRepositoryDependency,
+    file_service: FileServiceDependency,
+    transcription_service: TranscriptionServiceDependency,
     file: UploadFile = File(..., description="Audio/video file to transcribe"),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
-    transcription_service: ITranscriptionService = Depends(get_transcription_service),
 ) -> Response:
     """
     Transcribe an uploaded audio file.
@@ -148,6 +143,10 @@ async def transcribe(
 )
 async def align(
     background_tasks: BackgroundTasks,
+    align_params: Annotated[AlignmentParams, Depends()],
+    repository: TaskRepositoryDependency,
+    file_service: FileServiceDependency,
+    alignment_service: AlignmentServiceDependency,
     transcript: UploadFile = File(
         ..., description="Whisper style transcript json file"
     ),
@@ -158,10 +157,6 @@ async def align(
         default=Config.DEVICE,
         description="Device to use for PyTorch inference",
     ),
-    align_params: AlignmentParams = Depends(),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
-    alignment_service: IAlignmentService = Depends(get_alignment_service),
 ) -> Response:
     """
     Align a transcript with an audio file.
@@ -250,15 +245,15 @@ async def align(
 )
 async def diarize(
     background_tasks: BackgroundTasks,
+    repository: TaskRepositoryDependency,
+    diarize_params: Annotated[DiarizationParams, Depends()],
+    file_service: FileServiceDependency,
+    diarization_service: DiarizationServiceDependency,
     file: UploadFile = File(...),
-    repository: ITaskRepository = Depends(get_task_repository),
     device: Device = Query(
         default=Config.DEVICE,
         description="Device to use for PyTorch inference",
     ),
-    diarize_params: DiarizationParams = Depends(),
-    file_service: FileService = Depends(get_file_service),
-    diarization_service: IDiarizationService = Depends(get_diarization_service),
 ) -> Response:
     """
     Perform diarization on an uploaded audio file.
@@ -321,13 +316,11 @@ async def diarize(
 )
 async def combine(
     background_tasks: BackgroundTasks,
+    repository: TaskRepositoryDependency,
+    file_service: FileServiceDependency,
+    speaker_service: SpeakerAssignmentServiceDependency,
     aligned_transcript: UploadFile = File(...),
     diarization_result: UploadFile = File(...),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
-    speaker_service: ISpeakerAssignmentService = Depends(
-        get_speaker_assignment_service
-    ),
 ) -> Response:
     """
     Combine a transcript with diarization results.

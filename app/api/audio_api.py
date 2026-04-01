@@ -5,6 +5,7 @@ It includes endpoints for processing uploaded audio files and audio files from U
 """
 
 import logging
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import (
@@ -16,12 +17,11 @@ from fastapi import (
     UploadFile,
 )
 
-from app.api.dependencies import get_file_service, get_task_repository
+from app.api.dependencies import FileServiceDependency, TaskRepositoryDependency
 from app.audio import get_audio_duration, process_audio_file
 from app.core.exceptions import FileValidationError
 from app.core.logging import logger
 from app.domain.entities.task import Task as DomainTask
-from app.domain.repositories.task_repository import ITaskRepository
 from app.files import ALLOWED_EXTENSIONS
 from app.schemas import (
     AlignmentParams,
@@ -35,8 +35,6 @@ from app.schemas import (
     WhisperModelParams,
 )
 from app.services import process_audio_common
-from app.services.file_service import FileService
-
 from app.api.callbacks import task_callback_router
 from app.callbacks import validate_callback_url_dependency
 
@@ -50,15 +48,15 @@ stt_router = APIRouter()
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
 async def speech_to_text(
     background_tasks: BackgroundTasks,
-    model_params: WhisperModelParams = Depends(),
-    align_params: AlignmentParams = Depends(),
-    diarize_params: DiarizationParams = Depends(),
-    asr_options_params: ASROptions = Depends(),
-    vad_options_params: VADOptions = Depends(),
+    model_params: Annotated[WhisperModelParams, Depends()],
+    align_params: Annotated[AlignmentParams, Depends()],
+    diarize_params: Annotated[DiarizationParams, Depends()],
+    asr_options_params: Annotated[ASROptions, Depends()],
+    vad_options_params: Annotated[VADOptions, Depends()],
+    callback_url: Annotated[str | None, Depends(validate_callback_url_dependency)],
+    repository: TaskRepositoryDependency,
+    file_service: FileServiceDependency,
     file: UploadFile = File(...),
-    callback_url: str | None = Depends(validate_callback_url_dependency),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
 ) -> Response:
     """
     Process an uploaded audio file for speech-to-text conversion.
@@ -138,15 +136,15 @@ async def speech_to_text(
 )
 async def speech_to_text_url(
     background_tasks: BackgroundTasks,
-    model_params: WhisperModelParams = Depends(),
-    align_params: AlignmentParams = Depends(),
-    diarize_params: DiarizationParams = Depends(),
-    asr_options_params: ASROptions = Depends(),
-    vad_options_params: VADOptions = Depends(),
+    model_params: Annotated[WhisperModelParams, Depends()],
+    align_params: Annotated[AlignmentParams, Depends()],
+    diarize_params: Annotated[DiarizationParams, Depends()],
+    asr_options_params: Annotated[ASROptions, Depends()],
+    vad_options_params: Annotated[VADOptions, Depends()],
+    callback_url: Annotated[str | None, Depends(validate_callback_url_dependency)],
+    repository: TaskRepositoryDependency,
+    file_service: FileServiceDependency,
     url: str = Form(...),
-    callback_url: str | None = Depends(validate_callback_url_dependency),
-    repository: ITaskRepository = Depends(get_task_repository),
-    file_service: FileService = Depends(get_file_service),
 ) -> Response:
     """
     Process an audio file from a URL for speech-to-text conversion.

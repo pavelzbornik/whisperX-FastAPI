@@ -1,21 +1,20 @@
 """This module contains the task management routes for the FastAPI application."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.api.dependencies import get_task_management_service
+from app.api.dependencies import TaskManagementServiceDependency
 from app.api.mappers.task_mapper import TaskMapper
 from app.api.schemas.task_schemas import TaskListResponse
 from app.core.exceptions import TaskNotFoundError
 from app.core.logging import logger
 from app.schemas import Metadata, Response, Result
-from app.services.task_management_service import TaskManagementService
 
 task_router = APIRouter()
 
 
 @task_router.get("/task/all", tags=["Tasks Management"])
 async def get_all_tasks_status(
-    service: TaskManagementService = Depends(get_task_management_service),
+    service: TaskManagementServiceDependency,
 ) -> TaskListResponse:
     """
     Retrieve the status of all tasks.
@@ -38,7 +37,7 @@ async def get_all_tasks_status(
 @task_router.get("/task/{identifier}", tags=["Tasks Management"])
 async def get_transcription_status(
     identifier: str,
-    service: TaskManagementService = Depends(get_task_management_service),
+    service: TaskManagementServiceDependency,
 ) -> Result:
     """
     Retrieve the status of a specific task by its identifier.
@@ -83,7 +82,7 @@ async def get_transcription_status(
 @task_router.delete("/task/{identifier}/delete", tags=["Tasks Management"])
 async def delete_task(
     identifier: str,
-    service: TaskManagementService = Depends(get_task_management_service),
+    service: TaskManagementServiceDependency,
 ) -> Response:
     """
     Delete a specific task by its identifier.
