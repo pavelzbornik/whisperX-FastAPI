@@ -39,7 +39,7 @@ dependencies = [
     "python-multipart==0.0.22",
     "tqdm==4.67.3",
     "uvicorn==0.42.0",
-    "whisperx==3.8.2",
+    "whisperx==3.8.4",
     "sqlalchemy[asyncio]>=2.0.0",
     "aiosqlite>=0.20.0",
     "torch<=2.8.0",
@@ -48,7 +48,7 @@ dependencies = [
     "setuptools>=78.1.1",
     # torchcodec has strict 1:1 PyTorch version coupling; 0.7.0 matches torch <=2.8.0
     "torchcodec==0.7.0",
-    # whisperx 3.8.2 uses deprecated use_auth_token parameter removed in 0.36.0
+    # whisperx 3.8.4 still uses deprecated use_auth_token parameter removed in 0.36.0
     "huggingface-hub<0.36.0",
     "python-json-logger>=4.0.0",
 ]
@@ -62,7 +62,7 @@ dev = [
     "locust>=2.20.0",
     "codespell==2.4.2",
     "factory-boy==3.3.3",
-    "mypy==1.19.1",
+    "mypy==1.20.0",
     "pandas-stubs>=2.1.0",
     "pre-commit==4.5.1",
     "pytest==9.0.2",
