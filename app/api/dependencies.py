@@ -1,6 +1,9 @@
 """Dependency injection providers for FastAPI endpoints."""
 
 from collections.abc import AsyncGenerator, Generator
+from typing import Annotated
+
+from fastapi import Depends
 
 from app.api.constants import CONTAINER_NOT_INITIALIZED_ERROR
 from app.core.container import Container
@@ -40,7 +43,7 @@ async def get_task_repository() -> AsyncGenerator[ITaskRepository, None]:
     Example:
         >>> @router.post("/tasks")
         >>> async def create_task(
-        ...     repository: ITaskRepository = Depends(get_task_repository)
+        ...     repository: Annotated[ITaskRepository, Depends(get_task_repository)]
         ... ):
         ...     task_id = await repository.add(task)
         ...     return {"id": task_id}
@@ -97,7 +100,10 @@ def get_transcription_service() -> Generator[ITranscriptionService, None, None]:
     Example:
         >>> @router.post("/transcribe")
         >>> async def transcribe(
-        ...     transcription: ITranscriptionService = Depends(get_transcription_service)
+        ...     transcription: Annotated[
+        ...         ITranscriptionService,
+        ...         Depends(get_transcription_service),
+        ...     ]
         ... ):
         ...     result = transcription.transcribe(audio, params)
         ...     return result
@@ -121,7 +127,10 @@ def get_diarization_service() -> Generator[IDiarizationService, None, None]:
     Example:
         >>> @router.post("/diarize")
         >>> async def diarize(
-        ...     diarization: IDiarizationService = Depends(get_diarization_service)
+        ...     diarization: Annotated[
+        ...         IDiarizationService,
+        ...         Depends(get_diarization_service),
+        ...     ]
         ... ):
         ...     result = diarization.diarize(audio, device)
         ...     return result
@@ -145,7 +154,10 @@ def get_alignment_service() -> Generator[IAlignmentService, None, None]:
     Example:
         >>> @router.post("/align")
         >>> async def align(
-        ...     alignment: IAlignmentService = Depends(get_alignment_service)
+        ...     alignment: Annotated[
+        ...         IAlignmentService,
+        ...         Depends(get_alignment_service),
+        ...     ]
         ... ):
         ...     result = alignment.align(transcript, audio, language)
         ...     return result
@@ -171,7 +183,10 @@ def get_speaker_assignment_service() -> Generator[
     Example:
         >>> @router.post("/assign-speakers")
         >>> async def assign_speakers(
-        ...     speaker_service: ISpeakerAssignmentService = Depends(get_speaker_assignment_service)
+        ...     speaker_service: Annotated[
+        ...         ISpeakerAssignmentService,
+        ...         Depends(get_speaker_assignment_service),
+        ...     ]
         ... ):
         ...     result = speaker_service.assign_speakers(diarization, transcript)
         ...     return result
@@ -179,3 +194,22 @@ def get_speaker_assignment_service() -> Generator[
     if _container is None:
         raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.speaker_assignment_service()
+
+
+TaskRepositoryDependency = Annotated[ITaskRepository, Depends(get_task_repository)]
+FileServiceDependency = Annotated[FileService, Depends(get_file_service)]
+TaskManagementServiceDependency = Annotated[
+    TaskManagementService, Depends(get_task_management_service)
+]
+TranscriptionServiceDependency = Annotated[
+    ITranscriptionService, Depends(get_transcription_service)
+]
+DiarizationServiceDependency = Annotated[
+    IDiarizationService, Depends(get_diarization_service)
+]
+AlignmentServiceDependency = Annotated[
+    IAlignmentService, Depends(get_alignment_service)
+]
+SpeakerAssignmentServiceDependency = Annotated[
+    ISpeakerAssignmentService, Depends(get_speaker_assignment_service)
+]
