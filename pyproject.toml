@@ -33,7 +33,7 @@ dependencies = [
     "fastapi==0.135.2",
     "gunicorn==25.3.0",
     "httpx==0.28.1",
-    "numba==0.64.0",
+    "numba==0.65.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.2",
     "python-multipart==0.0.22",
