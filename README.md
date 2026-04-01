@@ -11,7 +11,6 @@
 ![CUDA](https://img.shields.io/badge/CUDA-12.8-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.135.2-green.svg)
 ![whisperx](https://img.shields.io/badge/whisperx-3.8.4-green.svg)
-
 <!-- BADGES:END -->
 
 The whisperX API is a tool for enhancing and analyzing audio content. This API provides a suite of services for processing audio and video files, including transcription, alignment, diarization, and combining transcript with diarization results.
