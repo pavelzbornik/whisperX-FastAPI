@@ -24,6 +24,7 @@ class WhisperXSpeakerAssignmentService:
         self,
         diarization_segments: pd.DataFrame,
         transcript: dict[str, Any],
+        speaker_embeddings: dict[str, list[float]] | None = None,
     ) -> dict[str, Any]:
         """
         Assign speaker labels to transcript words using WhisperX.
@@ -31,13 +32,16 @@ class WhisperXSpeakerAssignmentService:
         Args:
             diarization_segments: DataFrame with speaker segments
             transcript: Aligned transcript dictionary
+            speaker_embeddings: Optional speaker embedding vectors to include in result
 
         Returns:
             Dictionary containing transcript with speaker labels
         """
         self.logger.debug("Starting to combine transcript with diarization results")
 
-        result = whisperx.assign_word_speakers(diarization_segments, transcript)
+        result = whisperx.assign_word_speakers(
+            diarization_segments, transcript, speaker_embeddings=speaker_embeddings
+        )
 
         self.logger.debug("Completed combining transcript with diarization results")
 

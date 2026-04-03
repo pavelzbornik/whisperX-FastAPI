@@ -112,6 +112,89 @@ class TestAudioProcessingService:
 
     @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
     @patch("app.services.audio_processing_service.SyncSessionLocal")
+    def test_process_audio_task_handles_diarization_result_with_embeddings(
+        self, mock_session_local: Mock, mock_repository_class: Mock
+    ) -> None:
+        """Test processing diarization task with DiarizationResult includes embeddings."""
+        import pandas as pd
+
+        from app.domain.entities.diarization_result import DiarizationResult
+
+        mock_session = MagicMock()
+        mock_session_local.return_value = mock_session
+        mock_repository = MagicMock()
+        mock_repository_class.return_value = mock_repository
+
+        df = pd.DataFrame(
+            {
+                "start": [0.0, 1.0],
+                "end": [1.0, 2.0],
+                "speaker": ["SPEAKER_00", "SPEAKER_01"],
+                "segment": [None, None],
+            }
+        )
+        embeddings = {"SPEAKER_00": [0.1, 0.2], "SPEAKER_01": [-0.1, -0.2]}
+        diarization_result = DiarizationResult(
+            segments=df, speaker_embeddings=embeddings
+        )
+        mock_processor = Mock(return_value=diarization_result)
+
+        process_audio_task(
+            audio_processor=mock_processor,
+            identifier="test-embed",
+            task_type="diarization",
+        )
+
+        assert mock_repository.update.call_count == 2
+        completed_call = mock_repository.update.call_args_list[1]
+        result = completed_call[1]["update_data"]["result"]
+        assert isinstance(result, dict)
+        assert "segments" in result
+        assert "speaker_embeddings" in result
+        assert len(result["segments"]) == 2
+        assert "segment" not in result["segments"][0]
+        assert result["speaker_embeddings"]["SPEAKER_00"] == [0.1, 0.2]
+
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
+    def test_process_audio_task_diarization_result_without_embeddings(
+        self, mock_session_local: Mock, mock_repository_class: Mock
+    ) -> None:
+        """Test DiarizationResult without embeddings returns list for backward compat."""
+        import pandas as pd
+
+        from app.domain.entities.diarization_result import DiarizationResult
+
+        mock_session = MagicMock()
+        mock_session_local.return_value = mock_session
+        mock_repository = MagicMock()
+        mock_repository_class.return_value = mock_repository
+
+        df = pd.DataFrame(
+            {
+                "start": [0.0, 1.0],
+                "end": [1.0, 2.0],
+                "speaker": ["SPEAKER_00", "SPEAKER_01"],
+            }
+        )
+        diarization_result = DiarizationResult(segments=df, speaker_embeddings=None)
+        mock_processor = Mock(return_value=diarization_result)
+
+        process_audio_task(
+            audio_processor=mock_processor,
+            identifier="test-no-embed",
+            task_type="diarization",
+        )
+
+        assert mock_repository.update.call_count == 2
+        completed_call = mock_repository.update.call_args_list[1]
+        result = completed_call[1]["update_data"]["result"]
+        # Without embeddings, should be a list for backward compatibility
+        assert isinstance(result, list)
+        assert len(result) == 2
+
+    @patch("app.services.audio_processing_service.SyncSQLAlchemyTaskRepository")
+    @patch("app.services.audio_processing_service.SyncSessionLocal")
     def test_process_audio_task_handles_error(
         self, mock_session_local: Mock, mock_repository_class: Mock
     ) -> None:

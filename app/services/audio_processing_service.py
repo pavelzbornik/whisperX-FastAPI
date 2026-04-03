@@ -33,6 +33,106 @@ from app.schemas import (
 )
 
 
+def _identify_and_store_speakers(
+    diarization_result: Any,
+    identifier: str,
+    session: Any,
+    identify: bool = False,
+    auto_store: bool = False,
+    threshold: float = 0.7,
+) -> Any:
+    """
+    Identify speakers against the local DB and optionally store new ones.
+
+    Args:
+        diarization_result: The diarization result with embeddings
+        identifier: The task identifier (used as task_uuid for stored speakers)
+        session: The sync DB session
+        identify: Whether to identify speakers against the DB
+        auto_store: Whether to auto-store unidentified speakers
+        threshold: Cosine similarity threshold for identification
+
+    Returns:
+        Updated DiarizationResult with known speaker labels
+    """
+    from uuid import uuid4
+
+    import numpy as np
+
+    from app.domain.entities.speaker_embedding import SpeakerEmbedding
+    from app.infrastructure.database.repositories.sqlalchemy_speaker_embedding_repository import (
+        SyncSQLAlchemySpeakerEmbeddingRepository,
+    )
+
+    if not diarization_result.speaker_embeddings:
+        return diarization_result
+
+    speaker_repo = SyncSQLAlchemySpeakerEmbeddingRepository(session)
+    known_speakers = speaker_repo.get_all() if identify else []
+
+    label_map: dict[str, str] = {}
+    new_speakers: list[SpeakerEmbedding] = []
+
+    for speaker_label, embedding in diarization_result.speaker_embeddings.items():
+        query = np.array(embedding, dtype=np.float64)
+        query_norm = np.linalg.norm(query)
+        if query_norm == 0:
+            continue
+
+        best_match: tuple[SpeakerEmbedding, float] | None = None
+        if identify:
+            for known in known_speakers:
+                vec = np.array(known.embedding, dtype=np.float64)
+                if query.shape != vec.shape:
+                    continue
+                vec_norm = np.linalg.norm(vec)
+                if vec_norm == 0:
+                    continue
+                similarity = float(np.dot(query, vec) / (query_norm * vec_norm))
+                if similarity >= threshold and (
+                    best_match is None or similarity > best_match[1]
+                ):
+                    best_match = (known, similarity)
+
+        if best_match is not None:
+            label_map[speaker_label] = best_match[0].speaker_label
+            logger.info(
+                "Task %s: identified %s as %s (similarity: %.3f)",
+                identifier,
+                speaker_label,
+                best_match[0].speaker_label,
+                best_match[1],
+            )
+        elif auto_store:
+            new_speaker = SpeakerEmbedding(
+                uuid=str(uuid4()),
+                speaker_label=speaker_label,
+                embedding=embedding,
+                task_uuid=identifier,
+            )
+            new_speakers.append(new_speaker)
+            logger.info(
+                "Task %s: auto-stored new speaker %s", identifier, speaker_label
+            )
+
+    if new_speakers:
+        speaker_repo.add_batch(new_speakers)
+
+    # Remap labels in segments DataFrame
+    if label_map:
+        diarization_result.segments["speaker"] = diarization_result.segments[
+            "speaker"
+        ].replace(label_map)
+        # Also update the embeddings dict keys
+        updated_embeddings = {}
+        for old_label, emb in diarization_result.speaker_embeddings.items():
+            new_label = label_map.get(old_label, old_label)
+            updated_embeddings[new_label] = emb
+        diarization_result.speaker_embeddings = updated_embeddings
+
+    return diarization_result
+
+
 def validate_language_code(language_code: str) -> None:
     """
     Validate the language code.
@@ -57,6 +157,8 @@ def process_audio_task(
     identifier: str,
     task_type: str,
     use_gpu_semaphore: bool = False,
+    identify_speakers: bool = False,
+    auto_store_speakers: bool = False,
 ) -> None:
     """
     Process an audio task.
@@ -66,6 +168,8 @@ def process_audio_task(
         identifier (str): The task identifier.
         task_type (str): The type of the task.
         use_gpu_semaphore: Whether to acquire the GPU semaphore before processing.
+        identify_speakers: Whether to match speakers against local DB.
+        auto_store_speakers: Whether to auto-store unidentified speakers.
     """
     from app.core.gpu_semaphore import get_gpu_semaphore
 
@@ -95,7 +199,20 @@ def process_audio_task(
             result = audio_processor()
 
             if task_type == "diarization":
-                result = result.drop(columns=["segment"]).to_dict(orient="records")
+                from app.domain.entities.diarization_result import DiarizationResult
+
+                if isinstance(result, DiarizationResult):
+                    if identify_speakers or auto_store_speakers:
+                        result = _identify_and_store_speakers(
+                            diarization_result=result,
+                            identifier=identifier,
+                            session=session,
+                            identify=identify_speakers,
+                            auto_store=auto_store_speakers,
+                        )
+                    result = result.to_serializable()
+                else:
+                    result = result.drop(columns=["segment"]).to_dict(orient="records")
 
             end_time = datetime.now(tz=timezone.utc)
             duration = (end_time - start_time).total_seconds()
@@ -225,6 +342,9 @@ def process_diarize(
             device=device.value,
             min_speakers=diarize_params.min_speakers,
             max_speakers=diarize_params.max_speakers,
+            return_embeddings=diarize_params.return_embeddings
+            or diarize_params.identify_speakers
+            or diarize_params.auto_store_speakers,
         )
 
     process_audio_task(
@@ -232,6 +352,8 @@ def process_diarize(
         identifier,
         "diarization",
         use_gpu_semaphore=device == Device.cuda,
+        identify_speakers=diarize_params.identify_speakers,
+        auto_store_speakers=diarize_params.auto_store_speakers,
     )
 
 

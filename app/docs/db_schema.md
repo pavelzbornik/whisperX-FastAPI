@@ -21,3 +21,15 @@
 | `error` | Error message, if any, associated with the task | VARCHAR | True | None | False |
 | `created_at` | Date and time of creation | DATETIME | False | None | False |
 | `updated_at` | Date and time of last update | DATETIME | False | None | False |
+
+## Table: speaker_embeddings
+
+| Field | Description | Type | Nullable | Unique | Primary Key |
+| --- | --- | --- | --- | --- | --- |
+| `id` | Unique identifier (Primary Key) | INTEGER | False | None | True |
+| `uuid` | Universally unique identifier for each speaker embedding | VARCHAR | False | True | False |
+| `task_uuid` | Optional link to the originating diarization task | VARCHAR | True | None | False |
+| `speaker_label` | User-facing name for the speaker | VARCHAR | False | None | False |
+| `description` | Free-text description of the speaker | VARCHAR | True | None | False |
+| `embedding` | Speaker embedding vector | JSON | False | None | False |
+| `created_at` | Date and time of creation | DATETIME | False | None | False |
