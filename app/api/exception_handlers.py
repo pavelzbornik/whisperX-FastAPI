@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from app.core.exceptions import (
     DomainError,
     InfrastructureError,
+    SpeakerNotFoundError,
     TaskNotFoundError,
     ValidationError,
 )
@@ -110,6 +111,35 @@ def task_not_found_handler(
 
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND, content=task_exc.to_dict()
+    )
+
+
+def speaker_not_found_handler(
+    request: Request, exc: SpeakerNotFoundError | Exception
+) -> JSONResponse:
+    """Handle speaker not found errors.
+
+    Args:
+        request: FastAPI request object
+        exc: Speaker not found error exception
+
+    Returns:
+        JSONResponse with error details and HTTP 404 status
+    """
+    speaker_exc = (
+        exc
+        if isinstance(exc, SpeakerNotFoundError)
+        else SpeakerNotFoundError("unknown")
+    )
+
+    logger.info(
+        "Speaker not found: %s",
+        speaker_exc.details.get("identifier"),
+        extra={"correlation_id": speaker_exc.correlation_id, "path": request.url.path},
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND, content=speaker_exc.to_dict()
     )
 
 
