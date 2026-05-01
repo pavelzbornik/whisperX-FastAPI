@@ -32,7 +32,7 @@ repos:
       # - id: name-tests-test
       - id: check-toml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.8
+    rev: v0.15.12
     hooks:
       - id: ruff-check
         args: [--fix]
@@ -104,7 +104,7 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.13.9
+    rev: v4.13.10
     hooks:
       - id: commitizen
         stages: [commit-msg]
