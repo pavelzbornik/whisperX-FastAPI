@@ -9,7 +9,7 @@
 <!-- BADGES:START -->
 ![Python](https://img.shields.io/badge/Python-3.12-blue.svg)
 ![CUDA](https://img.shields.io/badge/CUDA-12.8-blue.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.135.2-green.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.135.4-green.svg)
 ![whisperx](https://img.shields.io/badge/whisperx-3.8.4-green.svg)
 <!-- BADGES:END -->
 
