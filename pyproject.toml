@@ -30,7 +30,7 @@ classifiers = [
 dependencies = [
     "colorlog==6.10.1",
     "dependency-injector>=4.41.0",
-    "fastapi==0.135.2",
+    "fastapi==0.136.1",
     "gunicorn==25.3.0",
     "httpx==0.28.1",
     "numba==0.64.0",
@@ -38,7 +38,7 @@ dependencies = [
     "python-dotenv==1.2.2",
     "python-multipart==0.0.26",
     "tqdm==4.67.3",
-    "uvicorn==0.42.0",
+    "uvicorn==0.46.0",
     "whisperx==3.8.4",
     "sqlalchemy[asyncio]>=2.0.0",
     "aiosqlite>=0.20.0",
