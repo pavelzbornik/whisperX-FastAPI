@@ -91,3 +91,52 @@ class Task(Base):
         onupdate=lambda: datetime.now(timezone.utc),
         comment="Date and time of last update",
     )
+
+
+class SpeakerEmbedding(Base):
+    """
+    Table to store speaker embeddings for identification.
+
+    Attributes:
+    - id: Unique identifier (Primary Key).
+    - uuid: Universally unique identifier for each speaker embedding.
+    - task_uuid: Optional link to the originating diarization task.
+    - speaker_label: User-facing name for the speaker.
+    - description: Optional free-text description of the speaker.
+    - embedding: Speaker embedding vector stored as JSON array.
+    - created_at: Date and time of creation.
+    """
+
+    __tablename__ = "speaker_embeddings"
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+        comment="Unique identifier (Primary Key)",
+    )
+    uuid: Mapped[str] = mapped_column(
+        String,
+        unique=True,
+        default=lambda: str(uuid4()),
+        comment="Universally unique identifier for each speaker embedding",
+    )
+    task_uuid: Mapped[str | None] = mapped_column(
+        String,
+        nullable=True,
+        index=True,
+        comment="Optional link to the originating diarization task",
+    )
+    speaker_label: Mapped[str] = mapped_column(
+        String, comment="User-facing name for the speaker"
+    )
+    description: Mapped[str | None] = mapped_column(
+        String, nullable=True, comment="Free-text description of the speaker"
+    )
+    embedding: Mapped[list[float]] = mapped_column(
+        JSON, comment="Speaker embedding vector"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        comment="Date and time of creation",
+    )
