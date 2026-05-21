@@ -300,7 +300,7 @@ class ASROptions(BaseModel):
 
     @field_validator("temperatures", mode="before")
     @classmethod
-    def parse_temperatures(cls, value: float | str | list[float]) -> list[float]:
+    def parse_temperatures(cls, value: int | float | str | list[float]) -> list[float]:
         """Normalize temperatures into a list of floats.
 
         Accepts a scalar float, a comma-separated string from query params, or
