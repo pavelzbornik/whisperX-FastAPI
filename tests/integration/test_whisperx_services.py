@@ -209,7 +209,7 @@ def test_process_audio_common_gpu(
             best_of=5,
             patience=1,
             length_penalty=1,
-            temperatures=0.0,
+            temperatures=[0.0],
             compression_ratio_threshold=2.4,
             log_prob_threshold=-1.0,
             no_speech_threshold=0.6,
