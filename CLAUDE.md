@@ -136,6 +136,9 @@ macOS/Windows). Never manually edit `uv.lock`.
 - When a request is ambiguous, present the possible interpretations and ask which is intended.
 - Push back when a simpler approach exists — suggest it before building the complex one.
 - Stop when confused. Name what's unclear and ask for clarification.
+- Frame tasks as goals with verification checkpoints — "add validation" becomes "write
+  tests for invalid inputs, then make them pass"; "refactor X" becomes "ensure tests pass
+  before and after". For multi-step tasks, state a plan before starting.
 
 ### Simplicity First
 
@@ -143,7 +146,8 @@ macOS/Windows). Never manually edit `uv.lock`.
 - No abstractions for single-use code.
 - No speculative "flexibility" or "configurability" that wasn't requested.
 - No error handling for impossible scenarios.
-- If 200 lines could be 50, rewrite it.
+- If the code you're writing could be 50 lines instead of 200, write the 50. (Applies to
+  new code — see **Surgical Changes** for existing code.)
 
 ### Surgical Changes
 
@@ -165,9 +169,6 @@ Follow Test-Driven Development for all new features and bug fixes:
 2. **Implement the minimum code** to make the tests pass — no more, no less.
 3. **Refactor** — clean up the implementation while keeping tests green.
 4. **Repeat** for each new behavior or code path.
-5. **Frame tasks as goals** — "add validation" becomes "write tests for invalid inputs,
-   then make them pass"; "refactor X" becomes "ensure tests pass before and after".
-   For multi-step tasks, state a plan with verification checkpoints before starting.
 
 ### Coverage Rules
 
