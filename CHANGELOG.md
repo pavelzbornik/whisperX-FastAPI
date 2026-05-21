@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.6.0...v0.6.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* **api:** accept wrapped task envelope in /service/align ([#525](https://github.com/pavelzbornik/whisperX-FastAPI/issues/525)) ([d5b95cb](https://github.com/pavelzbornik/whisperX-FastAPI/commit/d5b95cbb94bbc483aa61edff757c5adf3f10ef0b))
+* **api:** accept wrapped task envelope in /service/align ([#525](https://github.com/pavelzbornik/whisperX-FastAPI/issues/525)) ([013444d](https://github.com/pavelzbornik/whisperX-FastAPI/commit/013444d0a2e6bba3093c2a29ae552f74d41199c8))
+* upgrade requests to &gt;=2.33.0 and load devcontainer .env ([bcbfa47](https://github.com/pavelzbornik/whisperX-FastAPI/commit/bcbfa4711ff09452e73cf90d2cd45fde14b34131)), closes [#497](https://github.com/pavelzbornik/whisperX-FastAPI/issues/497)
+
 ## [0.6.0](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.5.1...v0.6.0) (2026-03-31)
 
 
