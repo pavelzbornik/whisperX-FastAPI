@@ -237,8 +237,15 @@ class ASROptions(BaseModel):
     length_penalty: float = Field(
         Query(1.0, description="Optional token length penalty coefficient")
     )
-    temperatures: float = Field(
-        Query(0.0, description="Temperature to use for sampling")
+    temperatures: list[float] = Field(
+        Query(
+            [0.0],
+            description=(
+                "Temperature(s) to use for sampling. Accepts a single float or a "
+                "comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable "
+                "temperature fallback for long-form transcription."
+            ),
+        )
     )
     compression_ratio_threshold: float = Field(
         Query(
@@ -289,6 +296,21 @@ class ASROptions(BaseModel):
         """Parse suppress tokens from a comma-separated string of token IDs into a list of integers."""
         if isinstance(value, str):
             return [int(x) for x in value.split(",")]
+        return value
+
+    @field_validator("temperatures", mode="before")
+    @classmethod
+    def parse_temperatures(cls, value: float | str | list[float]) -> list[float]:
+        """Normalize temperatures into a list of floats.
+
+        Accepts a scalar float, a comma-separated string from query params, or
+        an already-parsed list. Whisper supports a list for temperature fallback
+        on long-form transcription.
+        """
+        if isinstance(value, str):
+            return [float(x.strip()) for x in value.split(",")]
+        if isinstance(value, (int, float)):
+            return [float(value)]
         return value
 
 
