@@ -69,6 +69,44 @@ See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details
    - Liveness probe (`/health/live`): Verifies if application is running
    - Readiness probe (`/health/ready`): Checks if application is ready to accept requests (includes database connectivity check)
 
+### OpenAI-compatible audio endpoints
+
+The API also exposes synchronous OpenAI Whisper-compatible endpoints:
+
+- `POST /v1/audio/transcriptions`
+- `POST /v1/audio/translations`
+
+These endpoints accept the same `multipart/form-data` style requests expected by
+OpenAI SDK clients and return the transcript directly in the response body.
+
+- `model="whisper-1"` maps to the local checkpoint configured by `WHISPER_MODEL`
+- Direct local Whisper checkpoint names such as `tiny`, `base`, `large-v3`, or
+  `distil-large-v3` are also accepted
+- `response_format` supports `json`, `text`, `srt`, `verbose_json`, and `vtt`
+- `timestamp_granularities[]=word` is supported with `response_format=verbose_json`
+  on `/v1/audio/transcriptions` and triggers alignment for word timings
+
+Example with the official OpenAI Python SDK:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+   api_key="not-used-but-required-by-some-clients",
+   base_url="http://127.0.0.1:8000/v1",
+)
+
+with open("tests/test_files/audio_en.mp3", "rb") as audio_file:
+   transcript = client.audio.transcriptions.create(
+       model="whisper-1",
+       file=audio_file,
+       response_format="verbose_json",
+       timestamp_granularities=["segment"],
+   )
+
+print(transcript.text)
+```
+
 ### Task management and result storage
 
 ![Service chart](app/docs/service_chart.svg)

@@ -192,6 +192,7 @@ def test_error_response_format() -> None:
         # All errors should have this structure
         assert "error" in data
         assert "message" in data["error"]
+        assert "type" in data["error"]
         assert "code" in data["error"]
         assert "correlation_id" in data["error"]
 
