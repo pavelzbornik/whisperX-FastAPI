@@ -68,6 +68,43 @@ from app.transcript import filter_aligned_transcription
 service_router = APIRouter()
 
 
+def _parse_transcript_payload(payload: bytes) -> Transcript:
+    """Parse an uploaded transcript JSON payload.
+
+    Accepts either the bare ``Transcript`` shape (``{segments, language}``)
+    or the wrapped envelope returned by ``GET /task/{identifier}``
+    (``{status, result, metadata, error}``) — in the latter case the inner
+    ``result`` is unwrapped before validation.
+    """
+    try:
+        data = json.loads(payload)
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        logger.error("Transcript file is not valid JSON: %s", str(e))
+        raise ValidationError(
+            message=f"Transcript file is not valid JSON: {e!s}",
+            code="INVALID_TRANSCRIPT_JSON",
+            user_message="The transcript file contains invalid JSON.",
+        ) from e
+
+    # Auto-unwrap the GET /task/{id} envelope when the user uploads it as-is.
+    if (
+        isinstance(data, dict)
+        and "segments" not in data
+        and isinstance(data.get("result"), dict)
+    ):
+        data = data["result"]
+
+    try:
+        return Transcript(**data)
+    except (PydanticValidationError, TypeError) as e:
+        logger.error("Invalid JSON content in transcript file: %s", str(e))
+        raise ValidationError(
+            message=f"Invalid JSON content in transcript file: {e!s}",
+            code="INVALID_TRANSCRIPT_JSON",
+            user_message="The transcript file contains invalid JSON.",
+        ) from e
+
+
 @service_router.post(
     "/service/transcribe",
     tags=["Speech-2-Text services"],
@@ -193,16 +230,7 @@ async def align(
 
     file_service.validate_file_extension(transcript.filename, {JSON_EXTENSION})
 
-    try:
-        # Read the content of the transcript file
-        transcript_data = Transcript(**json.loads(transcript.file.read()))
-    except PydanticValidationError as e:
-        logger.error("Invalid JSON content in transcript file: %s", str(e))
-        raise ValidationError(
-            message=f"Invalid JSON content in transcript file: {str(e)}",
-            code="INVALID_TRANSCRIPT_JSON",
-            user_message="The transcript file contains invalid JSON.",
-        )
+    transcript_data = _parse_transcript_payload(await transcript.read())
 
     # Validate and save audio file
     if file.filename is None:

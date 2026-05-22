@@ -13,6 +13,9 @@ _test_db_url = os.environ.get("TEST_DB_URL")
 if _test_db_url:
     os.environ["DB_URL"] = _test_db_url
 
+# Disable SSRF protection for tests — e2e tests use localhost callback servers
+os.environ.setdefault("SSRF_PROTECTION_ENABLED", "false")
+
 from tests.fixtures import TestContainer  # noqa: E402
 from tests.fixtures.database import db_session, test_db_engine  # noqa: E402, F401
 

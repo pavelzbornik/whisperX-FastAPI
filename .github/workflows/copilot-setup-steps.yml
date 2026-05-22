@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Cache Hugging Face and Torch models
-        uses: actions/cache@565629816435f6c0b50676926c9b05c254113c0c
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
         with:
           path: |
             ~/.cache/huggingface

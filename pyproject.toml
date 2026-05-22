@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "whisperx-fastapi"
-version = "0.5.1"
+version = "0.6.0"
 description = "WhisperX REST API for audio transcription, alignment, and diarization"
 readme = "README.md"
 license = { text = "MIT" }
@@ -30,16 +30,16 @@ classifiers = [
 dependencies = [
     "colorlog==6.10.1",
     "dependency-injector>=4.41.0",
-    "fastapi==0.135.1",
-    "gunicorn==25.1.0",
+    "fastapi==0.136.1",
+    "gunicorn==25.3.0",
     "httpx==0.28.1",
     "numba==0.64.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.2",
-    "python-multipart==0.0.22",
+    "python-multipart==0.0.27",
     "tqdm==4.67.3",
-    "uvicorn==0.42.0",
-    "whisperx==3.8.2",
+    "uvicorn==0.46.0",
+    "whisperx==3.8.5",
     "sqlalchemy[asyncio]>=2.0.0",
     "aiosqlite>=0.20.0",
     "torch<=2.8.0",
@@ -48,9 +48,10 @@ dependencies = [
     "setuptools>=78.1.1",
     # torchcodec has strict 1:1 PyTorch version coupling; 0.7.0 matches torch <=2.8.0
     "torchcodec==0.7.0",
-    # whisperx 3.8.2 uses deprecated use_auth_token parameter removed in 0.36.0
+    # whisperx 3.8.4 still uses deprecated use_auth_token parameter removed in 0.36.0
     "huggingface-hub<0.36.0",
     "python-json-logger>=4.0.0",
+    "requests>=2.33.0",
 ]
 
 [project.optional-dependencies]
@@ -62,13 +63,13 @@ dev = [
     "locust>=2.20.0",
     "codespell==2.4.2",
     "factory-boy==3.3.3",
-    "mypy==1.19.1",
+    "mypy==1.20.2",
     "pandas-stubs>=2.1.0",
-    "pre-commit==4.5.1",
-    "pytest==9.0.2",
+    "pre-commit==4.6.0",
+    "pytest==9.0.3",
     "pytest-asyncio>=0.24.0",
-    "pytest-cov==7.0.0",
-    "ruff==0.15.7",
+    "pytest-cov==7.1.0",
+    "ruff==0.15.12",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]

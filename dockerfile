@@ -23,7 +23,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && ln -s -f /usr/bin/python${PYTHON_VERSION} /usr/bin/python
 
 # Install UV for package management
-COPY --from=ghcr.io/astral-sh/uv:0.10 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /bin/
 
 WORKDIR /app
 
