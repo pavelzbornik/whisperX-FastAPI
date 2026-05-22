@@ -3,7 +3,7 @@
 import os
 from typing import Annotated, Any, NoReturn, cast
 
-from fastapi import APIRouter, Depends, Header, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import ValidationError as PydanticValidationError
@@ -24,7 +24,11 @@ from app.api.schemas import (
 )
 from app.audio import get_audio_duration, process_audio_file
 from app.core.config import get_settings
-from app.core.exceptions import FileValidationError, ValidationError
+from app.core.exceptions import (
+    FileValidationError,
+    UnsupportedFileExtensionError,
+    ValidationError,
+)
 from app.core.gpu_semaphore import get_gpu_semaphore
 from app.core.logging import logger
 from app.domain.services.alignment_service import IAlignmentService
@@ -37,6 +41,62 @@ from app.schemas import (
 )
 from app.services.file_service import FileService
 from app.transcript import filter_aligned_transcription
+
+_OPENAI_NON_JSON_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {
+        "description": "Transcript in the requested format.",
+        "content": {
+            "application/json": {
+                "schema": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/components/schemas/OpenAIJsonTranscriptionResponse"
+                        },
+                        {"$ref": "#/components/schemas/OpenAIVerboseJsonResponse"},
+                    ]
+                }
+            },
+            "text/plain": {"schema": {"type": "string"}},
+            "application/x-subrip": {"schema": {"type": "string"}},
+            "text/vtt": {"schema": {"type": "string"}},
+        },
+    },
+}
+
+
+def _validate_file_extension_or_raise_openai(
+    file_service: FileService, filename: str
+) -> None:
+    """Validate the upload extension and re-raise as a domain exception.
+
+    ``FileService.validate_file_extension`` raises ``fastapi.HTTPException`` for
+    invalid extensions, which bypasses the project's exception handlers and would
+    return FastAPI's default ``{"detail": ...}`` body instead of the OpenAI-style
+    ``{"error": {"type": ...}}`` envelope. Convert it here so SDK clients still
+    see a compatible error shape.
+    """
+    try:
+        file_service.validate_file_extension(filename, ALLOWED_EXTENSIONS)
+    except HTTPException as exc:
+        raise UnsupportedFileExtensionError(
+            filename=filename,
+            extension=os.path.splitext(filename)[1].lower(),
+            allowed=ALLOWED_EXTENSIONS,
+        ) from exc
+
+
+def _save_upload_or_raise_openai(
+    file_service: FileService, file: StarletteUploadFile
+) -> str:
+    """Save the upload and re-raise FastAPI HTTP errors as domain exceptions."""
+    try:
+        return file_service.save_upload(cast(Any, file))
+    except HTTPException as exc:
+        raise FileValidationError(
+            filename=file.filename or "unknown",
+            reason=str(exc.detail),
+        ) from exc
+
 
 openai_compat_router = APIRouter(prefix="/v1", tags=["OpenAI compatibility"])
 
@@ -196,10 +256,11 @@ def _run_sync_transcription(
     if filename is None:
         raise FileValidationError(filename="unknown", reason="Filename is missing")
 
-    file_service.validate_file_extension(filename, ALLOWED_EXTENSIONS)
-    temp_file = file_service.save_upload(cast(Any, file))
+    _validate_file_extension_or_raise_openai(file_service, filename)
+    temp_file = _save_upload_or_raise_openai(file_service, file)
 
     gpu_semaphore = get_gpu_semaphore() if model_params.device.value == "cuda" else None
+    semaphore_acquired = False
 
     try:
         audio = process_audio_file(temp_file)
@@ -208,6 +269,7 @@ def _run_sync_transcription(
         if gpu_semaphore is not None:
             logger.info("OpenAI-compatible request waiting for GPU slot")
             gpu_semaphore.acquire()
+            semaphore_acquired = True
 
         transcript = transcription_service.transcribe(
             audio=audio,
@@ -247,7 +309,7 @@ def _run_sync_transcription(
             requested_language=model_params.language,
         )
     finally:
-        if gpu_semaphore is not None:
+        if gpu_semaphore is not None and semaphore_acquired:
             gpu_semaphore.release()
             logger.info("GPU slot released for OpenAI-compatible request")
         if os.path.exists(temp_file):
@@ -308,9 +370,9 @@ async def _handle_openai_transcription(
 
 @openai_compat_router.post(
     "/audio/transcriptions",
-    response_model=OpenAIJsonTranscriptionResponse | OpenAIVerboseJsonResponse,
     status_code=status.HTTP_200_OK,
     summary="Transcribe audio synchronously with an OpenAI-compatible API",
+    responses=_OPENAI_NON_JSON_RESPONSES,
 )
 async def create_transcription(
     request: Request,
@@ -331,9 +393,9 @@ async def create_transcription(
 
 @openai_compat_router.post(
     "/audio/translations",
-    response_model=OpenAIJsonTranscriptionResponse | OpenAIVerboseJsonResponse,
     status_code=status.HTTP_200_OK,
     summary="Translate audio to English synchronously with an OpenAI-compatible API",
+    responses=_OPENAI_NON_JSON_RESPONSES,
 )
 async def create_translation(
     request: Request,

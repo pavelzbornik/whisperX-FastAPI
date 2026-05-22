@@ -2,13 +2,22 @@
 
 from collections.abc import Generator
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from dependency_injector import providers
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 import app.main as main_module
+from app.schemas import (
+    ASROptions,
+    ComputeType,
+    Device,
+    TaskEnum,
+    WhisperModel,
+    WhisperModelParams,
+)
 from tests.mocks import MockAlignmentService, MockTranscriptionService
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
@@ -157,3 +166,191 @@ def test_openai_timestamp_granularities_require_verbose_json(
 
     assert response.status_code == 422
     assert response.json()["error"]["type"] == "invalid_request_error"
+
+
+def _post_openai_request_with_filename(
+    client: TestClient,
+    *,
+    filename: str,
+    content_type: str = "application/octet-stream",
+) -> Any:
+    """Post an OpenAI-compatible request using a custom filename."""
+    files = [
+        ("file", (filename, b"not really audio", content_type)),
+        ("model", (None, "whisper-1")),
+    ]
+    return client.post("/v1/audio/transcriptions", files=files)
+
+
+@pytest.mark.unit
+def test_openai_unsupported_extension_returns_openai_envelope(
+    openai_client: tuple[TestClient, MockTranscriptionService, MockAlignmentService],
+) -> None:
+    """Unsupported file extensions must return the OpenAI-style error envelope."""
+    client, _, _ = openai_client
+
+    response = _post_openai_request_with_filename(client, filename="malware.xyz")
+
+    assert response.status_code == 422
+    body = response.json()
+    assert "error" in body
+    assert body["error"]["type"] == "invalid_request_error"
+    assert "detail" not in body
+
+
+def _make_cuda_whisper_params() -> tuple[WhisperModelParams, ASROptions]:
+    """Build cuda-targeted Whisper params for forcing the GPU-semaphore branch."""
+    model_params = WhisperModelParams(
+        language="en",
+        task=TaskEnum.TRANSCRIBE,
+        model=WhisperModel.tiny,
+        device=Device.cuda,
+        device_index=0,
+        threads=0,
+        batch_size=8,
+        chunk_size=20,
+        compute_type=ComputeType.int8,
+    )
+    asr_options = ASROptions(
+        beam_size=5,
+        best_of=5,
+        patience=1.0,
+        length_penalty=1.0,
+        compression_ratio_threshold=2.4,
+        log_prob_threshold=-1.0,
+        no_speech_threshold=0.6,
+        initial_prompt=None,
+        suppress_tokens=[-1],
+        suppress_numerals=False,
+        hotwords=None,
+        temperatures=0.0,
+    )
+    return model_params, asr_options
+
+
+@pytest.mark.unit
+def test_gpu_semaphore_not_released_when_acquire_was_skipped(
+    openai_client: tuple[TestClient, MockTranscriptionService, MockAlignmentService],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """If preprocessing raises before acquire, the semaphore must not be released."""
+    client, _, _ = openai_client
+
+    mock_semaphore = MagicMock()
+    mock_semaphore.acquire = MagicMock()
+    mock_semaphore.release = MagicMock()
+
+    def _raise(*_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("simulated audio decode failure")
+
+    monkeypatch.setattr(
+        "app.api.openai_compat_api.get_gpu_semaphore",
+        lambda: mock_semaphore,
+    )
+    monkeypatch.setattr(
+        "app.api.openai_compat_api.process_audio_file",
+        _raise,
+    )
+    monkeypatch.setattr(
+        "app.api.openai_compat_api.map_request_to_whisper_params",
+        lambda **_kwargs: _make_cuda_whisper_params(),
+    )
+
+    # TestClient re-raises uncaught server exceptions by default; that is fine —
+    # the assertions below verify that the semaphore was not released regardless
+    # of which side handles the error.
+    with pytest.raises(RuntimeError, match="simulated audio decode failure"):
+        _post_openai_request(client)
+
+    mock_semaphore.acquire.assert_not_called()
+    mock_semaphore.release.assert_not_called()
+
+
+@pytest.mark.unit
+def test_openai_save_upload_failure_returns_openai_envelope(
+    openai_client: tuple[TestClient, MockTranscriptionService, MockAlignmentService],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An HTTPException from save_upload must surface as an OpenAI-style error."""
+    client, _, _ = openai_client
+
+    def _raise_http(*_args: Any, **_kwargs: Any) -> Any:
+        raise HTTPException(status_code=400, detail="Filename is missing")
+
+    monkeypatch.setattr(
+        "app.api.openai_compat_api.FileService.save_upload",
+        _raise_http,
+    )
+
+    response = _post_openai_request(client)
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["type"] == "invalid_request_error"
+    assert "detail" not in body
+
+
+@pytest.mark.unit
+def test_openai_missing_file_field_returns_openai_envelope(
+    openai_client: tuple[TestClient, MockTranscriptionService, MockAlignmentService],
+) -> None:
+    """A request without a 'file' field returns the OpenAI-style error envelope."""
+    client, _, _ = openai_client
+
+    response = client.post(
+        "/v1/audio/transcriptions",
+        files=[("model", (None, "whisper-1"))],
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["type"] == "invalid_request_error"
+
+
+@pytest.mark.unit
+def test_openai_translation_rejects_word_timestamps(
+    openai_client: tuple[TestClient, MockTranscriptionService, MockAlignmentService],
+) -> None:
+    """Word timestamps must be rejected on the translations endpoint."""
+    client, _, _ = openai_client
+
+    response = _post_openai_request(
+        client,
+        endpoint="/v1/audio/translations",
+        extra_fields=[
+            ("response_format", "verbose_json"),
+            ("timestamp_granularities[]", "word"),
+        ],
+    )
+
+    assert response.status_code == 422
+    body = response.json()
+    assert body["error"]["type"] == "invalid_request_error"
+
+
+@pytest.mark.unit
+def test_gpu_semaphore_released_when_acquire_succeeded(
+    openai_client: tuple[TestClient, MockTranscriptionService, MockAlignmentService],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the semaphore is acquired, a downstream failure must still release it."""
+    client, _, _ = openai_client
+
+    mock_semaphore = MagicMock()
+    mock_semaphore.acquire = MagicMock()
+    mock_semaphore.release = MagicMock()
+
+    monkeypatch.setattr(
+        "app.api.openai_compat_api.get_gpu_semaphore",
+        lambda: mock_semaphore,
+    )
+    monkeypatch.setattr(
+        "app.api.openai_compat_api.map_request_to_whisper_params",
+        lambda **_kwargs: _make_cuda_whisper_params(),
+    )
+
+    response = _post_openai_request(client)
+
+    assert response.status_code == 200
+    mock_semaphore.acquire.assert_called_once()
+    mock_semaphore.release.assert_called_once()

@@ -8,13 +8,15 @@ from fastapi.testclient import TestClient
 openai = pytest.importorskip("openai")
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
-assert os.path.exists(AUDIO_FILE), f"Audio file not found: {AUDIO_FILE}"
 
 
 @pytest.mark.e2e
 @pytest.mark.slow
 def test_openai_sdk_transcription(client: TestClient) -> None:
     """The official OpenAI SDK should work against the compatibility endpoint."""
+    if not os.path.exists(AUDIO_FILE):
+        pytest.skip(f"Audio fixture not available: {AUDIO_FILE}")
+
     sdk_client = openai.OpenAI(
         api_key="test-key",
         base_url="http://testserver/v1",
