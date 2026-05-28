@@ -9,10 +9,14 @@ from app.domain.services.alignment_service import IAlignmentService
 from app.domain.services.diarization_service import IDiarizationService
 from app.domain.services.speaker_assignment_service import ISpeakerAssignmentService
 from app.domain.services.transcription_service import ITranscriptionService
+from app.infrastructure.database.repositories.sqlalchemy_speaker_embedding_repository import (
+    AsyncSQLAlchemySpeakerEmbeddingRepository,
+)
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     AsyncSQLAlchemyTaskRepository,
 )
 from app.services.file_service import FileService
+from app.services.speaker_service import SpeakerService
 from app.services.task_management_service import TaskManagementService
 
 
@@ -179,3 +183,20 @@ def get_speaker_assignment_service() -> Generator[
     if _container is None:
         raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
     yield _container.speaker_assignment_service()
+
+
+async def get_speaker_service() -> AsyncGenerator[SpeakerService, None]:
+    """
+    Provide a SpeakerService instance for dependency injection.
+
+    Opens an AsyncSession, wraps it in a speaker embedding repository,
+    and passes it to SpeakerService. Session is closed after the request.
+
+    Yields:
+        SpeakerService: A speaker service instance
+    """
+    if _container is None:
+        raise RuntimeError(CONTAINER_NOT_INITIALIZED_ERROR)
+    async with _container.db_session_factory() as session:
+        repo = AsyncSQLAlchemySpeakerEmbeddingRepository(session)
+        yield SpeakerService(repo)

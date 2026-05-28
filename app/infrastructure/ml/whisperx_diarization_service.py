@@ -4,11 +4,11 @@ import gc
 from typing import Any
 
 import numpy as np
-import pandas as pd
 import torch
 from whisperx.diarize import DiarizationPipeline
 
 from app.core.logging import logger
+from app.domain.entities.diarization_result import DiarizationResult
 
 
 class WhisperXDiarizationService:
@@ -36,7 +36,8 @@ class WhisperXDiarizationService:
         device: str,
         min_speakers: int | None = None,
         max_speakers: int | None = None,
-    ) -> pd.DataFrame:
+        return_embeddings: bool = False,
+    ) -> DiarizationResult:
         """
         Identify speakers using PyAnnote diarization model.
 
@@ -45,9 +46,10 @@ class WhisperXDiarizationService:
             device: Device to use ('cpu' or 'cuda')
             min_speakers: Minimum number of speakers (optional)
             max_speakers: Maximum number of speakers (optional)
+            return_embeddings: Whether to return speaker embedding vectors
 
         Returns:
-            DataFrame with speaker segments
+            DiarizationResult with speaker segments and optional embeddings
         """
         self.logger.debug("Starting diarization with device: %s", device)
 
@@ -63,8 +65,18 @@ class WhisperXDiarizationService:
 
         # Perform diarization
         result = model(
-            audio=audio, min_speakers=min_speakers, max_speakers=max_speakers
+            audio=audio,
+            min_speakers=min_speakers,
+            max_speakers=max_speakers,
+            return_embeddings=return_embeddings,
         )
+
+        # Unpack result based on whether embeddings were requested
+        if return_embeddings and isinstance(result, tuple):
+            segments_df, speaker_embeddings = result
+        else:
+            segments_df = result
+            speaker_embeddings = None
 
         # Log GPU memory before cleanup
         if torch.cuda.is_available():
@@ -86,7 +98,10 @@ class WhisperXDiarizationService:
             )
 
         self.logger.debug("Completed diarization with device: %s", device)
-        return result  # type: ignore[no-any-return]
+        return DiarizationResult(
+            segments=segments_df,
+            speaker_embeddings=speaker_embeddings,
+        )
 
     def load_model(self, device: str, hf_token: str) -> None:
         """

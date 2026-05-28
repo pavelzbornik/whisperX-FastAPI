@@ -35,6 +35,7 @@ class MockSpeakerAssignmentService:
         self,
         diarization_segments: pd.DataFrame,
         transcript: dict[str, Any],
+        speaker_embeddings: dict[str, list[float]] | None = None,
     ) -> dict[str, Any]:
         """
         Return mock speaker assignment result immediately.
@@ -42,6 +43,7 @@ class MockSpeakerAssignmentService:
         Args:
             diarization_segments: Diarization DataFrame (ignored in mock)
             transcript: Transcript dictionary (ignored in mock)
+            speaker_embeddings: Optional speaker embeddings to include in result
 
         Returns:
             Mock speaker assignment result
@@ -54,12 +56,16 @@ class MockSpeakerAssignmentService:
         self.last_assign_params = {
             "diarization_segments_shape": diarization_segments.shape,
             "transcript_keys": list(transcript.keys()),
+            "speaker_embeddings": speaker_embeddings,
         }
 
         if self.should_fail:
             raise RuntimeError("Mock speaker assignment failed")
 
-        return self.mock_result
+        result = dict(self.mock_result)
+        if speaker_embeddings is not None:
+            result["speaker_embeddings"] = speaker_embeddings
+        return result
 
     def _default_result(self) -> dict[str, Any]:
         """
