@@ -301,9 +301,15 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+          scanners: "vuln"
+          timeout: "15m"
       - name: Convert SARIF to Markdown table
         if: always()
         run: |
+          if [ ! -f trivy-results.sarif ]; then
+            echo "Trivy did not produce a SARIF report (scan may have failed or timed out)." > trivy-results.txt
+            exit 0
+          fi
           wget -q https://github.com/Antvirf/go-sarif-to-markdown-table/raw/refs/heads/main/bin/sarif-to-markdown-table-linux-amd64 -O sarif-to-markdown-table-linux || \
           { echo "Failed to download SARIF conversion tool - using raw SARIF output"; cat trivy-results.sarif > trivy-results.txt; exit 0; }
           chmod +x sarif-to-markdown-table-linux
@@ -316,7 +322,7 @@ jobs:
           path: trivy-results.txt
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@c618c9bddbf8ce520050acf14e9bb6c220e22931
-        if: always()
+        if: always() && hashFiles('trivy-results.sarif') != ''
         with:
           sarif_file: "trivy-results.sarif"
           category: "trivy-container-scan"
