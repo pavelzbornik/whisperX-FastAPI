@@ -107,10 +107,30 @@ LOG_LEVEL=INFO
 ENVIRONMENT=production
 DB_URL=sqlite:///records.db
 MAX_CONCURRENT_GPU_TASKS=1          # max simultaneous GPU tasks (prevents OOM)
+
+# API protection (all no-op by default — see app/core/config.py)
+MAX_UPLOAD_SIZE_MB=0               # 413 over this many MB; 0 = unlimited
+MAX_QUEUED_GPU_REQUESTS=0         # 503 when in-flight GPU requests exceed cap; 0 = unlimited
+SYNC_GPU_QUOTA_FRACTION=0.5       # share of MAX_QUEUED_GPU_REQUESTS for the sync (/v1/audio/*) path
+RATE_LIMIT__ENABLED=false         # slowapi per-caller limiting → 429 + Retry-After
+RATE_LIMIT__REQUESTS_PER_MINUTE=60
+RATE_LIMIT__BURST=10
+RATE_LIMIT__KEY_STRATEGY=ip       # ip | bearer_token
+AUTH__ENABLED=false               # shared bearer-token auth → 401
+AUTH__BEARER_TOKEN=               # required when AUTH__ENABLED=true
 ```
 
 **Critical:** When `DEVICE=cpu`, `COMPUTE_TYPE` is auto-corrected to `int8`. Tests set
 `DEVICE=cpu` and `COMPUTE_TYPE=int8` automatically.
+
+**API protection** (rate limiting, upload cap, route concurrency caps, bearer auth) lives
+in `app/core/{rate_limit,concurrency}.py`, `app/api/{middleware,security}.py`, and is wired
+in `main.py`. Knobs come from `get_settings()` (loaded from env/`.env` at startup and
+`lru_cache`-backed), so they are fixed for the life of the process and stay no-op until
+enabled — changing them needs a restart (tests clear the caches to re-read). The upload cap
+is enforced from `Content-Length`; the async concurrency gate is admission control (the
+background GPU pipeline is bounded by `MAX_CONCURRENT_GPU_TASKS`). Multi-worker deployments
+give each worker its own in-process budget.
 
 ## CI Pipeline
 

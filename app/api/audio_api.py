@@ -13,13 +13,16 @@ from fastapi import (
     Depends,
     File,
     Form,
+    Request,
     UploadFile,
 )
+from starlette.responses import Response as StarletteResponse
 
 from app.api.dependencies import get_file_service, get_task_repository
 from app.audio import get_audio_duration, process_audio_file
 from app.core.exceptions import FileValidationError
 from app.core.logging import logger
+from app.core.rate_limit import limiter, rate_limit_value, rate_limiting_disabled
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
 from app.files import ALLOWED_EXTENSIONS
@@ -48,7 +51,10 @@ stt_router = APIRouter()
 
 
 @stt_router.post("/speech-to-text", tags=["Speech-2-Text"])
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def speech_to_text(
+    request: Request,
+    response: StarletteResponse,
     background_tasks: BackgroundTasks,
     model_params: WhisperModelParams = Depends(),
     align_params: AlignmentParams = Depends(),
@@ -136,7 +142,10 @@ async def speech_to_text(
 @stt_router.post(
     "/speech-to-text-url", callbacks=task_callback_router.routes, tags=["Speech-2-Text"]
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def speech_to_text_url(
+    request: Request,
+    response: StarletteResponse,
     background_tasks: BackgroundTasks,
     model_params: WhisperModelParams = Depends(),
     align_params: AlignmentParams = Depends(),

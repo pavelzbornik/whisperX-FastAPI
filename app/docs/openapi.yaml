@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: whisperX REST service
-  description: "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.amr', '.mp3', '.awb', '.wav', '.oga', '.ogg', '.aac', '.wma', '.m4a'}\n\n    VIDEO_EXTENSIONS = {'.mkv', '.mp4', '.avi', '.mov', '.wmv'}\n\n    "
+  description: "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.ogg', '.mp3', '.amr', '.awb', '.oga', '.aac', '.m4a', '.wav', '.wma'}\n\n    VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.mov', '.wmv', '.avi'}\n\n    "
   version: 0.0.1
 paths:
   /speech-to-text:
@@ -411,6 +411,14 @@ paths:
                 maxLength: 2083
               - type: 'null'
             title: Callback Url
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -837,6 +845,14 @@ paths:
                 maxLength: 2083
               - type: 'null'
             title: Callback Url
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -891,6 +907,15 @@ paths:
       summary: Get All Tasks Status
       description: "Retrieve the status of all tasks.\n\nArgs:\n    service: Task management service dependency.\n\nReturns:\n    TaskListResponse: The status of all tasks."
       operationId: get_all_tasks_status_task_all_get
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -898,6 +923,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskListResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /task/{identifier}:
     get:
       tags:
@@ -912,6 +943,14 @@ paths:
           schema:
             type: string
             title: Identifier
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -939,6 +978,14 @@ paths:
           schema:
             type: string
             title: Identifier
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1274,6 +1321,14 @@ paths:
             default: 0.363
             title: Vad Offset
           description: Offset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected.
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -1336,6 +1391,14 @@ paths:
             default: false
             title: Return Char Alignments
           description: Return character-level alignments in the output json file
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -1418,6 +1481,14 @@ paths:
             default: false
             title: Auto Store Speakers
           description: Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -1444,12 +1515,21 @@ paths:
       summary: 4. Combine Transcript And Diarization Result
       description: "Combine a transcript with diarization results.\n\nArgs:\n    background_tasks (BackgroundTasks): Background tasks dependency.\n    aligned_transcript (UploadFile): Uploaded aligned transcript file.\n    diarization_result (UploadFile): Uploaded diarization result file.\n    repository (ITaskRepository): Task repository dependency.\n    file_service (FileService): File service dependency.\n    speaker_service (ISpeakerAssignmentService): Speaker assignment service dependency.\n\nReturns:\n    Response: Confirmation message of task queuing."
       operationId: 4__Combine_Transcript_and_Diarization_result_service_combine_post
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
+        required: true
         content:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/Body_4__Combine_Transcript_and_Diarization_result_service_combine_post'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -1470,6 +1550,15 @@ paths:
       summary: Create Speaker
       description: Create a new speaker embedding.
       operationId: Create_speaker_speakers_post
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -1523,6 +1612,14 @@ paths:
             minimum: 0
             default: 0
             title: Offset
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1554,6 +1651,14 @@ paths:
             description: Delete all speakers from this task
             title: Task Id
           description: Delete all speakers from this task
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1581,6 +1686,14 @@ paths:
           schema:
             type: string
             title: Uuid
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1607,6 +1720,14 @@ paths:
           schema:
             type: string
             title: Uuid
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
         required: true
         content:
@@ -1639,6 +1760,14 @@ paths:
           schema:
             type: string
             title: Uuid
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       responses:
         '200':
           description: Successful Response
@@ -1659,12 +1788,21 @@ paths:
       summary: Search Speakers
       description: Search for similar speakers by embedding vector (cosine similarity).
       operationId: Search_speakers_speakers_search_post
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SpeakerSearchRequest'
-        required: true
       responses:
         '200':
           description: Successful Response
@@ -1685,12 +1823,21 @@ paths:
       summary: Identify Speaker
       description: Identify the best-matching speaker above threshold.
       operationId: Identify_speaker_speakers_identify_post
+      parameters:
+        - name: Authorization
+          in: header
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: 'null'
+            title: Authorization
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SpeakerIdentifyRequest'
-        required: true
       responses:
         '200':
           description: Successful Response

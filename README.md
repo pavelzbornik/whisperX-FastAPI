@@ -213,6 +213,52 @@ WhisperX supports these model sizes:
 
 Set default model in `.env` using `WHISPER_MODEL=` (default: tiny)
 
+### API protection: upload cap, rate limiting, concurrency, and auth
+
+The transcription endpoints (`/speech-to-text`, `/service/*`, `/v1/audio/*`) can be
+protected with optional, configurable safeguards. **Every option is a no-op by default**,
+so existing deployments are unaffected until they opt in.
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `MAX_UPLOAD_SIZE_MB` | `0` | Reject uploads larger than this many MB with HTTP 413, checked from `Content-Length` before the body is read. `0` = unlimited. (Requests without a `Content-Length`, e.g. chunked uploads, are not pre-checked — see the note below.) |
+| `MAX_QUEUED_GPU_REQUESTS` | `0` | Cap on concurrent in-flight transcription **requests** admitted across the API, returning HTTP 503 (with `Retry-After`) when exceeded. `0` = unlimited. Use `>= 2` for an exact split; `1` admits up to 2 (one per path). |
+| `SYNC_GPU_QUOTA_FRACTION` | `0.5` | Fraction of `MAX_QUEUED_GPU_REQUESTS` reserved for the synchronous (`/v1/audio/*`) path; the async path gets the remainder. For `total >= 2` the split is exact and each path keeps at least one slot. |
+| `RATE_LIMIT__ENABLED` | `false` | Enable per-caller rate limiting (slowapi). Returns HTTP 429 with `Retry-After`. |
+| `RATE_LIMIT__REQUESTS_PER_MINUTE` | `60` | Sustained per-caller budget per minute. |
+| `RATE_LIMIT__BURST` | `10` | Short-term per-caller burst budget per second. |
+| `RATE_LIMIT__KEY_STRATEGY` | `ip` | How callers are identified: `ip` or `bearer_token`. |
+| `AUTH__ENABLED` | `false` | Require a shared bearer token on protected endpoints (HTTP 401 otherwise). |
+| `AUTH__BEARER_TOKEN` | _(empty)_ | The shared token. **Required when `AUTH__ENABLED=true`.** |
+
+Example `.env` snippet enabling all of them:
+
+```sh
+MAX_UPLOAD_SIZE_MB=25
+MAX_QUEUED_GPU_REQUESTS=20
+SYNC_GPU_QUOTA_FRACTION=0.5
+RATE_LIMIT__ENABLED=true
+RATE_LIMIT__REQUESTS_PER_MINUTE=60
+RATE_LIMIT__BURST=10
+RATE_LIMIT__KEY_STRATEGY=ip
+AUTH__ENABLED=true
+AUTH__BEARER_TOKEN=replace-with-a-long-random-secret
+```
+
+> **Notes:**
+>
+> - Values are read from the environment at startup and are fixed for the life of the
+>   process; changing them requires a restart.
+> - Rate-limit and concurrency state are kept in-process. Running multiple workers
+>   (`uvicorn --workers >1`) gives each worker its own budget, so these limits — like the
+>   GPU semaphore — assume a single worker process.
+> - The upload cap is enforced from the `Content-Length` header. Uploads sent without one
+>   (chunked transfer encoding) are not rejected up front and are bounded only by available
+>   memory/disk; the common multipart upload path always sends `Content-Length`.
+> - For async endpoints (`/speech-to-text`, `/service/*`), the concurrency gate is
+>   **admission control** for the request phase (validation, audio decode, enqueue). The GPU
+>   pipeline runs in a background task bounded by `MAX_CONCURRENT_GPU_TASKS`, not by this gate.
+
 ## System Requirements
 
 - NVIDIA GPU with CUDA 12.8+ support

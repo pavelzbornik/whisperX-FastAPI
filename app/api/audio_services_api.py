@@ -14,9 +14,11 @@ from fastapi import (
     Depends,
     File,
     Query,
+    Request,
     UploadFile,
 )
 from pydantic import ValidationError as PydanticValidationError
+from starlette.responses import Response as StarletteResponse
 
 from app.api.constants import (
     JSON_EXTENSION,
@@ -35,6 +37,7 @@ from app.audio import get_audio_duration, process_audio_file
 from app.core.config import Config
 from app.core.exceptions import FileValidationError, ValidationError
 from app.core.logging import logger
+from app.core.rate_limit import limiter, rate_limit_value, rate_limiting_disabled
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
@@ -110,7 +113,10 @@ def _parse_transcript_payload(payload: bytes) -> Transcript:
     tags=["Speech-2-Text services"],
     name="1. Transcribe",
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def transcribe(
+    request: Request,
+    response: StarletteResponse,
     background_tasks: BackgroundTasks,
     model_params: WhisperModelParams = Depends(),
     asr_options_params: ASROptions = Depends(),
@@ -183,7 +189,10 @@ async def transcribe(
     tags=["Speech-2-Text services"],
     name="2. Align Transcript",
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def align(
+    request: Request,
+    response: StarletteResponse,
     background_tasks: BackgroundTasks,
     transcript: UploadFile = File(
         ..., description="Whisper style transcript json file"
@@ -276,7 +285,10 @@ async def align(
 @service_router.post(
     "/service/diarize", tags=["Speech-2-Text services"], name="3. Diarize"
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def diarize(
+    request: Request,
+    response: StarletteResponse,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     repository: ITaskRepository = Depends(get_task_repository),
@@ -347,7 +359,10 @@ async def diarize(
     tags=["Speech-2-Text services"],
     name="4. Combine Transcript and Diarization result",
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def combine(
+    request: Request,
+    response: StarletteResponse,
     background_tasks: BackgroundTasks,
     aligned_transcript: UploadFile = File(...),
     diarization_result: UploadFile = File(...),
