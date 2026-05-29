@@ -227,3 +227,23 @@ Follow Test-Driven Development for all new features and bug fixes:
 - Address style violations proactively — check for unused imports, consistent naming
   (`str | None` not `Optional[str]`), and docstrings on public methods
 - Verify coverage meets threshold before pushing, not after CI fails
+
+### PR titles must be Conventional Commits
+
+The `.github/workflows/pr-title-lint.yml` workflow (added in #539) enforces
+[Conventional Commits](https://www.conventionalcommits.org/) for every PR title via
+`amannn/action-semantic-pull-request`. **The PR will fail CI if the title doesn't match.**
+
+Why it matters: PRs are squash-merged, so the PR title becomes the merge commit subject on
+the target branch. `release-please` parses those subjects on `main` to decide the version
+bump and to build the changelog — a non-conventional title (e.g. `Dev`) flattens everything
+behind a single unrecognized commit and the release detection breaks.
+
+Allowed types: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`,
+`perf:`, `style:`, `revert:` (the action-semantic-pull-request defaults). Use a scope when
+useful — e.g. `feat(security): ...`, `fix(api): ...`, `chore(deps): ...`. Mark breaking
+changes with `!` (e.g. `feat(api)!: ...`).
+
+The dev → main release PR is also subject to this rule: title it with a conventional
+prefix (e.g. `feat: …` or `chore(main): release X.Y.Z`) so `release-please` can detect it
+after the squash. Do **not** title it `Dev`.
