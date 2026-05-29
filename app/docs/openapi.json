@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.awb', '.wma', '.amr', '.m4a', '.mp3', '.ogg', '.oga', '.aac', '.wav'}\n\n    VIDEO_EXTENSIONS = {'.avi', '.mkv', '.mov', '.mp4', '.wmv'}\n\n    ",
+    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.aac', '.wav', '.m4a', '.ogg', '.mp3', '.oga', '.amr', '.wma', '.awb'}\n\n    VIDEO_EXTENSIONS = {'.avi', '.wmv', '.mov', '.mkv', '.mp4'}\n\n    ",
     "version": "0.0.1"
   },
   "paths": {
@@ -297,6 +297,42 @@
               "title": "Max Speakers"
             },
             "description": "Maximum number of speakers to in audio file"
+          },
+          {
+            "name": "return_embeddings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include speaker embedding vectors in the task result",
+              "default": false,
+              "title": "Return Embeddings"
+            },
+            "description": "Include speaker embedding vectors in the task result"
+          },
+          {
+            "name": "identify_speakers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Match speakers against the local speaker database and replace generic labels with known names",
+              "default": false,
+              "title": "Identify Speakers"
+            },
+            "description": "Match speakers against the local speaker database and replace generic labels with known names"
+          },
+          {
+            "name": "auto_store_speakers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)",
+              "default": false,
+              "title": "Auto Store Speakers"
+            },
+            "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)"
           },
           {
             "name": "beam_size",
@@ -835,6 +871,42 @@
               "title": "Max Speakers"
             },
             "description": "Maximum number of speakers to in audio file"
+          },
+          {
+            "name": "return_embeddings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include speaker embedding vectors in the task result",
+              "default": false,
+              "title": "Return Embeddings"
+            },
+            "description": "Include speaker embedding vectors in the task result"
+          },
+          {
+            "name": "identify_speakers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Match speakers against the local speaker database and replace generic labels with known names",
+              "default": false,
+              "title": "Identify Speakers"
+            },
+            "description": "Match speakers against the local speaker database and replace generic labels with known names"
+          },
+          {
+            "name": "auto_store_speakers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)",
+              "default": false,
+              "title": "Auto Store Speakers"
+            },
+            "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)"
           },
           {
             "name": "beam_size",
@@ -1829,6 +1901,42 @@
               "title": "Max Speakers"
             },
             "description": "Maximum number of speakers to in audio file"
+          },
+          {
+            "name": "return_embeddings",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Include speaker embedding vectors in the task result",
+              "default": false,
+              "title": "Return Embeddings"
+            },
+            "description": "Include speaker embedding vectors in the task result"
+          },
+          {
+            "name": "identify_speakers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Match speakers against the local speaker database and replace generic labels with known names",
+              "default": false,
+              "title": "Identify Speakers"
+            },
+            "description": "Match speakers against the local speaker database and replace generic labels with known names"
+          },
+          {
+            "name": "auto_store_speakers",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)",
+              "default": false,
+              "title": "Auto Store Speakers"
+            },
+            "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)"
           }
         ],
         "requestBody": {
@@ -1891,6 +1999,377 @@
                 "schema": {
                   "$ref": "#/components/schemas/Response"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/speakers": {
+      "post": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Create Speaker",
+        "description": "Create a new speaker embedding.",
+        "operationId": "Create_speaker_speakers_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSpeakerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "List Speakers",
+        "description": "List speaker embeddings with optional task filter and pagination.",
+        "operationId": "List_speakers_speakers_get",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by originating task UUID",
+              "title": "Task Id"
+            },
+            "description": "Filter by originating task UUID"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpeakerResponse"
+                  },
+                  "title": "Response List Speakers Speakers Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Delete Speakers By Task",
+        "description": "Delete all speaker embeddings associated with a task.",
+        "operationId": "Delete_speakers_by_task_speakers_delete",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Delete all speakers from this task",
+              "title": "Task Id"
+            },
+            "description": "Delete all speakers from this task"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/speakers/{uuid}": {
+      "get": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Get Speaker",
+        "description": "Get a single speaker embedding by UUID.",
+        "operationId": "Get_speaker_speakers__uuid__get",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Update Speaker",
+        "description": "Update a speaker's label, description, or embedding.",
+        "operationId": "Update_speaker_speakers__uuid__put",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSpeakerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Delete Speaker",
+        "description": "Delete a single speaker embedding.",
+        "operationId": "Delete_speaker_speakers__uuid__delete",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/speakers/search": {
+      "post": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Search Speakers",
+        "description": "Search for similar speakers by embedding vector (cosine similarity).",
+        "operationId": "Search_speakers_speakers_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakerSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/speakers/identify": {
+      "post": {
+        "tags": [
+          "Speakers"
+        ],
+        "summary": "Identify Speaker",
+        "description": "Identify the best-matching speaker above threshold.",
+        "operationId": "Identify_speaker_speakers_identify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakerIdentifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -2077,6 +2556,54 @@
         ],
         "title": "ComputeType",
         "description": "Enum for compute types."
+      },
+      "CreateSpeakerRequest": {
+        "properties": {
+          "speaker_label": {
+            "type": "string",
+            "title": "Speaker Label",
+            "description": "User-facing name for the speaker"
+          },
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Embedding",
+            "description": "Speaker embedding vector"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Free-text description (role, voice notes, etc.)"
+          },
+          "task_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Uuid",
+            "description": "Optional link to originating diarization task"
+          }
+        },
+        "type": "object",
+        "required": [
+          "speaker_label",
+          "embedding"
+        ],
+        "title": "CreateSpeakerRequest",
+        "description": "Request schema for creating a speaker embedding."
       },
       "Device": {
         "type": "string",
@@ -2285,6 +2812,158 @@
         "title": "Result",
         "description": "Model for a result with status, result data, metadata, and optional error."
       },
+      "SpeakerIdentifyRequest": {
+        "properties": {
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Embedding",
+            "description": "Query embedding vector"
+          },
+          "threshold": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Threshold",
+            "description": "Minimum cosine similarity threshold",
+            "default": 0.7
+          }
+        },
+        "type": "object",
+        "required": [
+          "embedding"
+        ],
+        "title": "SpeakerIdentifyRequest",
+        "description": "Request schema for identifying a speaker."
+      },
+      "SpeakerResponse": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "task_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Uuid"
+          },
+          "speaker_label": {
+            "type": "string",
+            "title": "Speaker Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Embedding"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid",
+          "task_uuid",
+          "speaker_label",
+          "description",
+          "embedding",
+          "created_at"
+        ],
+        "title": "SpeakerResponse",
+        "description": "Response schema for a speaker embedding."
+      },
+      "SpeakerSearchRequest": {
+        "properties": {
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Embedding",
+            "description": "Query embedding vector"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "description": "Max results to return",
+            "default": 5
+          },
+          "threshold": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Threshold",
+            "description": "Minimum cosine similarity threshold",
+            "default": 0.7
+          }
+        },
+        "type": "object",
+        "required": [
+          "embedding"
+        ],
+        "title": "SpeakerSearchRequest",
+        "description": "Request schema for searching similar speakers."
+      },
+      "SpeakerSearchResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SpeakerSearchResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "SpeakerSearchResponse",
+        "description": "Response schema for speaker search."
+      },
+      "SpeakerSearchResult": {
+        "properties": {
+          "speaker": {
+            "$ref": "#/components/schemas/SpeakerResponse"
+          },
+          "similarity": {
+            "type": "number",
+            "title": "Similarity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "speaker",
+          "similarity"
+        ],
+        "title": "SpeakerSearchResult",
+        "description": "A single search result with similarity score."
+      },
       "TaskEnum": {
         "type": "string",
         "enum": [
@@ -2450,6 +3129,52 @@
         ],
         "title": "TaskSummaryResponse",
         "description": "DTO for returning task summary in list operations.\n\nUsed for GET /task/all endpoint to provide a lighter response."
+      },
+      "UpdateSpeakerRequest": {
+        "properties": {
+          "speaker_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker Label",
+            "description": "Updated speaker name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Updated description"
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding",
+            "description": "Updated embedding vector"
+          }
+        },
+        "type": "object",
+        "title": "UpdateSpeakerRequest",
+        "description": "Request schema for updating a speaker embedding."
       },
       "ValidationError": {
         "properties": {

@@ -3,7 +3,8 @@
 from typing import Any, Protocol
 
 import numpy as np
-import pandas as pd
+
+from app.domain.entities.diarization_result import DiarizationResult
 
 
 class IDiarizationService(Protocol):
@@ -24,7 +25,8 @@ class IDiarizationService(Protocol):
         device: str,
         min_speakers: int | None = None,
         max_speakers: int | None = None,
-    ) -> pd.DataFrame:
+        return_embeddings: bool = False,
+    ) -> DiarizationResult:
         """
         Identify speakers and their speaking segments in audio.
 
@@ -33,13 +35,11 @@ class IDiarizationService(Protocol):
             device: Device to use ('cpu' or 'cuda')
             min_speakers: Minimum number of speakers (optional)
             max_speakers: Maximum number of speakers (optional)
+            return_embeddings: Whether to return speaker embedding vectors
 
         Returns:
-            DataFrame containing speaker segments with columns:
-                - start: Segment start time in seconds
-                - end: Segment end time in seconds
-                - speaker: Speaker label (e.g., 'SPEAKER_00', 'SPEAKER_01')
-                - Additional metadata columns may be included
+            DiarizationResult containing speaker segments DataFrame and
+            optionally speaker embeddings
         """
         ...
 

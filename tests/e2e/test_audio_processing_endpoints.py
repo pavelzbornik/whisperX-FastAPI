@@ -268,6 +268,59 @@ def test_align_service(client: TestClient) -> None:
 
 
 @pytest.mark.e2e
+def test_align_service_accepts_wrapped_task_result(client: TestClient) -> None:
+    """Regression for issue #525.
+
+    The JSON file users download from ``GET /task/{identifier}`` is wrapped in
+    a ``{status, result, metadata, error}`` envelope. Posting that envelope
+    directly to ``/service/align`` must queue the task instead of failing with
+    ``INVALID_TRANSCRIPT_JSON``.
+    """
+    with open("tests/test_files/transcript.json") as f:
+        bare = json.load(f)
+
+    wrapped = {
+        "status": "completed",
+        "result": bare,
+        "metadata": {
+            "task_type": "transcription",
+            "task_params": {},
+            "language": bare["language"],
+            "file_name": "audio.wav",
+            "url": None,
+            "callback_url": None,
+            "duration": 1.0,
+            "audio_duration": 1.0,
+            "start_time": None,
+            "end_time": None,
+        },
+        "error": None,
+    }
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tf:
+        json.dump(wrapped, tf)
+        temp_path = tf.name
+
+    try:
+        with (
+            open(temp_path, "rb") as wrapped_fp,
+            open(AUDIO_FILE, "rb") as audio_file,
+        ):
+            response = client.post(
+                f"/service/align?device={os.getenv('DEVICE')}",
+                files={
+                    "transcript": ("response_task.json", wrapped_fp),
+                    "file": ("audio_file.mp3", audio_file),
+                },
+            )
+    finally:
+        os.unlink(temp_path)
+
+    assert response.status_code == 200, response.text
+    assert "Task queued" in response.json()["message"]
+
+
+@pytest.mark.e2e
 @pytest.mark.slow
 def test_diarize_service(client: TestClient) -> None:
     """Test the diarization service endpoint."""

@@ -128,6 +128,36 @@ groups auto-merge after CI passes.
 **PyTorch wheels:** `uv.lock` is platform-specific (CUDA on Linux x86\_64, CPU on
 macOS/Windows). Never manually edit `uv.lock`.
 
+## Coding Discipline
+
+### Think Before Coding
+
+- State assumptions explicitly before writing code. If uncertain, ask rather than guess.
+- When a request is ambiguous, present the possible interpretations and ask which is intended.
+- Push back when a simpler approach exists — suggest it before building the complex one.
+- Stop when confused. Name what's unclear and ask for clarification.
+- Frame tasks as goals with verification checkpoints — "add validation" becomes "write
+  tests for invalid inputs, then make them pass"; "refactor X" becomes "ensure tests pass
+  before and after". For multi-step tasks, state a plan before starting.
+
+### Simplicity First
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No speculative "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If the code you're writing could be 50 lines instead of 200, write the 50. (Applies to
+  new code — see **Surgical Changes** for existing code.)
+
+### Surgical Changes
+
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- Remove imports/variables/functions that your changes made unused.
+- Don't remove pre-existing unused code unless asked.
+
 ## Testing — TDD Process
 
 Follow Test-Driven Development for all new features and bug fixes:
@@ -169,6 +199,7 @@ Follow Test-Driven Development for all new features and bug fixes:
   existing fields are preserved
 - Never replace entire file contents when only a section needs updating
 - For batch operations, process in small batches with validation between each
+- See also **Surgical Changes** above for scope discipline when modifying code.
 
 ## PR Workflow
 

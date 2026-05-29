@@ -5,6 +5,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from app.domain.entities.diarization_result import DiarizationResult
+
 
 class MockDiarizationService:
     """
@@ -16,18 +18,23 @@ class MockDiarizationService:
     """
 
     def __init__(
-        self, mock_result: pd.DataFrame | None = None, should_fail: bool = False
+        self,
+        mock_result: pd.DataFrame | None = None,
+        mock_embeddings: dict[str, list[float]] | None = None,
+        should_fail: bool = False,
     ) -> None:
         """
         Initialize mock diarization service.
 
         Args:
-            mock_result: Custom result to return (uses default if None)
+            mock_result: Custom segments DataFrame to return (uses default if None)
+            mock_embeddings: Custom speaker embeddings to return when requested
             should_fail: If True, raises exception on diarize
         """
         self.mock_result = (
             mock_result if mock_result is not None else self._default_result()
         )
+        self.mock_embeddings = mock_embeddings or self._default_embeddings()
         self.should_fail = should_fail
         self.diarize_called = False
         self.diarize_call_count = 0
@@ -41,7 +48,8 @@ class MockDiarizationService:
         device: str,
         min_speakers: int | None = None,
         max_speakers: int | None = None,
-    ) -> pd.DataFrame:
+        return_embeddings: bool = False,
+    ) -> DiarizationResult:
         """
         Return mock diarization result immediately.
 
@@ -50,9 +58,10 @@ class MockDiarizationService:
             device: Device
             min_speakers: Minimum number of speakers
             max_speakers: Maximum number of speakers
+            return_embeddings: Whether to include speaker embeddings
 
         Returns:
-            Mock diarization DataFrame
+            DiarizationResult with mock segments and optional embeddings
 
         Raises:
             RuntimeError: If should_fail is True
@@ -64,12 +73,16 @@ class MockDiarizationService:
             "device": device,
             "min_speakers": min_speakers,
             "max_speakers": max_speakers,
+            "return_embeddings": return_embeddings,
         }
 
         if self.should_fail:
             raise RuntimeError("Mock diarization failed")
 
-        return self.mock_result
+        return DiarizationResult(
+            segments=self.mock_result,
+            speaker_embeddings=self.mock_embeddings if return_embeddings else None,
+        )
 
     def load_model(self, _device: str, _hf_token: str) -> None:
         """
@@ -106,3 +119,15 @@ class MockDiarizationService:
                 },
             ]
         )
+
+    def _default_embeddings(self) -> dict[str, list[float]]:
+        """
+        Provide default mock speaker embeddings.
+
+        Returns:
+            Dictionary mapping speaker labels to embedding vectors
+        """
+        return {
+            "SPEAKER_00": [0.1, 0.2, 0.3, 0.4],
+            "SPEAKER_01": [-0.1, -0.2, -0.3, -0.4],
+        }
