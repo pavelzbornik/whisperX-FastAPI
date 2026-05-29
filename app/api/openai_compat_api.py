@@ -442,11 +442,13 @@ async def _handle_openai_transcription(
 )
 async def create_transcription(
     request: Request,
+    file_service: Annotated[FileService, Depends(get_file_service)],
+    transcription_service: Annotated[
+        ITranscriptionService, Depends(get_transcription_service)
+    ],
+    alignment_service: Annotated[IAlignmentService, Depends(get_alignment_service)],
+    repository: Annotated[ITaskRepository, Depends(get_task_repository)],
     _authorization: Annotated[str | None, Header(alias="Authorization")] = None,
-    file_service: FileService = Depends(get_file_service),
-    transcription_service: ITranscriptionService = Depends(get_transcription_service),
-    alignment_service: IAlignmentService = Depends(get_alignment_service),
-    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """Transcribe an uploaded file and return the transcript synchronously.
 
@@ -472,11 +474,13 @@ async def create_transcription(
 )
 async def create_translation(
     request: Request,
+    file_service: Annotated[FileService, Depends(get_file_service)],
+    transcription_service: Annotated[
+        ITranscriptionService, Depends(get_transcription_service)
+    ],
+    alignment_service: Annotated[IAlignmentService, Depends(get_alignment_service)],
+    repository: Annotated[ITaskRepository, Depends(get_task_repository)],
     _authorization: Annotated[str | None, Header(alias="Authorization")] = None,
-    file_service: FileService = Depends(get_file_service),
-    transcription_service: ITranscriptionService = Depends(get_transcription_service),
-    alignment_service: IAlignmentService = Depends(get_alignment_service),
-    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
     """Translate an uploaded file to English and return the result synchronously.
 
