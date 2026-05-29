@@ -12,6 +12,14 @@ from sqlalchemy.schema import Table
 DOCS_PATH = "app/docs"
 
 
+class _IndentedYamlDumper(yaml.Dumper):
+    """YAML dumper that indents block sequences under their parent key."""
+
+    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
+        """Force block sequences to be indented rather than rendered indentless."""
+        super().increase_indent(flow, False)
+
+
 def save_openapi_json(app: FastAPI, path: str = DOCS_PATH) -> None:
     """
     Save the OpenAPI documentation of the FastAPI app in JSON and YAML formats.
@@ -25,8 +33,18 @@ def save_openapi_json(app: FastAPI, path: str = DOCS_PATH) -> None:
     # Change "openapi.json" to desired filename
     with open(f"{path}/openapi.json", "w") as file:
         json.dump(openapi_data, file, indent=2)
+        file.write("\n")
     with open(f"{path}/openapi.yaml", "w") as f:
-        yaml.dump(openapi_data, f, sort_keys=False)
+        # width is set very high so long description strings are not wrapped with
+        # backslash continuations, keeping the YAML diff stable across regenerations.
+        yaml.dump(
+            openapi_data,
+            f,
+            Dumper=_IndentedYamlDumper,
+            sort_keys=False,
+            width=1 << 30,
+            allow_unicode=True,
+        )
 
 
 def generate_markdown_table(model: Table) -> str:

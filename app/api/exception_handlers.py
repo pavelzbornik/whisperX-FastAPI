@@ -181,6 +181,7 @@ def infrastructure_error_handler(
         content={
             "error": {
                 "message": "A temporary system error occurred. Please try again later.",
+                "type": "server_error",
                 "code": infra_exc.code,
                 "correlation_id": infra_exc.correlation_id,
             }
@@ -216,6 +217,7 @@ def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
         content={
             "error": {
                 "message": "An unexpected error occurred. Please contact support if the problem persists.",
+                "type": "server_error",
                 "code": "INTERNAL_ERROR",
                 "correlation_id": correlation_id,
             }

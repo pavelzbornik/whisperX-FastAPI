@@ -69,9 +69,101 @@ See the [WhisperX Documentation](https://github.com/m-bain/whisperX) for details
    - Liveness probe (`/health/live`): Verifies if application is running
    - Readiness probe (`/health/ready`): Checks if application is ready to accept requests (includes database connectivity check)
 
+### OpenAI-compatible audio endpoints
+
+The API also exposes synchronous OpenAI Whisper-compatible endpoints:
+
+- `POST /v1/audio/transcriptions`
+- `POST /v1/audio/translations`
+
+These endpoints accept the same `multipart/form-data` style requests expected by
+OpenAI SDK clients and return the transcript directly in the response body. Each
+request is also persisted as a task, so its result (or error) can be retrieved later
+via the `/task` endpoints.
+
+- `model="whisper-1"` maps to the local checkpoint configured by `WHISPER_MODEL`
+- Direct local Whisper checkpoint names such as `tiny`, `base`, `large-v3`, or
+  `distil-large-v3` are also accepted
+- `response_format` supports `json`, `text`, `srt`, `verbose_json`, and `vtt`
+- `timestamp_granularities[]=word` is supported with `response_format=verbose_json`
+  on `/v1/audio/transcriptions` and triggers alignment for word timings
+
+Example with the official OpenAI Python SDK:
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+   api_key="not-used-but-required-by-some-clients",
+   base_url="http://127.0.0.1:8000/v1",
+)
+
+with open("tests/test_files/audio_en.mp3", "rb") as audio_file:
+   transcript = client.audio.transcriptions.create(
+       model="whisper-1",
+       file=audio_file,
+       response_format="verbose_json",
+       timestamp_granularities=["segment"],
+   )
+
+print(transcript.text)
+```
+
 ### Task management and result storage
 
-![Service chart](app/docs/service_chart.svg)
+```mermaid
+flowchart TD
+    Client(["Client / OpenAI SDK"])
+
+    subgraph AsyncAPI ["Asynchronous API — background jobs"]
+        STT["POST /speech-to-text<br/>POST /speech-to-text-url"]
+        SVC["POST /service/transcribe<br/>POST /service/align<br/>POST /service/diarize<br/>POST /service/combine"]
+        BG{{"Background task<br/>WhisperX pipeline"}}
+        TASK["GET /task/all<br/>GET /task/{identifier}<br/>DELETE /task/{identifier}/delete"]
+    end
+
+    subgraph SyncAPI ["OpenAI-compatible API — synchronous"]
+        OAI["POST /v1/audio/transcriptions<br/>POST /v1/audio/translations"]
+    end
+
+    subgraph SpeakerAPI ["Speaker management"]
+        SPK["POST / GET / PUT / DELETE /speakers<br/>POST /speakers/search<br/>POST /speakers/identify"]
+    end
+
+    SEM(["GPU semaphore<br/>MAX_CONCURRENT_GPU_TASKS"])
+    DB[("Database<br/>tasks, results and speaker embeddings")]
+
+    Client -->|submit job| STT
+    Client -->|submit job| SVC
+    Client -->|poll / manage| TASK
+    Client -->|request| OAI
+    Client -->|manage speakers| SPK
+
+    STT --> BG
+    SVC --> BG
+    BG -->|store status + result| DB
+    OAI -->|store status + result| DB
+    DB -->|read| TASK
+
+    SPK -->|CRUD / search / identify| DB
+    BG -. identify / auto-store speakers .-> DB
+
+    BG -. acquire .-> SEM
+    OAI -. acquire .-> SEM
+    OAI -->|transcript in response| Client
+```
+
+The asynchronous endpoints enqueue a background WhisperX job, persist its status and
+result to the database, and let clients poll or manage it via the `/task` endpoints. The
+OpenAI-compatible endpoints run the pipeline synchronously and return the transcript
+directly in the response, while also persisting the task and its result to the same
+database — so completed (and failed) synchronous requests are queryable via the `/task`
+endpoints just like the asynchronous ones. Both paths share the same GPU semaphore
+(`MAX_CONCURRENT_GPU_TASKS`) to prevent out-of-memory errors.
+
+The `/speakers` endpoints provide CRUD, similarity search, and identification over speaker
+embeddings persisted in the same database. Diarization tasks can optionally identify
+against, or auto-store into, these embeddings (`identify_speakers` / `auto_store_speakers`).
 
 Task status and results are stored in a database via async SQLAlchemy. The DB connection
 is configured with `DB_URL` (default: `sqlite:///records.db`).

@@ -62,7 +62,13 @@ from app.core.logging.context import (  # noqa: E402
 # Get logger for application startup
 logger = logging.getLogger("app")
 
-from app.api import service_router, speaker_router, stt_router, task_router  # noqa: E402
+from app.api import (  # noqa: E402
+    openai_compat_router,
+    service_router,
+    speaker_router,
+    stt_router,
+    task_router,
+)
 from app.api.exception_handlers import (  # noqa: E402
     domain_error_handler,
     generic_error_handler,
@@ -149,6 +155,10 @@ tags_metadata = [
         "description": "Manage tasks.",
     },
     {
+        "name": "OpenAI compatibility",
+        "description": "Synchronous OpenAI Whisper-compatible audio endpoints.",
+    },
+    {
         "name": "Health",
         "description": "Health check endpoints to monitor application status",
     },
@@ -199,6 +209,7 @@ app.include_router(stt_router)
 app.include_router(task_router)
 app.include_router(service_router)
 app.include_router(speaker_router)
+app.include_router(openai_compat_router)
 
 
 class RequestContextMiddleware:

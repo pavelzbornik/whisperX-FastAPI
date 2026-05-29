@@ -56,11 +56,17 @@ class ApplicationError(Exception):
         return {
             "error": {
                 "message": self.user_message,
+                "type": self.error_type,
                 "code": self.code,
                 "correlation_id": self.correlation_id,
                 **self.details,
             }
         }
+
+    @property
+    def error_type(self) -> str:
+        """Return an OpenAI-style error type."""
+        return "api_error"
 
 
 class DomainError(ApplicationError):
@@ -80,6 +86,11 @@ class DomainError(ApplicationError):
             **kwargs: Additional error context
         """
         super().__init__(message, code=code, **kwargs)
+
+    @property
+    def error_type(self) -> str:
+        """Return an OpenAI-style error type."""
+        return "invalid_request_error"
 
 
 class ValidationError(DomainError):
@@ -126,6 +137,11 @@ class InfrastructureError(ApplicationError):
             **kwargs: Additional error context
         """
         super().__init__(message, code=code, **kwargs)
+
+    @property
+    def error_type(self) -> str:
+        """Return an OpenAI-style error type."""
+        return "server_error"
 
 
 class ConfigurationError(ApplicationError):
