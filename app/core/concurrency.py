@@ -59,12 +59,13 @@ def compute_quota_split(total: int, sync_fraction: float) -> tuple[int, int]:
     """Split a total budget into ``(sync_capacity, async_capacity)``.
 
     A ``total`` of 0 (or less) yields ``(0, 0)`` meaning both paths are
-    unlimited. For ``total >= 2`` the split is exact (``sync + async == total``)
-    while guaranteeing each path at least one slot, so a fraction of 0 or 1
-    cannot lock out either path. The sole exception is ``total == 1``: since a
-    capacity of 0 means "unlimited" rather than "no slots", both paths get 1,
-    allowing up to 2 concurrent requests. Set ``MAX_QUEUED_GPU_REQUESTS >= 2``
-    for a split where the combined cap equals the configured total.
+    unlimited. For ``total >= 2`` the split is exact
+    (``sync + async == total``) and each path is guaranteed at least one
+    slot, so a fraction of 0 or 1 cannot lock out either path.
+
+    ``total == 1`` is rejected by the Settings validator (it cannot be
+    split without either exceeding the cap or closing one path); callers
+    should not pass it here.
 
     Args:
         total: The overall concurrent-request budget.
@@ -75,8 +76,6 @@ def compute_quota_split(total: int, sync_fraction: float) -> tuple[int, int]:
     """
     if total <= 0:
         return 0, 0
-    if total == 1:
-        return 1, 1
     # Clamp the sync share to [1, total - 1] so the async path keeps >= 1 slot
     # and the two shares always sum to exactly ``total``.
     sync_capacity = min(max(round(total * sync_fraction), 1), total - 1)

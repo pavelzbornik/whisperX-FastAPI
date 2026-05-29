@@ -1,9 +1,8 @@
 """Tests for exception handlers."""
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.testclient import TestClient
-
 from slowapi.errors import RateLimitExceeded
 
 from app.api.exception_handlers import (
@@ -27,8 +26,19 @@ from app.core.exceptions import (
     ValidationError,
 )
 
+
+class _StubLimiter:
+    """Minimal stub satisfying ``rate_limit_exceeded_handler``'s header injection."""
+
+    def _inject_headers(self, response: Response, _current_limit: object) -> Response:
+        response.headers["Retry-After"] = "60"
+        return response
+
+
 # Create a test app
 app = FastAPI()
+# Expose a stub limiter so the rate-limit handler can inject Retry-After.
+app.state.limiter = _StubLimiter()
 
 # Register exception handlers
 app.add_exception_handler(TaskNotFoundError, task_not_found_handler)
@@ -39,6 +49,19 @@ app.add_exception_handler(AuthenticationError, authentication_error_handler)
 app.add_exception_handler(ServiceOverloadedError, service_overloaded_handler)
 app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_exception_handler(Exception, generic_error_handler)
+
+
+@app.get("/test/rate-limit-exceeded-with-state")
+async def raise_rate_limit_exceeded_with_state(request: Request) -> None:
+    """Raise RateLimitExceeded after setting view_rate_limit (for Retry-After)."""
+    from limits import parse
+    from slowapi.wrappers import Limit
+
+    request.state.view_rate_limit = ("dummy_limit", ["k"])
+    limit = Limit(
+        parse("1/minute"), lambda: "key", None, False, None, None, None, 1, True
+    )
+    raise RateLimitExceeded(limit)
 
 
 # Test routes
@@ -98,18 +121,6 @@ async def raise_service_overloaded() -> None:
     raise ServiceOverloadedError(scope="sync", retry_after=3)
 
 
-@app.get("/test/rate-limit-exceeded")
-async def raise_rate_limit_exceeded() -> None:
-    """Raise slowapi RateLimitExceeded."""
-    from limits import parse
-    from slowapi.wrappers import Limit
-
-    limit = Limit(
-        parse("1/minute"), lambda: "key", None, False, None, None, None, 1, True
-    )
-    raise RateLimitExceeded(limit)
-
-
 # Test client
 client = TestClient(app, raise_server_exceptions=False)
 
@@ -167,7 +178,7 @@ def test_authentication_error_handler() -> None:
 
 @pytest.mark.unit
 def test_service_overloaded_handler() -> None:
-    """Test ServiceOverloadedError handler returns 503 with Retry-After."""
+    """Test ServiceOverloadedError handler returns 503 with Retry-After and id."""
     response = client.get("/test/service-overloaded")
 
     assert response.status_code == 503
@@ -176,14 +187,16 @@ def test_service_overloaded_handler() -> None:
     assert data["error"]["code"] == "SERVICE_OVERLOADED"
     assert data["error"]["type"] == "server_error"
     assert data["error"]["scope"] == "sync"
+    assert "correlation_id" in data["error"]
 
 
 @pytest.mark.unit
 def test_rate_limit_exceeded_handler() -> None:
-    """Test RateLimitExceeded handler returns 429 with OpenAI-style envelope."""
-    response = client.get("/test/rate-limit-exceeded")
+    """Test RateLimitExceeded handler returns 429 with envelope and Retry-After."""
+    response = client.get("/test/rate-limit-exceeded-with-state")
 
     assert response.status_code == 429
+    assert response.headers["Retry-After"] == "60"
     data = response.json()
     assert data["error"]["code"] == "RATE_LIMIT_EXCEEDED"
     assert data["error"]["type"] == "rate_limit_error"

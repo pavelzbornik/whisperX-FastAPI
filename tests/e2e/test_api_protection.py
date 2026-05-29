@@ -14,7 +14,7 @@ from collections.abc import Generator
 from typing import Any
 
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
+from pytest import MonkeyPatch
 from dependency_injector import providers
 from fastapi.testclient import TestClient
 from unittest.mock import patch

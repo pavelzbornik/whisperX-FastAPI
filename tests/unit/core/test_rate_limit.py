@@ -36,7 +36,9 @@ def reset_rate_limit_env() -> Generator[None, None, None]:
     get_settings.cache_clear()
 
 
-def _make_request(headers: dict[str, str] | None = None, client_ip: str = "1.2.3.4"):
+def _make_request(
+    headers: dict[str, str] | None = None, client_ip: str = "1.2.3.4"
+) -> Request:
     """Build a minimal Starlette Request for key-function tests."""
     raw_headers = [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()]
     scope = {
@@ -61,25 +63,59 @@ def test_key_uses_client_ip_by_default(reset_rate_limit_env: None) -> None:
 
 
 @pytest.mark.unit
-def test_key_uses_bearer_token_when_configured(reset_rate_limit_env: None) -> None:
-    """The bearer_token strategy buckets by the presented token."""
+def test_key_uses_bearer_token_when_auth_enabled(
+    reset_rate_limit_env: None,
+) -> None:
+    """The bearer_token strategy buckets by the validated token (auth on)."""
     os.environ["RATE_LIMIT__KEY_STRATEGY"] = "bearer_token"
+    os.environ["AUTH__ENABLED"] = "true"
+    os.environ["AUTH__BEARER_TOKEN"] = "s3cret"
     get_settings.cache_clear()
-
-    key = rate_limit_key(_make_request(headers={"Authorization": "Bearer abc123"}))
-
-    assert key == "token:abc123"
+    try:
+        key = rate_limit_key(_make_request(headers={"Authorization": "Bearer abc123"}))
+        assert key == "token:abc123"
+    finally:
+        for k in ("AUTH__ENABLED", "AUTH__BEARER_TOKEN"):
+            os.environ.pop(k, None)
+        get_settings.cache_clear()
 
 
 @pytest.mark.unit
-def test_bearer_strategy_falls_back_to_ip(reset_rate_limit_env: None) -> None:
-    """Without a usable token, bearer_token strategy falls back to client IP."""
+def test_bearer_strategy_ignored_when_auth_disabled(
+    reset_rate_limit_env: None,
+) -> None:
+    """Bearer-token keying is ignored without auth, falling back to IP.
+
+    Otherwise callers could rotate arbitrary bearer values to obtain fresh
+    rate-limit buckets and evade the limit entirely.
+    """
     os.environ["RATE_LIMIT__KEY_STRATEGY"] = "bearer_token"
+    os.environ.pop("AUTH__ENABLED", None)
     get_settings.cache_clear()
 
-    key = rate_limit_key(_make_request(client_ip="5.5.5.5"))
+    key = rate_limit_key(
+        _make_request(headers={"Authorization": "Bearer abc123"}, client_ip="7.7.7.7")
+    )
 
-    assert key == "5.5.5.5"
+    assert key == "7.7.7.7"
+
+
+@pytest.mark.unit
+def test_bearer_strategy_falls_back_to_ip_without_token(
+    reset_rate_limit_env: None,
+) -> None:
+    """Without a usable token, bearer_token strategy falls back to client IP."""
+    os.environ["RATE_LIMIT__KEY_STRATEGY"] = "bearer_token"
+    os.environ["AUTH__ENABLED"] = "true"
+    os.environ["AUTH__BEARER_TOKEN"] = "s3cret"
+    get_settings.cache_clear()
+    try:
+        key = rate_limit_key(_make_request(client_ip="5.5.5.5"))
+        assert key == "5.5.5.5"
+    finally:
+        for k in ("AUTH__ENABLED", "AUTH__BEARER_TOKEN"):
+            os.environ.pop(k, None)
+        get_settings.cache_clear()
 
 
 @pytest.mark.unit

@@ -174,6 +174,8 @@ class RateLimitSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
         env_prefix="RATE_LIMIT__",
         case_sensitive=True,
         extra="ignore",
@@ -208,6 +210,8 @@ class AuthSettings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
         env_prefix="AUTH__",
         case_sensitive=True,
         extra="ignore",
@@ -296,6 +300,21 @@ class Settings(BaseSettings):
     def normalize_environment(cls, v: str) -> str:
         """Normalize environment to lowercase."""
         return str(v).lower() if v else "production"
+
+    @model_validator(mode="after")
+    def validate_queued_gpu_requests(self) -> "Settings":
+        """Reject MAX_QUEUED_GPU_REQUESTS == 1 (cannot be split per path).
+
+        A total of 1 cannot be split into a sync share and an async share
+        without either exceeding the cap (both = 1) or closing one path. The
+        accepted values are 0 (unlimited) or any integer >= 2.
+        """
+        if self.MAX_QUEUED_GPU_REQUESTS == 1:
+            raise ValueError(
+                "MAX_QUEUED_GPU_REQUESTS=1 cannot be split between the sync "
+                "and async paths; use 0 (unlimited) or >= 2."
+            )
+        return self
 
 
 @lru_cache

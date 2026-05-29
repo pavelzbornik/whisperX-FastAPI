@@ -19,9 +19,13 @@ from app.core.config import RateLimitKeyStrategy, get_settings
 def rate_limit_key(request: Request) -> str:
     """Return the rate-limit bucket key for the current request.
 
-    Honors ``RATE_LIMIT__KEY_STRATEGY``: ``bearer_token`` buckets by the
-    presented bearer token (falling back to the client IP when no usable token
-    is present), otherwise buckets by client IP.
+    Honors ``RATE_LIMIT__KEY_STRATEGY``. ``bearer_token`` is only used when
+    ``AUTH__ENABLED`` is true — by then the auth dependency has already
+    rejected requests with missing or invalid tokens, so the bucket key
+    refers to a token the server has validated. When auth is disabled the
+    strategy falls back to the client IP, otherwise callers could rotate
+    arbitrary bearer values to obtain fresh rate-limit buckets and evade
+    the limit. ``ip`` (the default) always buckets by client IP.
 
     Args:
         request: The incoming request.
@@ -30,7 +34,10 @@ def rate_limit_key(request: Request) -> str:
         A string key identifying the caller for rate-limit accounting.
     """
     settings = get_settings()
-    if settings.rate_limit.KEY_STRATEGY == RateLimitKeyStrategy.bearer_token:
+    if (
+        settings.rate_limit.KEY_STRATEGY == RateLimitKeyStrategy.bearer_token
+        and settings.auth.ENABLED
+    ):
         authorization = request.headers.get("Authorization", "")
         if authorization.lower().startswith("bearer "):
             token = authorization[7:].strip()

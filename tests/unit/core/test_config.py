@@ -249,6 +249,7 @@ class TestGetSettings:
         assert isinstance(settings, Settings)
 
 
+@pytest.mark.unit
 class TestRateLimitSettings:
     """Test RateLimitSettings class."""
 
@@ -287,6 +288,7 @@ class TestRateLimitSettings:
                 RateLimitSettings()
 
 
+@pytest.mark.unit
 class TestAuthSettings:
     """Test AuthSettings class."""
 
@@ -314,6 +316,7 @@ class TestAuthSettings:
                 AuthSettings()
 
 
+@pytest.mark.unit
 class TestRequestShapingSettings:
     """Test request-shaping fields on the top-level Settings."""
 
@@ -349,6 +352,19 @@ class TestRequestShapingSettings:
             "DEVICE": "cpu",
             "COMPUTE_TYPE": "int8",
             "SYNC_GPU_QUOTA_FRACTION": "1.5",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(PydanticValidationError):
+                Settings()
+
+    def test_max_queued_gpu_requests_equal_to_one_rejected(self) -> None:
+        """MAX_QUEUED_GPU_REQUESTS=1 cannot be split between paths."""
+        from pydantic import ValidationError as PydanticValidationError
+
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "MAX_QUEUED_GPU_REQUESTS": "1",
         }
         with patch.dict(os.environ, env, clear=True):
             with pytest.raises(PydanticValidationError):
