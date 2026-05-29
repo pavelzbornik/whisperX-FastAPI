@@ -125,8 +125,12 @@ AUTH__BEARER_TOKEN=               # required when AUTH__ENABLED=true
 
 **API protection** (rate limiting, upload cap, route concurrency caps, bearer auth) lives
 in `app/core/{rate_limit,concurrency}.py`, `app/api/{middleware,security}.py`, and is wired
-in `main.py`. All knobs read `get_settings()` per request so they toggle at runtime and stay
-no-op until enabled. Multi-worker deployments give each worker its own in-process budget.
+in `main.py`. Knobs come from `get_settings()` (loaded from env/`.env` at startup and
+`lru_cache`-backed), so they are fixed for the life of the process and stay no-op until
+enabled — changing them needs a restart (tests clear the caches to re-read). The upload cap
+is enforced from `Content-Length`; the async concurrency gate is admission control (the
+background GPU pipeline is bounded by `MAX_CONCURRENT_GPU_TASKS`). Multi-worker deployments
+give each worker its own in-process budget.
 
 ## CI Pipeline
 

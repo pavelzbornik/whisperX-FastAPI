@@ -2,9 +2,11 @@
 
 The :data:`limiter` is constructed once at import time, but its behaviour is
 driven by :func:`app.core.config.get_settings` on *every* request via the
-dynamic limit string, the key function, and the exemption predicate. This means
-toggling ``RATE_LIMIT__*`` environment variables takes effect without rebuilding
-the application (which keeps the feature configurable at runtime and testable).
+dynamic limit string, the key function, and the exemption predicate. Because
+``get_settings`` is ``lru_cache``-backed (loaded from the environment/``.env``
+at startup), the effective values are fixed for the life of the process; the
+per-request reads exist so the limit/strategy/enabled flag are evaluated
+together and so tests can clear the cache to re-read updated settings.
 """
 
 from slowapi import Limiter

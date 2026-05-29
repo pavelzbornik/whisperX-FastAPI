@@ -265,8 +265,11 @@ class Settings(BaseSettings):
         default=0,
         ge=0,
         description=(
-            "Cap on concurrent in-flight GPU requests across the API, split "
-            "between sync and async paths (0 = unlimited)"
+            "Cap on concurrent in-flight transcription requests admitted across "
+            "the API, split between the sync and async paths (0 = unlimited). "
+            "Set >= 2 for a split whose combined cap equals this total; a value "
+            "of 1 admits up to 2 (one per path). Background GPU execution is "
+            "additionally bounded by MAX_CONCURRENT_GPU_TASKS."
         ),
     )
     SYNC_GPU_QUOTA_FRACTION: float = Field(

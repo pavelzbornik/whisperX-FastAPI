@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.aac', '.oga', '.amr', '.mp3', '.awb', '.wma', '.wav', '.m4a', '.ogg'}\n\n    VIDEO_EXTENSIONS = {'.mov', '.avi', '.mkv', '.mp4', '.wmv'}\n\n    ",
+    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.ogg', '.mp3', '.amr', '.awb', '.oga', '.aac', '.m4a', '.wav', '.wma'}\n\n    VIDEO_EXTENSIONS = {'.mp4', '.mkv', '.mov', '.wmv', '.avi'}\n\n    ",
     "version": "0.0.1"
   },
   "paths": {
@@ -551,7 +551,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -1146,7 +1146,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -1252,7 +1252,7 @@
         "operationId": "get_all_tasks_status_task_all_get",
         "parameters": [
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -1311,7 +1311,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -1370,7 +1370,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -1823,7 +1823,7 @@
             "description": "Offset threshold for VAD (see pyannote.audio), reduce this if speech is not being detected."
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -1935,7 +1935,7 @@
             "description": "Return character-level alignments in the output json file"
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2078,7 +2078,7 @@
             "description": "Automatically store new speaker embeddings in the database (embeddings are computed automatically when enabled)"
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2138,7 +2138,7 @@
         "operationId": "4__Combine_Transcript_and_Diarization_result_service_combine_post",
         "parameters": [
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2198,7 +2198,7 @@
         "operationId": "Create_speaker_speakers_post",
         "parameters": [
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2297,7 +2297,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2360,7 +2360,7 @@
             "description": "Delete all speakers from this task"
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2419,7 +2419,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2476,7 +2476,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2543,7 +2543,7 @@
             }
           },
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2593,7 +2593,7 @@
         "operationId": "Search_speakers_speakers_search_post",
         "parameters": [
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2653,7 +2653,7 @@
         "operationId": "Identify_speaker_speakers_identify_post",
         "parameters": [
           {
-            "name": "authorization",
+            "name": "Authorization",
             "in": "header",
             "required": false,
             "schema": {
@@ -2727,22 +2727,6 @@
               ],
               "title": "Authorization"
             }
-          },
-          {
-            "name": "authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
           }
         ],
         "responses": {
@@ -2802,22 +2786,6 @@
         "parameters": [
           {
             "name": "Authorization",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Authorization"
-            }
-          },
-          {
-            "name": "authorization",
             "in": "header",
             "required": false,
             "schema": {

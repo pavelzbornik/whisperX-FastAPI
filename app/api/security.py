@@ -1,8 +1,9 @@
 """FastAPI security dependencies: bearer-token auth and concurrency gates.
 
-All dependencies read :func:`app.core.config.get_settings` per request, so the
-relevant features stay off (no-op) until explicitly enabled and can be toggled
-at runtime without rebuilding the application.
+Configuration is read from :func:`app.core.config.get_settings`, which is loaded
+once from the environment/``.env`` at startup (it is ``lru_cache``-backed). The
+relevant features stay off (no-op) until explicitly enabled; changing the values
+requires a process restart. Tests clear the relevant caches to re-read them.
 """
 
 import hmac
@@ -20,7 +21,7 @@ from app.core.exceptions import AuthenticationError, ServiceOverloadedError
 
 
 def verify_bearer_token(
-    authorization: Annotated[str | None, Header()] = None,
+    authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ) -> None:
     """Validate the shared bearer token when authentication is enabled.
 
@@ -72,9 +73,15 @@ async def enforce_sync_gpu_quota() -> AsyncGenerator[None, None]:
 async def enforce_async_gpu_quota() -> AsyncGenerator[None, None]:
     """Hold a slot on the asynchronous-path concurrency gate for the request.
 
+    Admission control for the async endpoints: the slot is held only for the
+    request phase (file validation, audio decode, task enqueue) and released
+    when the HTTP response is sent. The GPU pipeline itself runs later in a
+    background task and is bounded by the GPU semaphore
+    (``MAX_CONCURRENT_GPU_TASKS``), not by this gate — so this caps how many
+    async requests are admitted concurrently, not the queued background backlog.
+
     Rejects with :class:`ServiceOverloadedError` (HTTP 503) when the async
-    budget is exhausted. The slot is released when the request finishes. A no-op
-    when ``MAX_QUEUED_GPU_REQUESTS`` is 0.
+    budget is exhausted. A no-op when ``MAX_QUEUED_GPU_REQUESTS`` is 0.
 
     Yields:
         None — control returns to the request handler while the slot is held.

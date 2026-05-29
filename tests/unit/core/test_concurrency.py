@@ -44,14 +44,25 @@ def reset_gates() -> Generator[None, None, None]:
         (20, 0.25, (5, 15)),
         (1, 0.5, (1, 1)),
         (10, 0.0, (1, 9)),
-        (10, 1.0, (10, 1)),
+        (10, 1.0, (9, 1)),
+        (2, 0.5, (1, 1)),
     ],
 )
 def test_compute_quota_split(
     total: int, fraction: float, expected: tuple[int, int]
 ) -> None:
-    """The budget is split as expected, clamping each path to >= 1 when capped."""
+    """For total>=2 the split is exact and each path keeps >=1 slot."""
     assert compute_quota_split(total, fraction) == expected
+
+
+@pytest.mark.unit
+def test_compute_quota_split_never_exceeds_total_when_capped() -> None:
+    """For any total>=2, the two shares sum to exactly the configured total."""
+    for total in range(2, 33):
+        for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
+            sync, async_ = compute_quota_split(total, fraction)
+            assert sync >= 1 and async_ >= 1
+            assert sync + async_ == total
 
 
 @pytest.mark.unit
