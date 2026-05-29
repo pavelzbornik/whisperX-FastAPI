@@ -1,8 +1,8 @@
 """SQLAlchemy implementations of the ISpeakerEmbeddingRepository interface."""
 
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import delete, select
+from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -222,7 +222,7 @@ class AsyncSQLAlchemySpeakerEmbeddingRepository:
             )
             result = await self.session.execute(stmt)
             await self.session.commit()
-            count: int = result.rowcount
+            count: int = cast(CursorResult[Any], result).rowcount
             logger.info("Deleted %d speaker embeddings for task %s", count, task_uuid)
             return count
         except SQLAlchemyError as e:

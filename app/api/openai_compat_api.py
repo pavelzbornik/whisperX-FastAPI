@@ -1,7 +1,9 @@
 """OpenAI Whisper-compatible synchronous audio transcription endpoints."""
 
 import os
+from datetime import datetime, timezone
 from typing import Annotated, Any, NoReturn, cast
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
@@ -12,6 +14,7 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 from app.api.dependencies import (
     get_alignment_service,
     get_file_service,
+    get_task_repository,
     get_transcription_service,
 )
 from app.api.mappers import map_request_to_whisper_params
@@ -31,12 +34,16 @@ from app.core.exceptions import (
 )
 from app.core.gpu_semaphore import get_gpu_semaphore
 from app.core.logging import logger
+from app.domain.entities.task import Task as DomainTask
+from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
 from app.domain.services.transcription_service import ITranscriptionService
 from app.files import ALLOWED_EXTENSIONS
 from app.schemas import (
     AlignedTranscription,
     TaskEnum,
+    TaskStatus,
+    TaskType,
     VADOptions,
 )
 from app.services.file_service import FileService
@@ -347,23 +354,82 @@ def _build_openai_response(
     )
 
 
+def _build_openai_task(
+    openai_request: OpenAITranscriptionRequest,
+    task: TaskEnum,
+    filename: str | None,
+    start_time: datetime,
+) -> DomainTask:
+    """Build a domain Task entity for a synchronous OpenAI-compatible request."""
+    return DomainTask(
+        uuid=str(uuid4()),
+        status=TaskStatus.processing,
+        task_type=TaskType.transcription,
+        file_name=filename,
+        language=openai_request.language,
+        task_params={
+            "model": openai_request.model,
+            "task": task.value,
+            "response_format": openai_request.response_format.value,
+            "temperature": openai_request.temperature,
+            "timestamp_granularities": [
+                granularity.value
+                for granularity in openai_request.timestamp_granularities
+            ],
+            "prompt": openai_request.prompt,
+        },
+        start_time=start_time,
+    )
+
+
 async def _handle_openai_transcription(
     request: Request,
     task: TaskEnum,
     file_service: FileService,
     transcription_service: ITranscriptionService,
     alignment_service: IAlignmentService,
+    repository: ITaskRepository,
 ) -> Response:
     """Handle a synchronous OpenAI-compatible transcription request."""
     openai_request, file = await _parse_openai_transcription_request(request)
-    transcript, verbose_response = await run_in_threadpool(
-        _run_sync_transcription,
-        file,
-        openai_request,
-        task,
-        file_service,
-        transcription_service,
-        alignment_service,
+
+    start_time = datetime.now(tz=timezone.utc)
+    identifier = await repository.add(
+        _build_openai_task(openai_request, task, file.filename, start_time)
+    )
+
+    try:
+        _transcript, verbose_response = await run_in_threadpool(
+            _run_sync_transcription,
+            file,
+            openai_request,
+            task,
+            file_service,
+            transcription_service,
+            alignment_service,
+        )
+    except Exception as exc:
+        await repository.update(
+            identifier,
+            {
+                "status": TaskStatus.failed,
+                "error": str(exc),
+                "end_time": datetime.now(tz=timezone.utc),
+            },
+        )
+        raise
+
+    end_time = datetime.now(tz=timezone.utc)
+    await repository.update(
+        identifier,
+        {
+            "status": TaskStatus.completed,
+            "result": verbose_response.model_dump(),
+            "audio_duration": verbose_response.duration,
+            "language": verbose_response.language,
+            "duration": (end_time - start_time).total_seconds(),
+            "end_time": end_time,
+        },
     )
     return _build_openai_response(openai_request, verbose_response)
 
@@ -380,14 +446,21 @@ async def create_transcription(
     file_service: FileService = Depends(get_file_service),
     transcription_service: ITranscriptionService = Depends(get_transcription_service),
     alignment_service: IAlignmentService = Depends(get_alignment_service),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
-    """Transcribe an uploaded file and return the transcript synchronously."""
+    """Transcribe an uploaded file and return the transcript synchronously.
+
+    The transcript is returned directly in the response. The request is also
+    persisted as a task, so its result (or error) can be retrieved afterwards via
+    the `/task/{identifier}` and `/task/all` endpoints.
+    """
     return await _handle_openai_transcription(
         request=request,
         task=TaskEnum.TRANSCRIBE,
         file_service=file_service,
         transcription_service=transcription_service,
         alignment_service=alignment_service,
+        repository=repository,
     )
 
 
@@ -403,12 +476,19 @@ async def create_translation(
     file_service: FileService = Depends(get_file_service),
     transcription_service: ITranscriptionService = Depends(get_transcription_service),
     alignment_service: IAlignmentService = Depends(get_alignment_service),
+    repository: ITaskRepository = Depends(get_task_repository),
 ) -> Response:
-    """Translate an uploaded file to English and return the result synchronously."""
+    """Translate an uploaded file to English and return the result synchronously.
+
+    The translation is returned directly in the response. The request is also
+    persisted as a task, so its result (or error) can be retrieved afterwards via
+    the `/task/{identifier}` and `/task/all` endpoints.
+    """
     return await _handle_openai_transcription(
         request=request,
         task=TaskEnum.TRANSLATE,
         file_service=file_service,
         transcription_service=transcription_service,
         alignment_service=alignment_service,
+        repository=repository,
     )

@@ -8,10 +8,17 @@ HTTP layer: routers, schemas, mappers, dependency injection, and exception handl
 | --- | --- |
 | `audio_api.py` | Full pipeline (transcribe → align → diarize → combine) |
 | `audio_services_api.py` | Individual service endpoints |
+| `openai_compat_api.py` | Synchronous OpenAI Whisper-compatible endpoints (`/v1/audio/*`) |
+| `speaker_api.py` | Speaker embedding CRUD, similarity search, and identification |
 | `task_api.py` | Task CRUD and status polling |
 | `callbacks.py` | Webhook callback delivery |
 
 All routers are registered in `main.py` via `app.include_router()`.
+
+**Keep the architecture diagram in sync.** When you add, remove, or change an endpoint or
+its request/result flow (e.g. task persistence, GPU semaphore usage, speaker storage),
+update the Mermaid diagram in `README.md` under **Task management and result storage** so
+it reflects the actual endpoints and data flow.
 
 ## Schemas (`schemas/`)
 

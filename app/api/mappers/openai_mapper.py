@@ -59,6 +59,6 @@ def map_request_to_whisper_params(
             suppress_tokens=[-1],
             suppress_numerals=False,
             hotwords=None,
-            temperatures=openai_request.temperature,
+            temperatures=[openai_request.temperature],
         ),
     )

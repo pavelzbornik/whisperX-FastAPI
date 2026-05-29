@@ -10,17 +10,51 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 import app.main as main_module
+from app.api.dependencies import get_task_repository
+from app.domain.entities.task import Task as DomainTask
 from app.schemas import (
     ASROptions,
     ComputeType,
     Device,
     TaskEnum,
+    TaskStatus,
+    TaskType,
     WhisperModel,
     WhisperModelParams,
 )
 from tests.mocks import MockAlignmentService, MockTranscriptionService
 
 AUDIO_FILE = "tests/test_files/audio_en.mp3"
+
+
+class _FakeTaskRepository:
+    """In-memory task repository that records add/update calls for assertions."""
+
+    def __init__(self) -> None:
+        """Initialize empty call records."""
+        self.added: list[DomainTask] = []
+        self.updates: list[tuple[str, dict[str, Any]]] = []
+
+    async def add(self, task: DomainTask) -> str:
+        """Record the added task and return its identifier."""
+        self.added.append(task)
+        return task.uuid
+
+    async def update(self, identifier: str, update_data: dict[str, Any]) -> None:
+        """Record an update call."""
+        self.updates.append((identifier, update_data))
+
+    async def get_by_id(self, identifier: str) -> DomainTask | None:
+        """Return None — not used by these tests."""
+        return None
+
+    async def get_all(self) -> list[DomainTask]:
+        """Return all recorded tasks."""
+        return list(self.added)
+
+    async def delete(self, identifier: str) -> bool:
+        """No-op delete returning True."""
+        return True
 
 
 @pytest.fixture
@@ -44,6 +78,32 @@ def openai_client() -> Generator[
     ):
         yield client, mock_transcription_service, mock_alignment_service
 
+    container.transcription_service.reset_override()
+    container.alignment_service.reset_override()
+
+
+@pytest.fixture
+def openai_client_with_repo() -> Generator[
+    tuple[TestClient, _FakeTaskRepository], None, None
+]:
+    """Provide a test client with mocked ML services and a fake task repository."""
+    container = main_module.container
+    container.transcription_service.override(
+        providers.Object(MockTranscriptionService())
+    )
+    container.alignment_service.override(providers.Object(MockAlignmentService()))
+
+    fake_repo = _FakeTaskRepository()
+    main_module.app.dependency_overrides[get_task_repository] = lambda: fake_repo
+
+    with (
+        patch("app.main.save_openapi_json"),
+        patch("app.main.generate_db_schema"),
+        TestClient(main_module.app, follow_redirects=False) as client,
+    ):
+        yield client, fake_repo
+
+    main_module.app.dependency_overrides.pop(get_task_repository, None)
     container.transcription_service.reset_override()
     container.alignment_service.reset_override()
 
@@ -354,3 +414,81 @@ def test_gpu_semaphore_released_when_acquire_succeeded(
     assert response.status_code == 200
     mock_semaphore.acquire.assert_called_once()
     mock_semaphore.release.assert_called_once()
+
+
+@pytest.mark.unit
+def test_openai_transcription_persists_completed_task(
+    openai_client_with_repo: tuple[TestClient, _FakeTaskRepository],
+) -> None:
+    """A successful transcription must persist a completed task with its result."""
+    client, fake_repo = openai_client_with_repo
+
+    response = _post_openai_request(
+        client,
+        extra_fields=[("response_format", "verbose_json")],
+    )
+
+    assert response.status_code == 200
+
+    assert len(fake_repo.added) == 1
+    added = fake_repo.added[0]
+    assert added.task_type == TaskType.transcription
+    assert added.status == TaskStatus.processing
+    assert added.file_name == "audio_en.mp3"
+    assert added.task_params is not None
+    assert added.task_params["task"] == "transcribe"
+
+    assert len(fake_repo.updates) == 1
+    identifier, update = fake_repo.updates[0]
+    assert identifier == added.uuid
+    assert update["status"] == TaskStatus.completed
+    assert update["result"]["text"] == "This is a test transcription."
+    assert "segments" in update["result"]
+    assert update["audio_duration"] is not None
+    assert update["duration"] >= 0
+    assert update["end_time"] is not None
+
+
+@pytest.mark.unit
+def test_openai_translation_persists_completed_task(
+    openai_client_with_repo: tuple[TestClient, _FakeTaskRepository],
+) -> None:
+    """A successful translation must persist a completed task tagged as translate."""
+    client, fake_repo = openai_client_with_repo
+
+    response = _post_openai_request(client, endpoint="/v1/audio/translations")
+
+    assert response.status_code == 200
+    added = fake_repo.added[0]
+    assert added.task_params is not None
+    assert added.task_params["task"] == "translate"
+
+    _, update = fake_repo.updates[0]
+    assert update["status"] == TaskStatus.completed
+    assert update["result"]["task"] == "translate"
+
+
+@pytest.mark.unit
+def test_openai_failed_request_persists_failed_task(
+    openai_client_with_repo: tuple[TestClient, _FakeTaskRepository],
+) -> None:
+    """A request that fails during processing must persist a failed task."""
+    client, fake_repo = openai_client_with_repo
+
+    with open(AUDIO_FILE, "rb") as audio_file:
+        response = client.post(
+            "/v1/audio/transcriptions",
+            files=[
+                ("file", ("audio_en.mp3", audio_file, "audio/mpeg")),
+                ("model", (None, "bogus-model")),
+            ],
+        )
+
+    assert response.status_code == 422
+
+    assert len(fake_repo.added) == 1
+    assert len(fake_repo.updates) == 1
+    identifier, update = fake_repo.updates[0]
+    assert identifier == fake_repo.added[0].uuid
+    assert update["status"] == TaskStatus.failed
+    assert update["error"]

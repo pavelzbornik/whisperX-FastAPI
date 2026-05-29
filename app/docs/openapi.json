@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "whisperX REST service",
-    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.aac', '.wav', '.m4a', '.ogg', '.mp3', '.oga', '.amr', '.wma', '.awb'}\n\n    VIDEO_EXTENSIONS = {'.avi', '.wmv', '.mov', '.mkv', '.mp4'}\n\n    ",
+    "description": "\n    # whisperX RESTful API\n\n    Welcome to the whisperX RESTful API! This API provides a suite of audio processing services to enhance and analyze your audio content.\n\n    ## Documentation:\n\n    For detailed information on request and response formats, consult the [WhisperX Documentation](https://github.com/m-bain/whisperX).\n\n    ## Services:\n\n    Speech-2-Text provides a suite of audio processing services to enhance and analyze your audio content. The following services are available:\n\n    1. Transcribe: Transcribe an audio/video  file into text.\n    2. Align: Align the transcript to the audio/video file.\n    3. Diarize: Diarize an audio/video file into speakers.\n    4. Combine Transcript and Diarization: Combine the transcript and diarization results.\n\n    ## Supported file extensions:\n    AUDIO_EXTENSIONS = {'.amr', '.mp3', '.awb', '.wav', '.oga', '.ogg', '.aac', '.wma', '.m4a'}\n\n    VIDEO_EXTENSIONS = {'.mkv', '.mp4', '.avi', '.mov', '.wmv'}\n\n    ",
     "version": "0.0.1"
   },
   "paths": {
@@ -387,12 +387,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "number",
-              "description": "Temperature to use for sampling",
-              "default": 0.0,
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "Temperature(s) to use for sampling. Accepts a single float or a comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable temperature fallback for long-form transcription.",
+              "default": [
+                0.0
+              ],
               "title": "Temperatures"
             },
-            "description": "Temperature to use for sampling"
+            "description": "Temperature(s) to use for sampling. Accepts a single float or a comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable temperature fallback for long-form transcription."
           },
           {
             "name": "compression_ratio_threshold",
@@ -961,12 +966,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "number",
-              "description": "Temperature to use for sampling",
-              "default": 0.0,
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "Temperature(s) to use for sampling. Accepts a single float or a comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable temperature fallback for long-form transcription.",
+              "default": [
+                0.0
+              ],
               "title": "Temperatures"
             },
-            "description": "Temperature to use for sampling"
+            "description": "Temperature(s) to use for sampling. Accepts a single float or a comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable temperature fallback for long-form transcription."
           },
           {
             "name": "compression_ratio_threshold",
@@ -1576,12 +1586,17 @@
             "in": "query",
             "required": false,
             "schema": {
-              "type": "number",
-              "description": "Temperature to use for sampling",
-              "default": 0.0,
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "Temperature(s) to use for sampling. Accepts a single float or a comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable temperature fallback for long-form transcription.",
+              "default": [
+                0.0
+              ],
               "title": "Temperatures"
             },
-            "description": "Temperature to use for sampling"
+            "description": "Temperature(s) to use for sampling. Accepts a single float or a comma-separated list (e.g. `0.0,0.2,0.4,0.6,0.8,1.0`) to enable temperature fallback for long-form transcription."
           },
           {
             "name": "compression_ratio_threshold",
@@ -1766,7 +1781,7 @@
             "schema": {
               "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda"
+              "default": "cpu"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -1862,7 +1877,7 @@
             "schema": {
               "$ref": "#/components/schemas/Device",
               "description": "Device to use for PyTorch inference",
-              "default": "cuda"
+              "default": "cpu"
             },
             "description": "Device to use for PyTorch inference"
           },
@@ -2038,7 +2053,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerCreatedResponse"
+                }
               }
             }
           },
@@ -2156,7 +2173,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerMessageResponse"
+                }
               }
             }
           },
@@ -2248,7 +2267,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerMessageResponse"
+                }
               }
             }
           },
@@ -2287,7 +2308,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerMessageResponse"
+                }
               }
             }
           },
@@ -2369,7 +2392,153 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SpeakerIdentifyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/transcriptions": {
+      "post": {
+        "tags": [
+          "OpenAI compatibility"
+        ],
+        "summary": "Transcribe audio synchronously with an OpenAI-compatible API",
+        "description": "Transcribe an uploaded file and return the transcript synchronously.\n\nThe transcript is returned directly in the response. The request is also\npersisted as a task, so its result (or error) can be retrieved afterwards via\nthe `/task/{identifier}` and `/task/all` endpoints.",
+        "operationId": "create_transcription_v1_audio_transcriptions_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transcript in the requested format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OpenAIJsonTranscriptionResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIVerboseJsonResponse"
+                    }
+                  ]
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-subrip": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/vtt": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/audio/translations": {
+      "post": {
+        "tags": [
+          "OpenAI compatibility"
+        ],
+        "summary": "Translate audio to English synchronously with an OpenAI-compatible API",
+        "description": "Translate an uploaded file to English and return the result synchronously.\n\nThe translation is returned directly in the response. The request is also\npersisted as a task, so its result (or error) can be retrieved afterwards via\nthe `/task/{identifier}` and `/task/all` endpoints.",
+        "operationId": "create_translation_v1_audio_translations_post",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transcript in the requested format.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OpenAIJsonTranscriptionResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OpenAIVerboseJsonResponse"
+                    }
+                  ]
+                }
+              },
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/x-subrip": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/vtt": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -2812,6 +2981,25 @@
         "title": "Result",
         "description": "Model for a result with status, result data, metadata, and optional error."
       },
+      "SpeakerCreatedResponse": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "title": "Uuid"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Speaker created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "uuid"
+        ],
+        "title": "SpeakerCreatedResponse",
+        "description": "Response schema for speaker creation."
+      },
       "SpeakerIdentifyRequest": {
         "properties": {
           "embedding": {
@@ -2837,6 +3025,38 @@
         ],
         "title": "SpeakerIdentifyRequest",
         "description": "Request schema for identifying a speaker."
+      },
+      "SpeakerIdentifyResponse": {
+        "properties": {
+          "speaker": {
+            "$ref": "#/components/schemas/SpeakerResponse"
+          },
+          "similarity": {
+            "type": "number",
+            "title": "Similarity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "speaker",
+          "similarity"
+        ],
+        "title": "SpeakerIdentifyResponse",
+        "description": "Response schema for speaker identification."
+      },
+      "SpeakerMessageResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "SpeakerMessageResponse",
+        "description": "Response schema for speaker operations that return a message."
       },
       "SpeakerResponse": {
         "properties": {
@@ -3255,6 +3475,10 @@
     {
       "name": "Tasks Management",
       "description": "Manage tasks."
+    },
+    {
+      "name": "OpenAI compatibility",
+      "description": "Synchronous OpenAI Whisper-compatible audio endpoints."
     },
     {
       "name": "Health",
