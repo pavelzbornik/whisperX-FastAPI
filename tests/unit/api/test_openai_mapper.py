@@ -38,7 +38,7 @@ def test_map_request_to_whisper_params_maps_prompt_and_temperature() -> None:
     assert model_params.task == TaskEnum.TRANSCRIBE
     assert model_params.language == "en"
     assert asr_options.initial_prompt == "Context prompt"
-    assert asr_options.temperatures == 0.4
+    assert asr_options.temperatures == [0.4]
 
 
 @pytest.mark.unit
