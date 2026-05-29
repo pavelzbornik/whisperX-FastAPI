@@ -40,8 +40,9 @@ import uuid  # noqa: E402
 from contextlib import asynccontextmanager  # noqa: E402
 
 from dotenv import load_dotenv  # noqa: E402
-from fastapi import FastAPI, status  # noqa: E402
+from fastapi import Depends, FastAPI, status  # noqa: E402
 from fastapi.responses import JSONResponse, RedirectResponse  # noqa: E402
+from slowapi.errors import RateLimitExceeded  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 from starlette.types import ASGIApp, Receive, Scope, Send  # noqa: E402
 
@@ -70,22 +71,34 @@ from app.api import (  # noqa: E402
     task_router,
 )
 from app.api.exception_handlers import (  # noqa: E402
+    authentication_error_handler,
     domain_error_handler,
     generic_error_handler,
     infrastructure_error_handler,
+    rate_limit_exceeded_handler,
+    service_overloaded_handler,
     speaker_not_found_handler,
     task_not_found_handler,
     validation_error_handler,
 )
+from app.api.middleware import MaxUploadSizeMiddleware  # noqa: E402
+from app.api.security import (  # noqa: E402
+    enforce_async_gpu_quota,
+    enforce_sync_gpu_quota,
+    verify_bearer_token,
+)
 from app.core.config import Config, get_settings  # noqa: E402
 from app.core.container import Container  # noqa: E402
 from app.core.exceptions import (  # noqa: E402
+    AuthenticationError,
     DomainError,
     InfrastructureError,
+    ServiceOverloadedError,
     SpeakerNotFoundError,
     TaskNotFoundError,
     ValidationError,
 )
+from app.core.rate_limit import limiter  # noqa: E402
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
 
@@ -196,20 +209,38 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Expose the rate limiter so its exception handler can inject headers.
+app.state.limiter = limiter
+
 # Register exception handlers
 app.add_exception_handler(TaskNotFoundError, task_not_found_handler)
 app.add_exception_handler(SpeakerNotFoundError, speaker_not_found_handler)
 app.add_exception_handler(ValidationError, validation_error_handler)
 app.add_exception_handler(DomainError, domain_error_handler)
 app.add_exception_handler(InfrastructureError, infrastructure_error_handler)
+app.add_exception_handler(AuthenticationError, authentication_error_handler)
+app.add_exception_handler(ServiceOverloadedError, service_overloaded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_exception_handler(Exception, generic_error_handler)
 
-# Include routers
-app.include_router(stt_router)
-app.include_router(task_router)
-app.include_router(service_router)
-app.include_router(speaker_router)
-app.include_router(openai_compat_router)
+# Include routers.
+# Bearer-token auth (when enabled) applies API-wide; route-level concurrency
+# gates protect the GPU-bound paths: the async background path (stt/service)
+# and the synchronous OpenAI-compatible path get separate budgets.
+app.include_router(
+    stt_router,
+    dependencies=[Depends(verify_bearer_token), Depends(enforce_async_gpu_quota)],
+)
+app.include_router(task_router, dependencies=[Depends(verify_bearer_token)])
+app.include_router(
+    service_router,
+    dependencies=[Depends(verify_bearer_token), Depends(enforce_async_gpu_quota)],
+)
+app.include_router(speaker_router, dependencies=[Depends(verify_bearer_token)])
+app.include_router(
+    openai_compat_router,
+    dependencies=[Depends(verify_bearer_token), Depends(enforce_sync_gpu_quota)],
+)
 
 
 class RequestContextMiddleware:
@@ -264,6 +295,9 @@ class RequestContextMiddleware:
 
 
 app.add_middleware(RequestContextMiddleware)
+# Added last so it is the outermost middleware: oversized uploads are rejected
+# with HTTP 413 before the body is buffered or any downstream work begins.
+app.add_middleware(MaxUploadSizeMiddleware)
 
 
 @app.get("/", include_in_schema=False)

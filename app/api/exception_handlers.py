@@ -8,11 +8,14 @@ import logging
 import uuid
 
 from fastapi import Request, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from slowapi.errors import RateLimitExceeded
 
 from app.core.exceptions import (
+    AuthenticationError,
     DomainError,
     InfrastructureError,
+    ServiceOverloadedError,
     SpeakerNotFoundError,
     TaskNotFoundError,
     ValidationError,
@@ -223,3 +226,110 @@ def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
             }
         },
     )
+
+
+def authentication_error_handler(
+    request: Request, exc: AuthenticationError | Exception
+) -> JSONResponse:
+    """Handle authentication failures.
+
+    Maps to HTTP 401 Unauthorized with a ``WWW-Authenticate: Bearer`` header so
+    clients know how to authenticate.
+
+    Args:
+        request: FastAPI request object
+        exc: Authentication error exception
+
+    Returns:
+        JSONResponse with error details and HTTP 401 status
+    """
+    auth_exc = exc if isinstance(exc, AuthenticationError) else AuthenticationError()
+
+    logger.info(
+        "Authentication failed: %s",
+        auth_exc.message,
+        extra={"correlation_id": auth_exc.correlation_id, "path": request.url.path},
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        content=auth_exc.to_dict(),
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def service_overloaded_handler(
+    request: Request, exc: ServiceOverloadedError | Exception
+) -> JSONResponse:
+    """Handle route-level concurrency-cap rejections.
+
+    Maps to HTTP 503 Service Unavailable with a ``Retry-After`` header.
+
+    Args:
+        request: FastAPI request object
+        exc: Service overloaded error exception
+
+    Returns:
+        JSONResponse with error details and HTTP 503 status
+    """
+    over_exc = (
+        exc
+        if isinstance(exc, ServiceOverloadedError)
+        else ServiceOverloadedError(scope="unknown")
+    )
+
+    logger.warning(
+        "Service overloaded: %s",
+        over_exc.message,
+        extra={"correlation_id": over_exc.correlation_id, "path": request.url.path},
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content=over_exc.to_dict(),
+        headers={"Retry-After": str(over_exc.retry_after)},
+    )
+
+
+def rate_limit_exceeded_handler(
+    request: Request, exc: RateLimitExceeded | Exception
+) -> Response:
+    """Handle slowapi rate-limit rejections.
+
+    Maps to HTTP 429 Too Many Requests with an OpenAI-style error envelope and
+    a ``Retry-After`` header (injected via the limiter when available).
+
+    Args:
+        request: FastAPI request object
+        exc: Rate limit exceeded exception
+
+    Returns:
+        JSONResponse with error details and HTTP 429 status
+    """
+    correlation_id = str(uuid.uuid4())
+    detail = getattr(exc, "detail", "")
+
+    logger.info(
+        "Rate limit exceeded: %s",
+        detail,
+        extra={"correlation_id": correlation_id, "path": request.url.path},
+    )
+
+    response: Response = JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={
+            "error": {
+                "message": f"Rate limit exceeded: {detail}",
+                "type": "rate_limit_error",
+                "code": "RATE_LIMIT_EXCEEDED",
+                "correlation_id": correlation_id,
+            }
+        },
+    )
+
+    limiter = getattr(request.app.state, "limiter", None)
+    view_rate_limit = getattr(request.state, "view_rate_limit", None)
+    if limiter is not None and view_rate_limit is not None:
+        response = limiter._inject_headers(response, view_rate_limit)
+
+    return response

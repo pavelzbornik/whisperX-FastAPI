@@ -1,5 +1,6 @@
 """Configuration module for the WhisperX FastAPI application."""
 
+from enum import Enum
 from functools import lru_cache
 from typing import Optional
 
@@ -8,6 +9,13 @@ from pydantic import Field, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.schemas import ComputeType, Device, WhisperModel
+
+
+class RateLimitKeyStrategy(str, Enum):
+    """Strategy used to derive the rate-limit bucket key for a request."""
+
+    ip = "ip"
+    bearer_token = "bearer_token"
 
 
 class DatabaseSettings(BaseSettings):
@@ -156,6 +164,74 @@ class SsrfSettings(BaseSettings):
     )
 
 
+class RateLimitSettings(BaseSettings):
+    """Per-caller rate limiting configuration (slowapi-backed).
+
+    Disabled by default so existing deployments are unaffected until they
+    opt in. Each option is configured via an environment variable prefixed
+    with ``RATE_LIMIT__``, for example ``RATE_LIMIT__ENABLED`` or
+    ``RATE_LIMIT__REQUESTS_PER_MINUTE``.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="RATE_LIMIT__",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    ENABLED: bool = Field(
+        default=False,
+        description="Enable per-caller rate limiting on transcription endpoints",
+    )
+    REQUESTS_PER_MINUTE: int = Field(
+        default=60,
+        ge=1,
+        description="Sustained request budget per caller per minute",
+    )
+    BURST: int = Field(
+        default=10,
+        ge=1,
+        description="Short-term burst budget per caller per second",
+    )
+    KEY_STRATEGY: RateLimitKeyStrategy = Field(
+        default=RateLimitKeyStrategy.ip,
+        description="How callers are identified: client IP or bearer token",
+    )
+
+
+class AuthSettings(BaseSettings):
+    """Optional shared bearer-token authentication configuration.
+
+    Disabled by default so existing deployments are unaffected until they
+    opt in. Configured via environment variables prefixed with ``AUTH__``,
+    for example ``AUTH__ENABLED`` or ``AUTH__BEARER_TOKEN``.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="AUTH__",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    ENABLED: bool = Field(
+        default=False,
+        description="Require a valid bearer token on protected endpoints",
+    )
+    BEARER_TOKEN: str = Field(
+        default="",
+        description="Shared bearer token required when AUTH__ENABLED is true",
+    )
+
+    @model_validator(mode="after")
+    def validate_token_present_when_enabled(self) -> "AuthSettings":
+        """Require a non-empty token when authentication is enabled."""
+        if self.ENABLED and not self.BEARER_TOKEN:
+            raise ValueError(
+                "AUTH__BEARER_TOKEN must be set when AUTH__ENABLED is true"
+            )
+        return self
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -180,6 +256,28 @@ class Settings(BaseSettings):
         ge=1,
         description="Maximum number of GPU tasks allowed to run concurrently",
     )
+    MAX_UPLOAD_SIZE_MB: int = Field(
+        default=0,
+        ge=0,
+        description="Reject uploads larger than this many MB (0 = unlimited)",
+    )
+    MAX_QUEUED_GPU_REQUESTS: int = Field(
+        default=0,
+        ge=0,
+        description=(
+            "Cap on concurrent in-flight GPU requests across the API, split "
+            "between sync and async paths (0 = unlimited)"
+        ),
+    )
+    SYNC_GPU_QUOTA_FRACTION: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Fraction of MAX_QUEUED_GPU_REQUESTS reserved for the synchronous "
+            "(OpenAI-compatible) path; the async path gets the remainder"
+        ),
+    )
 
     # Nested settings
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
@@ -187,6 +285,8 @@ class Settings(BaseSettings):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     callback: CallbackSettings = Field(default_factory=CallbackSettings)
     ssrf: SsrfSettings = Field(default_factory=SsrfSettings)
+    rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
+    auth: AuthSettings = Field(default_factory=AuthSettings)
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod

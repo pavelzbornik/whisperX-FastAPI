@@ -592,6 +592,69 @@ class UnsupportedFileExtensionError(ValidationError):
         )
 
 
+# Authentication / throttling exceptions
+
+
+class AuthenticationError(ApplicationError):
+    """Bearer-token authentication failed or credentials were missing."""
+
+    def __init__(
+        self,
+        reason: str = "Missing or invalid authentication credentials",
+        correlation_id: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize the authentication error.
+
+        Args:
+            reason: Human-readable reason the request was rejected
+            correlation_id: Optional correlation ID for tracing
+        """
+        super().__init__(
+            message=f"Authentication failed: {reason}",
+            code="AUTHENTICATION_FAILED",
+            user_message=reason,
+            correlation_id=correlation_id,
+        )
+
+    @property
+    def error_type(self) -> str:
+        """Return an OpenAI-style error type."""
+        return "invalid_request_error"
+
+
+class ServiceOverloadedError(ApplicationError):
+    """Route-level concurrency cap exceeded; the service is temporarily busy."""
+
+    def __init__(
+        self,
+        scope: str,
+        retry_after: int = 1,
+        correlation_id: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize the service overloaded error.
+
+        Args:
+            scope: Which request path was saturated (e.g. 'sync' or 'async')
+            retry_after: Suggested retry delay in seconds (sent as Retry-After)
+            correlation_id: Optional correlation ID for tracing
+        """
+        super().__init__(
+            message=f"Concurrency limit reached for {scope} requests",
+            code="SERVICE_OVERLOADED",
+            user_message="The service is busy processing other requests. Please retry shortly.",
+            correlation_id=correlation_id,
+            scope=scope,
+        )
+        self.retry_after = retry_after
+
+    @property
+    def error_type(self) -> str:
+        """Return an OpenAI-style error type."""
+        return "server_error"
+
+
 # Configuration-related exceptions
 
 

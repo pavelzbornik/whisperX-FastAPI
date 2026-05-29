@@ -34,6 +34,7 @@ from app.core.exceptions import (
 )
 from app.core.gpu_semaphore import get_gpu_semaphore
 from app.core.logging import logger
+from app.core.rate_limit import limiter, rate_limit_value, rate_limiting_disabled
 from app.domain.entities.task import Task as DomainTask
 from app.domain.repositories.task_repository import ITaskRepository
 from app.domain.services.alignment_service import IAlignmentService
@@ -440,6 +441,7 @@ async def _handle_openai_transcription(
     summary="Transcribe audio synchronously with an OpenAI-compatible API",
     responses=_OPENAI_NON_JSON_RESPONSES,
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def create_transcription(
     request: Request,
     file_service: Annotated[FileService, Depends(get_file_service)],
@@ -472,6 +474,7 @@ async def create_transcription(
     summary="Translate audio to English synchronously with an OpenAI-compatible API",
     responses=_OPENAI_NON_JSON_RESPONSES,
 )
+@limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def create_translation(
     request: Request,
     file_service: Annotated[FileService, Depends(get_file_service)],

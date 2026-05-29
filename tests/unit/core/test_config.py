@@ -6,8 +6,11 @@ from unittest.mock import patch
 import pytest
 
 from app.core.config import (
+    AuthSettings,
     DatabaseSettings,
     LoggingSettings,
+    RateLimitKeyStrategy,
+    RateLimitSettings,
     Settings,
     WhisperSettings,
     get_settings,
@@ -244,3 +247,109 @@ class TestGetSettings:
         """Test that get_settings returns a Settings instance."""
         settings = get_settings()
         assert isinstance(settings, Settings)
+
+
+class TestRateLimitSettings:
+    """Test RateLimitSettings class."""
+
+    def test_default_values_are_no_op(self) -> None:
+        """Rate limiting is disabled by default with sensible budgets."""
+        with patch.dict(os.environ, {}, clear=True):
+            settings = RateLimitSettings()
+            assert settings.ENABLED is False
+            assert settings.REQUESTS_PER_MINUTE == 60
+            assert settings.BURST == 10
+            assert settings.KEY_STRATEGY == RateLimitKeyStrategy.ip
+
+    def test_custom_values_via_env(self) -> None:
+        """Values are read from RATE_LIMIT__ prefixed environment variables."""
+        env = {
+            "RATE_LIMIT__ENABLED": "true",
+            "RATE_LIMIT__REQUESTS_PER_MINUTE": "5",
+            "RATE_LIMIT__BURST": "2",
+            "RATE_LIMIT__KEY_STRATEGY": "bearer_token",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            settings = RateLimitSettings()
+            assert settings.ENABLED is True
+            assert settings.REQUESTS_PER_MINUTE == 5
+            assert settings.BURST == 2
+            assert settings.KEY_STRATEGY == RateLimitKeyStrategy.bearer_token
+
+    def test_rejects_non_positive_rpm(self) -> None:
+        """REQUESTS_PER_MINUTE must be >= 1."""
+        from pydantic import ValidationError as PydanticValidationError
+
+        with patch.dict(
+            os.environ, {"RATE_LIMIT__REQUESTS_PER_MINUTE": "0"}, clear=True
+        ):
+            with pytest.raises(PydanticValidationError):
+                RateLimitSettings()
+
+
+class TestAuthSettings:
+    """Test AuthSettings class."""
+
+    def test_default_values_are_no_op(self) -> None:
+        """Authentication is disabled by default with no token."""
+        with patch.dict(os.environ, {}, clear=True):
+            settings = AuthSettings()
+            assert settings.ENABLED is False
+            assert settings.BEARER_TOKEN == ""
+
+    def test_custom_values_via_env(self) -> None:
+        """Values are read from AUTH__ prefixed environment variables."""
+        env = {"AUTH__ENABLED": "true", "AUTH__BEARER_TOKEN": "secret"}
+        with patch.dict(os.environ, env, clear=True):
+            settings = AuthSettings()
+            assert settings.ENABLED is True
+            assert settings.BEARER_TOKEN == "secret"
+
+    def test_enabled_requires_token(self) -> None:
+        """Enabling auth without a token raises a validation error."""
+        from pydantic import ValidationError as PydanticValidationError
+
+        with patch.dict(os.environ, {"AUTH__ENABLED": "true"}, clear=True):
+            with pytest.raises(PydanticValidationError):
+                AuthSettings()
+
+
+class TestRequestShapingSettings:
+    """Test request-shaping fields on the top-level Settings."""
+
+    def test_defaults_are_no_op(self) -> None:
+        """Upload cap and queue cap default to unlimited."""
+        env = {"DEVICE": "cpu", "COMPUTE_TYPE": "int8"}
+        with patch.dict(os.environ, env, clear=True):
+            settings = Settings()
+            assert settings.MAX_UPLOAD_SIZE_MB == 0
+            assert settings.MAX_QUEUED_GPU_REQUESTS == 0
+            assert settings.SYNC_GPU_QUOTA_FRACTION == 0.5
+
+    def test_custom_values(self) -> None:
+        """Request-shaping fields are read from the environment."""
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "MAX_UPLOAD_SIZE_MB": "25",
+            "MAX_QUEUED_GPU_REQUESTS": "20",
+            "SYNC_GPU_QUOTA_FRACTION": "0.25",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            settings = Settings()
+            assert settings.MAX_UPLOAD_SIZE_MB == 25
+            assert settings.MAX_QUEUED_GPU_REQUESTS == 20
+            assert settings.SYNC_GPU_QUOTA_FRACTION == 0.25
+
+    def test_fraction_out_of_range_rejected(self) -> None:
+        """SYNC_GPU_QUOTA_FRACTION must be within [0, 1]."""
+        from pydantic import ValidationError as PydanticValidationError
+
+        env = {
+            "DEVICE": "cpu",
+            "COMPUTE_TYPE": "int8",
+            "SYNC_GPU_QUOTA_FRACTION": "1.5",
+        }
+        with patch.dict(os.environ, env, clear=True):
+            with pytest.raises(PydanticValidationError):
+                Settings()
