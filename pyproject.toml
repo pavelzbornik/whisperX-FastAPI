@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=78.1.1", "wheel"]
+requires = ["setuptools>=83.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -45,7 +45,7 @@ dependencies = [
     "torch<=2.8.0",
     "torchaudio<=2.8.0",
     "torchvision<=0.23.0",
-    "setuptools>=78.1.1",
+    "setuptools>=83.0.0",
     # torchcodec has strict 1:1 PyTorch version coupling; 0.7.0 matches torch <=2.8.0
     "torchcodec==0.7.0",
     # whisperx 3.8.4 still uses deprecated use_auth_token parameter removed in 0.36.0
