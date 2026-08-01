@@ -62,15 +62,15 @@ postgres = [
 ]
 dev = [
     "locust>=2.20.0",
-    "codespell==2.4.2",
+    "codespell==2.4.3",
     "factory-boy==3.3.3",
     "mypy==1.20.2",
     "pandas-stubs>=2.1.0",
-    "pre-commit==4.6.0",
+    "pre-commit==4.6.1",
     "pytest==9.0.3",
     "pytest-asyncio>=0.24.0",
     "pytest-cov==7.1.0",
-    "ruff==0.15.20",
+    "ruff==0.15.22",
     "types-requests>=2.31.0",
     "types-PyYAML>=6.0.12",
 ]
