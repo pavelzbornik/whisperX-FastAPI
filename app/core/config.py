@@ -201,6 +201,43 @@ class RateLimitSettings(BaseSettings):
     )
 
 
+class MiddlewareSettings(BaseSettings):
+    """Request logging and timing middleware configuration.
+
+    Each option is configured via an environment variable prefixed with
+    ``MIDDLEWARE__``, for example ``MIDDLEWARE__SLOW_REQUEST_THRESHOLD``.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="MIDDLEWARE__",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    ENABLE_REQUEST_LOGGING: bool = Field(
+        default=False,
+        description="Log one line when a request starts and one when it completes",
+    )
+    SLOW_REQUEST_THRESHOLD: float = Field(
+        default=5.0,
+        gt=0,
+        description="Requests slower than this many seconds are logged as warnings",
+    )
+    SENSITIVE_HEADERS: set[str] = Field(
+        default={
+            "authorization",
+            "cookie",
+            "set-cookie",
+            "proxy-authorization",
+            "x-api-key",
+            "x-csrf-token",
+        },
+        description="Header names (lowercase) whose values are redacted in logs",
+    )
+
+
 class AuthSettings(BaseSettings):
     """Optional shared bearer-token authentication configuration.
 
@@ -294,6 +331,7 @@ class Settings(BaseSettings):
     ssrf: SsrfSettings = Field(default_factory=SsrfSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    middleware: MiddlewareSettings = Field(default_factory=MiddlewareSettings)
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod

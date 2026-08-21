@@ -118,6 +118,10 @@ RATE_LIMIT__BURST=10
 RATE_LIMIT__KEY_STRATEGY=ip       # ip | bearer_token
 AUTH__ENABLED=false               # shared bearer-token auth → 401
 AUTH__BEARER_TOKEN=               # required when AUTH__ENABLED=true
+
+# Request observability (see app/api/middleware.py)
+MIDDLEWARE__ENABLE_REQUEST_LOGGING=false  # log request start/completion, headers redacted
+MIDDLEWARE__SLOW_REQUEST_THRESHOLD=5.0    # warn when a request exceeds this many seconds
 ```
 
 **Critical:** When `DEVICE=cpu`, `COMPUTE_TYPE` is auto-corrected to `int8`. Tests set
@@ -131,6 +135,14 @@ enabled — changing them needs a restart (tests clear the caches to re-read). T
 is enforced from `Content-Length`; the async concurrency gate is admission control (the
 background GPU pipeline is bounded by `MAX_CONCURRENT_GPU_TASKS`). Multi-worker deployments
 give each worker its own in-process budget.
+
+**Request observability** also lives in `app/api/middleware.py`: `TimingMiddleware` (always
+on — adds an `X-Response-Time` header and warns past `MIDDLEWARE__SLOW_REQUEST_THRESHOLD`)
+and `RequestLoggingMiddleware` (off by default; redacts sensitive headers). Every
+middleware here is raw ASGI rather than `BaseHTTPMiddleware`, so `contextvars` propagate
+correctly to handlers and background tasks. Request order is
+`MaxUploadSize → RequestContext → RequestLogging → Timing`, which puts logging and timing
+inside the request-id context.
 
 ## CI Pipeline
 

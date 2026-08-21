@@ -81,7 +81,11 @@ from app.api.exception_handlers import (  # noqa: E402
     task_not_found_handler,
     validation_error_handler,
 )
-from app.api.middleware import MaxUploadSizeMiddleware  # noqa: E402
+from app.api.middleware import (  # noqa: E402
+    MaxUploadSizeMiddleware,
+    RequestLoggingMiddleware,
+    TimingMiddleware,
+)
 from app.api.security import (  # noqa: E402
     enforce_async_gpu_quota,
     enforce_sync_gpu_quota,
@@ -294,6 +298,13 @@ class RequestContextMiddleware:
         await self.app(scope, receive, send_with_request_id)
 
 
+# Middleware added later wraps middleware added earlier, so the resulting
+# request order is: MaxUploadSize -> RequestContext -> RequestLogging -> Timing.
+# Timing is innermost so it measures handler work rather than the middleware
+# stack, and both logging and timing run inside RequestContext so their records
+# carry the request id.
+app.add_middleware(TimingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RequestContextMiddleware)
 # Added last so it is the outermost middleware: oversized uploads are rejected
 # with HTTP 413 before the body is buffered or any downstream work begins.
