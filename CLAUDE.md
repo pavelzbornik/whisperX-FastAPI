@@ -80,13 +80,14 @@ app/
 │   ├── audio_api.py           # Speech-to-text (full pipeline) endpoints
 │   ├── audio_services_api.py  # Individual service endpoints (transcribe/align/diarize)
 │   ├── task_api.py            # Task management endpoints
-│   ├── dependencies.py        # Injects services from Container via Depends()
+│   ├── dependencies.py        # Container providers + Annotated injection aliases
 │   ├── schemas/               # Pydantic request/response models
 │   ├── mappers/               # API schema ↔ domain entity conversion
 │   └── exception_handlers.py  # Maps domain exceptions → HTTP responses
 ├── core/                      # Config, DI Container, exception hierarchy → see app/core/CLAUDE.md
 ├── domain/                    # Pure Python entities, repository + ML service interfaces → see app/domain/CLAUDE.md
 ├── infrastructure/            # SQLAlchemy + WhisperX implementations → see app/infrastructure/CLAUDE.md
+├── observability/             # Optional OpenTelemetry tracing + metrics (off by default)
 └── services/                  # Business logic orchestration → see app/services/CLAUDE.md
 
 alembic/                       # Schema migrations (revisions in alembic/versions/)
@@ -129,6 +130,11 @@ AUTH__BEARER_TOKEN=               # required when AUTH__ENABLED=true
 # Request observability (see app/api/middleware.py)
 MIDDLEWARE__ENABLE_REQUEST_LOGGING=false  # log request start/completion, headers redacted
 MIDDLEWARE__SLOW_REQUEST_THRESHOLD=5.0    # warn when a request exceeds this many seconds
+
+# OpenTelemetry (off by default — see docs/observability/README.md)
+OTEL__ENABLED=false               # master switch for traces + metrics
+OTEL__EXPORTER_ENDPOINT=          # OTLP/HTTP endpoint; empty defers to OTEL_EXPORTER_OTLP_ENDPOINT
+OTEL__TRACES_SAMPLER_RATIO=1.0
 ```
 
 **Critical:** When `DEVICE=cpu`, `COMPUTE_TYPE` is auto-corrected to `int8`. Tests set

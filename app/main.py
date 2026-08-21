@@ -107,6 +107,10 @@ from app.core.rate_limit import limiter  # noqa: E402
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
 from app.infrastructure.database.migrations import run_migrations  # noqa: E402
+from app.observability import (  # noqa: E402
+    configure_observability,
+    shutdown_observability,
+)
 
 # Log application startup information
 environment = os.getenv("ENVIRONMENT", "production").lower()
@@ -148,6 +152,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await asyncio.to_thread(run_migrations)
     logger.info("Database schema is up to date")
 
+    # No-op unless OTEL__ENABLED is set.
+    configure_observability(app)
+
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
     logger.info("OpenAPI schema and database schema documentation generated")
@@ -161,6 +168,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # sync_engine uses QueuePool for PostgreSQL; disposing prevents connection leaks.
     await async_engine.dispose()
     sync_engine.dispose()
+
+    # Flush buffered spans and metrics rather than dropping them on exit.
+    shutdown_observability()
 
 
 tags_metadata = [
