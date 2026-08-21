@@ -5,6 +5,8 @@ from collections.abc import Generator
 
 import pytest
 from fastapi import FastAPI
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 
@@ -81,11 +83,12 @@ def test_configure_observability_is_inert_when_disabled() -> None:
     no middleware is added and no global provider is installed.
     """
     app = FastAPI()
-    middleware_before = list(app.user_middleware)
 
     observability.configure_observability(app, _settings(OTEL__ENABLED="false"))
 
-    assert list(app.user_middleware) == middleware_before
+    # instrument_app wraps build_middleware_stack and sets this flag rather than
+    # appending to user_middleware, so this is what actually proves it ran.
+    assert getattr(app, "_is_instrumented_by_opentelemetry", False) is False
     assert observability._tracer_provider is None
     assert observability._meter_provider is None
 
@@ -151,3 +154,42 @@ def test_shutdown_is_safe_when_nothing_was_configured() -> None:
 
     assert observability._tracer_provider is None
     assert observability._meter_provider is None
+
+
+@pytest.mark.unit
+def test_configure_observability_instruments_app_when_enabled() -> None:
+    """Enabling observability installs providers and instruments the app.
+
+    Instrumentation is global, so this test unwinds it again — otherwise later
+    tests would run against a half-instrumented process.
+    """
+    app = FastAPI()
+    settings = _settings(
+        OTEL__ENABLED="true",
+        OTEL__EXPORTER_ENDPOINT="http://localhost:4318",
+    )
+
+    try:
+        observability.configure_observability(app, settings)
+
+        assert isinstance(observability._tracer_provider, TracerProvider)
+        assert isinstance(observability._meter_provider, MeterProvider)
+        assert getattr(app, "_is_instrumented_by_opentelemetry", False) is True
+    finally:
+        FastAPIInstrumentor.uninstrument_app(app)
+        SQLAlchemyInstrumentor().uninstrument()
+        observability.shutdown_observability()
+
+    assert observability._tracer_provider is None
+    assert observability._meter_provider is None
+
+
+@pytest.mark.unit
+def test_configure_observability_reads_cached_settings_when_omitted() -> None:
+    """Omitting settings falls back to get_settings() rather than raising."""
+    app = FastAPI()
+    _settings(OTEL__ENABLED="false")
+
+    observability.configure_observability(app)
+
+    assert observability._tracer_provider is None
