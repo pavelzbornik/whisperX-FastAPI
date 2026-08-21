@@ -21,7 +21,6 @@
 | `error` | Error message, if any, associated with the task | VARCHAR | True | None | False |
 | `created_at` | Date and time of creation | DATETIME | False | None | False |
 | `updated_at` | Date and time of last update | DATETIME | False | None | False |
-
 ## Table: speaker_embeddings
 
 | Field | Description | Type | Nullable | Unique | Primary Key |
