@@ -89,9 +89,16 @@ app/
 ├── infrastructure/            # SQLAlchemy + WhisperX implementations → see app/infrastructure/CLAUDE.md
 └── services/                  # Business logic orchestration → see app/services/CLAUDE.md
 
+alembic/                       # Schema migrations (revisions in alembic/versions/)
 tests/                         # Markers, mocks, factories, coverage → see tests/CLAUDE.md
 docs/                          # ADRs, stories, config migration guide → see docs/CLAUDE.md
 ```
+
+**Schema changes go through Alembic.** The app runs pending migrations at startup, so no
+manual step is needed to boot. After editing `app/infrastructure/database/models.py`, run
+`task db:revision MSG="..."`, read the generated revision (autogenerate turns a column
+rename into a drop plus an add, losing data), and check it in. `uv run alembic check`
+fails when a model change has no matching migration. See `docs/database/migrations.md`.
 
 ## Environment Variables
 

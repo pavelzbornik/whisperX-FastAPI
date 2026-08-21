@@ -33,6 +33,7 @@ def _torch_load_compat(*args: Any, **kwargs: Any) -> Any:
 
 torch.load = _torch_load_compat
 
+import asyncio  # noqa: E402
 import logging  # noqa: E402
 import os  # noqa: E402
 import time  # noqa: E402
@@ -105,6 +106,7 @@ from app.core.exceptions import (  # noqa: E402
 from app.core.rate_limit import limiter  # noqa: E402
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
+from app.infrastructure.database.migrations import run_migrations  # noqa: E402
 
 # Log application startup information
 environment = os.getenv("ENVIRONMENT", "production").lower()
@@ -139,9 +141,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     logger.info("Application lifespan started - dependency container initialized")
 
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database connection established")
+    # Alembic is synchronous, so it runs in a worker thread rather than on the
+    # event loop. This replaces the previous create_all call: the schema is now
+    # versioned, so column changes can ship as migrations instead of silently
+    # not being applied to existing databases.
+    await asyncio.to_thread(run_migrations)
+    logger.info("Database schema is up to date")
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
