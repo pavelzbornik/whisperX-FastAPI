@@ -51,6 +51,21 @@ def _head_revision() -> str | None:
     return ScriptDirectory.from_config(config).get_current_head()
 
 
+def _make_legacy_database(engine: Engine) -> None:
+    """Build a pre-Alembic database: initial schema, no version stamp.
+
+    The base revision is derived from the script directory rather than written
+    out, so the tests keep working if the initial revision is ever renamed or
+    squashed.
+    """
+    with engine.begin() as connection:
+        config = migrations._build_config(connection)
+        base_revision = ScriptDirectory.from_config(config).get_base()
+        command.upgrade(config, base_revision)
+    with engine.begin() as connection:
+        connection.execute(text("DROP TABLE alembic_version"))
+
+
 @pytest.mark.unit
 def test_migrations_create_schema_on_empty_database(patched_engine: Engine) -> None:
     """A fresh database ends up with every model table and a version stamp."""
@@ -80,7 +95,10 @@ def test_legacy_database_is_stamped_not_recreated(patched_engine: Engine) -> Non
     This is the upgrade path for deployments that predate Alembic: the tables
     are already there but unversioned, so `upgrade head` alone would fail.
     """
-    Base.metadata.create_all(patched_engine)
+    # The realistic legacy shape: built by the previous release's create_all,
+    # so it matches the initial revision. Reproduced by migrating to that
+    # revision and then removing the stamp.
+    _make_legacy_database(patched_engine)
     assert "alembic_version" not in _table_names(patched_engine)
 
     # Prove the data survives: a stamp must not drop or recreate the table.
@@ -159,3 +177,30 @@ def test_partial_legacy_schema_is_refused(patched_engine: Engine) -> None:
 
     with pytest.raises(RuntimeError, match="speaker_embeddings"):
         migrations.run_migrations()
+
+
+@pytest.mark.unit
+def test_legacy_database_gains_columns_added_by_later_revisions(
+    patched_engine: Engine,
+) -> None:
+    """A pre-Alembic database is brought all the way up to head.
+
+    This is the real upgrade path: the database was built by `create_all` from
+    the previous release, so it predates every column added since. Stamping it
+    at the initial revision and then upgrading is what applies those columns.
+    Stamping it at head instead would mark the migrations as already applied
+    and silently leave the table missing `retry_count`.
+    """
+    # Build the schema as the initial revision left it — i.e. without any
+    # column added by a later revision — and strip the version stamp so the
+    # database looks pre-Alembic.
+    _make_legacy_database(patched_engine)
+
+    columns = {c["name"] for c in inspect(patched_engine).get_columns("tasks")}
+    assert "retry_count" not in columns, "precondition: column not yet present"
+
+    migrations.run_migrations()
+
+    columns = {c["name"] for c in inspect(patched_engine).get_columns("tasks")}
+    assert "retry_count" in columns
+    assert _current_revision(patched_engine) == _head_revision()

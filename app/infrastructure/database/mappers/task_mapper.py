@@ -29,6 +29,7 @@ def to_domain(orm_task: ORMTask) -> DomainTask:
         start_time=orm_task.start_time,
         end_time=orm_task.end_time,
         error=orm_task.error,
+        retry_count=orm_task.retry_count,
         created_at=orm_task.created_at,
         updated_at=orm_task.updated_at,
     )
@@ -59,6 +60,7 @@ def to_orm(domain_task: DomainTask) -> ORMTask:
         start_time=domain_task.start_time,
         end_time=domain_task.end_time,
         error=domain_task.error,
+        retry_count=domain_task.retry_count,
         created_at=domain_task.created_at,
         updated_at=domain_task.updated_at,
     )
