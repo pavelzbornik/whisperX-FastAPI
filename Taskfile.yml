@@ -64,6 +64,25 @@ tasks:
     cmds:
       - >-
         uv run pytest -m "not load" --junitxml=pytest-report.xml --cov=app --cov-report=xml --cov-report=term --cov-fail-under={{.COVERAGE_THRESHOLD}}
+  # === Database ===
+  db:upgrade:
+    desc: Apply all pending Alembic migrations
+    cmds:
+      - uv run alembic upgrade head
+  db:downgrade:
+    desc: Revert the most recent Alembic migration
+    cmds:
+      - uv run alembic downgrade -1
+  db:current:
+    desc: Show the revision the database is currently at
+    cmds:
+      - uv run alembic current
+  db:revision:
+    desc: 'Autogenerate a migration from model changes (MSG="describe the change")'
+    cmds:
+      - uv run alembic revision --autogenerate -m "{{.MSG}}"
+    requires:
+      vars: [MSG]
   # === Application ===
   run:
     desc: Start the application locally with hot reload

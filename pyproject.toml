@@ -28,12 +28,18 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
+    "alembic>=1.13.0",
     "colorlog==6.10.1",
     "dependency-injector>=4.41.0",
     "fastapi==0.141.1",
     "gunicorn==26.1.0",
     "httpx==0.28.1",
     "numba==0.64.0",
+    "opentelemetry-api>=1.21.0",
+    "opentelemetry-sdk>=1.21.0",
+    "opentelemetry-instrumentation-fastapi>=0.42b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.42b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.21.0",
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.2",
     "python-multipart==0.0.31",

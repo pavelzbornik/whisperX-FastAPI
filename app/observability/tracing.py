@@ -1,0 +1,76 @@
+"""OpenTelemetry tracing setup.
+
+Tracing is opt-in. When ``OTEL__ENABLED`` is false nothing here touches global
+state, so the application keeps behaving exactly as it did before.
+"""
+
+import logging
+from importlib.metadata import PackageNotFoundError, version
+
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
+
+from app.core.config import Settings
+
+logger = logging.getLogger(__name__)
+
+
+def _service_version() -> str:
+    """Return the installed package version, or ``unknown`` if unavailable."""
+    try:
+        return version("whisperx-fastapi")
+    except PackageNotFoundError:  # pragma: no cover - only when run from source
+        return "unknown"
+
+
+def build_resource(settings: Settings) -> Resource:
+    """Describe this service for the collector.
+
+    Args:
+        settings: Application settings.
+
+    Returns:
+        Resource carrying service name, version, and deployment environment.
+    """
+    return Resource.create(
+        {
+            "service.name": settings.observability.SERVICE_NAME,
+            "service.version": _service_version(),
+            "deployment.environment": settings.ENVIRONMENT,
+        }
+    )
+
+
+def configure_tracing(settings: Settings) -> TracerProvider | None:
+    """Install a tracer provider exporting over OTLP/HTTP.
+
+    Args:
+        settings: Application settings.
+
+    Returns:
+        The provider that was installed, or ``None`` when tracing is disabled.
+    """
+    if not settings.observability.ENABLED:
+        return None
+
+    provider = TracerProvider(
+        resource=build_resource(settings),
+        sampler=ParentBasedTraceIdRatio(settings.observability.TRACES_SAMPLER_RATIO),
+    )
+
+    # An empty endpoint is deliberate — the exporter then reads the SDK's own
+    # OTEL_EXPORTER_OTLP_ENDPOINT, so existing collector config keeps working.
+    endpoint = settings.observability.EXPORTER_ENDPOINT
+    exporter = OTLPSpanExporter(endpoint=endpoint) if endpoint else OTLPSpanExporter()
+    provider.add_span_processor(BatchSpanProcessor(exporter))
+
+    trace.set_tracer_provider(provider)
+    logger.info(
+        "OpenTelemetry tracing enabled (sampler ratio %.2f)",
+        settings.observability.TRACES_SAMPLER_RATIO,
+    )
+    return provider
