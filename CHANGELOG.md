@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.7.0...v0.8.0) (2026-05-29)
+
+
+### Features
+
+* rate limiting, auth, speaker embeddings, and list-of-temperatures ([#538](https://github.com/pavelzbornik/whisperX-FastAPI/issues/538)) ([1c2dd17](https://github.com/pavelzbornik/whisperX-FastAPI/commit/1c2dd17a8ec9efa272f6a43e44a98f5a988e7279))
+
+## [0.7.0](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.6.1...v0.7.0) (2026-05-29)
+
+
+### Features
+
+* OpenAI-compatible synchronous audio transcription endpoints ([#531](https://github.com/pavelzbornik/whisperX-FastAPI/issues/531)) ([aa15ff5](https://github.com/pavelzbornik/whisperX-FastAPI/commit/aa15ff54bb956760058c2b5247f2ffd10b4a96d7))
+
 ## [0.6.1](https://github.com/pavelzbornik/whisperX-FastAPI/compare/v0.6.0...v0.6.1) (2026-05-21)
 
 
