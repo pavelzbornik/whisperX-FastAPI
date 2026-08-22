@@ -1,9 +1,9 @@
 """Speaker embedding API endpoints — CRUD, search, and identification."""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from starlette import status
 
-from app.api.dependencies import get_speaker_service
+from app.api.dependencies import SpeakerServiceDep
 from app.api.mappers.speaker_mapper import SpeakerMapper
 from app.api.schemas.speaker_schemas import (
     CreateSpeakerRequest,
@@ -18,7 +18,6 @@ from app.api.schemas.speaker_schemas import (
     UpdateSpeakerRequest,
 )
 from app.core.exceptions import SpeakerNotFoundError, ValidationError
-from app.services.speaker_service import SpeakerService
 
 speaker_router = APIRouter()
 
@@ -32,7 +31,7 @@ speaker_router = APIRouter()
 )
 async def create_speaker(
     request: CreateSpeakerRequest,
-    speaker_service: SpeakerService = Depends(get_speaker_service),
+    speaker_service: SpeakerServiceDep,
 ) -> SpeakerCreatedResponse:
     """Create a new speaker embedding."""
     uuid = await speaker_service.create(
@@ -51,12 +50,12 @@ async def create_speaker(
     response_model=list[SpeakerResponse],
 )
 async def list_speakers(
+    speaker_service: SpeakerServiceDep,
     task_id: str | None = Query(
         default=None, description="Filter by originating task UUID"
     ),
     limit: int = Query(default=100, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
-    speaker_service: SpeakerService = Depends(get_speaker_service),
 ) -> list[SpeakerResponse]:
     """List speaker embeddings with optional task filter and pagination."""
     if task_id:
@@ -75,7 +74,7 @@ async def list_speakers(
 )
 async def get_speaker(
     uuid: str,
-    speaker_service: SpeakerService = Depends(get_speaker_service),
+    speaker_service: SpeakerServiceDep,
 ) -> SpeakerResponse:
     """Get a single speaker embedding by UUID."""
     speaker = await speaker_service.get_by_id(uuid)
@@ -93,7 +92,7 @@ async def get_speaker(
 async def update_speaker(
     uuid: str,
     request: UpdateSpeakerRequest,
-    speaker_service: SpeakerService = Depends(get_speaker_service),
+    speaker_service: SpeakerServiceDep,
 ) -> SpeakerMessageResponse:
     """Update a speaker's label, description, or embedding."""
     update_data = {k: v for k, v in request.model_dump().items() if v is not None}
@@ -118,7 +117,7 @@ async def update_speaker(
 )
 async def delete_speaker(
     uuid: str,
-    speaker_service: SpeakerService = Depends(get_speaker_service),
+    speaker_service: SpeakerServiceDep,
 ) -> SpeakerMessageResponse:
     """Delete a single speaker embedding."""
     found = await speaker_service.delete(uuid)
@@ -134,8 +133,8 @@ async def delete_speaker(
     response_model=SpeakerMessageResponse,
 )
 async def delete_speakers_by_task(
+    speaker_service: SpeakerServiceDep,
     task_id: str = Query(description="Delete all speakers from this task"),
-    speaker_service: SpeakerService = Depends(get_speaker_service),
 ) -> SpeakerMessageResponse:
     """Delete all speaker embeddings associated with a task."""
     count = await speaker_service.delete_by_task(task_id)
@@ -150,7 +149,7 @@ async def delete_speakers_by_task(
 )
 async def search_speakers(
     request: SpeakerSearchRequest,
-    speaker_service: SpeakerService = Depends(get_speaker_service),
+    speaker_service: SpeakerServiceDep,
 ) -> SpeakerSearchResponse:
     """Search for similar speakers by embedding vector (cosine similarity)."""
     matches = await speaker_service.search_similar(
@@ -177,7 +176,7 @@ async def search_speakers(
 )
 async def identify_speaker(
     request: SpeakerIdentifyRequest,
-    speaker_service: SpeakerService = Depends(get_speaker_service),
+    speaker_service: SpeakerServiceDep,
 ) -> SpeakerIdentifyResponse:
     """Identify the best-matching speaker above threshold."""
     result = await speaker_service.identify(

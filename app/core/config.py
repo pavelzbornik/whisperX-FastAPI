@@ -201,6 +201,112 @@ class RateLimitSettings(BaseSettings):
     )
 
 
+class ObservabilitySettings(BaseSettings):
+    """OpenTelemetry tracing and metrics configuration.
+
+    Disabled by default: with ``OTEL__ENABLED`` false nothing is instrumented
+    and no exporter is created, so the application behaves exactly as it did
+    before. Options use the ``OTEL__`` prefix, for example
+    ``OTEL__ENABLED`` or ``OTEL__TRACES_SAMPLER_RATIO``.
+
+    Leaving ``OTEL__EXPORTER_ENDPOINT`` empty is deliberate: the exporters then
+    fall back to the SDK's own standard variables (``OTEL_EXPORTER_OTLP_ENDPOINT``
+    and friends), so existing collector configuration keeps working.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="OTEL__",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    ENABLED: bool = Field(
+        default=False,
+        description="Enable OpenTelemetry tracing and metrics",
+    )
+    SERVICE_NAME: str = Field(
+        default="whisperx-fastapi",
+        description="Value reported as service.name on spans and metrics",
+    )
+    EXPORTER_ENDPOINT: str = Field(
+        default="",
+        description=(
+            "OTLP/HTTP collector endpoint; empty defers to the SDK's own "
+            "OTEL_EXPORTER_OTLP_ENDPOINT variable"
+        ),
+    )
+    TRACES_SAMPLER_RATIO: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Fraction of traces to sample when there is no parent decision",
+    )
+    METRICS_ENABLED: bool = Field(
+        default=True,
+        description="Export metrics as well as traces when observability is enabled",
+    )
+    METRICS_EXPORT_INTERVAL_MS: int = Field(
+        default=60_000,
+        gt=0,
+        description="How often metrics are pushed to the collector, in milliseconds",
+    )
+
+
+class MiddlewareSettings(BaseSettings):
+    """Request logging and timing middleware configuration.
+
+    Each option is configured via an environment variable prefixed with
+    ``MIDDLEWARE__``, for example ``MIDDLEWARE__SLOW_REQUEST_THRESHOLD``.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="MIDDLEWARE__",
+        case_sensitive=True,
+        extra="ignore",
+    )
+
+    ENABLE_REQUEST_LOGGING: bool = Field(
+        default=False,
+        description="Log one line when a request starts and one when it completes",
+    )
+    SLOW_REQUEST_THRESHOLD: float = Field(
+        default=5.0,
+        gt=0,
+        description="Requests slower than this many seconds are logged as warnings",
+    )
+    SENSITIVE_HEADERS: set[str] = Field(
+        default={
+            "authorization",
+            "cookie",
+            "set-cookie",
+            "proxy-authorization",
+            "x-api-key",
+            "x-csrf-token",
+        },
+        description="Header names (lowercase) whose values are redacted in logs",
+    )
+    SENSITIVE_QUERY_PARAMS: set[str] = Field(
+        default={
+            "token",
+            "access_token",
+            "api_key",
+            "apikey",
+            "key",
+            "secret",
+            "password",
+            "signature",
+            "sig",
+        },
+        description=(
+            "Query parameter names (lowercase) whose values are redacted in logs"
+        ),
+    )
+
+
 class AuthSettings(BaseSettings):
     """Optional shared bearer-token authentication configuration.
 
@@ -294,6 +400,8 @@ class Settings(BaseSettings):
     ssrf: SsrfSettings = Field(default_factory=SsrfSettings)
     rate_limit: RateLimitSettings = Field(default_factory=RateLimitSettings)
     auth: AuthSettings = Field(default_factory=AuthSettings)
+    middleware: MiddlewareSettings = Field(default_factory=MiddlewareSettings)
+    observability: ObservabilitySettings = Field(default_factory=ObservabilitySettings)
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod
