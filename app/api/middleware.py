@@ -12,6 +12,8 @@ from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+_REDACTED = "***REDACTED***"
+
 # Methods that can carry a request body worth size-checking.
 _BODY_METHODS = frozenset({"POST", "PUT", "PATCH"})
 
@@ -79,6 +81,35 @@ class MaxUploadSizeMiddleware:
         await self.app(scope, receive, send)
 
 
+def _sanitize_query_string(raw_query: bytes, sensitive: set[str]) -> str:
+    """Decode a query string, redacting the values of sensitive parameters.
+
+    Credentials travel in query strings as well as headers — a bearer token, a
+    pre-signed URL signature — and a log line is a durable place for one to end
+    up. Parameter names are preserved so the shape of the request stays
+    readable; only the values are masked.
+
+    Args:
+        raw_query: Raw ASGI ``query_string``.
+        sensitive: Lowercase parameter names whose values must not be logged.
+
+    Returns:
+        The query string with sensitive values replaced.
+    """
+    decoded = raw_query.decode("latin-1")
+    if not decoded:
+        return ""
+
+    sanitized = []
+    for pair in decoded.split("&"):
+        name, separator, _ = pair.partition("=")
+        if separator and name.lower() in sensitive:
+            sanitized.append(f"{name}={_REDACTED}")
+        else:
+            sanitized.append(pair)
+    return "&".join(sanitized)
+
+
 def _sanitize_headers(
     raw_headers: Iterable[tuple[bytes, bytes]], sensitive: set[str]
 ) -> dict[str, str]:
@@ -95,7 +126,7 @@ def _sanitize_headers(
     for raw_name, raw_value in raw_headers:
         name = raw_name.decode("latin-1").lower()
         if name in sensitive:
-            sanitized[name] = "***REDACTED***"
+            sanitized[name] = _REDACTED
         else:
             sanitized[name] = raw_value.decode("latin-1")
     return sanitized
@@ -200,7 +231,10 @@ class RequestLoggingMiddleware:
             extra={
                 "method": method,
                 "path": path,
-                "query_params": scope.get("query_string", b"").decode("latin-1"),
+                "query_params": _sanitize_query_string(
+                    scope.get("query_string", b""),
+                    settings.middleware.SENSITIVE_QUERY_PARAMS,
+                ),
                 "client_ip": client_ip,
                 "headers": _sanitize_headers(
                     scope.get("headers", []), settings.middleware.SENSITIVE_HEADERS

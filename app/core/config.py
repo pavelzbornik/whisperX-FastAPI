@@ -289,6 +289,22 @@ class MiddlewareSettings(BaseSettings):
         },
         description="Header names (lowercase) whose values are redacted in logs",
     )
+    SENSITIVE_QUERY_PARAMS: set[str] = Field(
+        default={
+            "token",
+            "access_token",
+            "api_key",
+            "apikey",
+            "key",
+            "secret",
+            "password",
+            "signature",
+            "sig",
+        },
+        description=(
+            "Query parameter names (lowercase) whose values are redacted in logs"
+        ),
+    )
 
 
 class AuthSettings(BaseSettings):

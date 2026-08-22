@@ -13,6 +13,7 @@ from app.api.middleware import (
     RequestLoggingMiddleware,
     TimingMiddleware,
     _sanitize_headers,
+    _sanitize_query_string,
 )
 from app.core.config import get_settings
 
@@ -229,3 +230,49 @@ def test_sanitize_headers_redacts_only_listed_names() -> None:
         "authorization": "***REDACTED***",
         "accept": "application/json",
     }
+
+
+@pytest.mark.unit
+def test_request_logging_redacts_sensitive_query_params(
+    reset_settings: None, middleware_logs: _RecordCollector
+) -> None:
+    """A credential passed in the query string never reaches the log record.
+
+    Credentials arrive in query strings as well as headers — a bearer token, a
+    pre-signed URL signature — and a log line is a durable place for one to
+    land.
+    """
+    os.environ["MIDDLEWARE__ENABLE_REQUEST_LOGGING"] = "true"
+    get_settings.cache_clear()
+
+    _build_client(with_logging=True).get("/ping?token=super-secret&page=2")
+
+    started = [
+        record
+        for record in middleware_logs.records
+        if "Request started" in record.getMessage()
+    ]
+    assert started, "expected a request-started record"
+
+    query = started[0].query_params  # type: ignore[attr-defined]
+    assert "super-secret" not in query
+    assert "token=***REDACTED***" in query
+    # Non-sensitive parameters stay readable.
+    assert "page=2" in query
+
+
+@pytest.mark.unit
+def test_sanitize_query_string_keeps_names_and_other_values() -> None:
+    """Only the values of listed parameters are masked."""
+    result = _sanitize_query_string(b"token=abc&page=2&Key=xyz", {"token", "key"})
+
+    assert result == "token=***REDACTED***&page=2&Key=***REDACTED***"
+
+
+@pytest.mark.unit
+def test_sanitize_query_string_handles_empty_and_valueless() -> None:
+    """An empty query, and a bare flag with no '=', are left alone."""
+    assert _sanitize_query_string(b"", {"token"}) == ""
+    assert _sanitize_query_string(b"flag&token=x", {"token"}) == (
+        "flag&token=***REDACTED***"
+    )

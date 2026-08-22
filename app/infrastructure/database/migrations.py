@@ -50,19 +50,44 @@ def _is_legacy_database(connection: Connection) -> bool:
     """Report whether this database predates Alembic.
 
     A legacy database is one created by the old ``create_all`` startup path: it
-    already holds application tables but has no Alembic version stamp.
+    holds the full set of application tables but has no Alembic version stamp.
+
+    Every expected table must be present. A database holding only some of them
+    is not a legacy database but a broken one — an interrupted deployment, or a
+    partially restored backup — and stamping it would record work that was
+    never done, leaving the missing tables to fail at runtime instead.
 
     Args:
         connection: Open SQLAlchemy connection to inspect.
 
     Returns:
-        ``True`` when the schema exists but is unversioned.
+        ``True`` when the complete schema exists but is unversioned.
+
+    Raises:
+        RuntimeError: If only part of the schema is present.
     """
     if MigrationContext.configure(connection).get_current_revision() is not None:
         return False
 
+    expected = set(Base.metadata.tables)
     existing = set(inspect(connection).get_table_names())
-    return bool(existing & set(Base.metadata.tables))
+    present = existing & expected
+
+    if not present:
+        return False
+
+    missing = expected - existing
+    if missing:
+        raise RuntimeError(
+            "Database has no Alembic version stamp and is missing the tables "
+            f"{sorted(missing)} while already holding {sorted(present)}. "
+            "Refusing to stamp it, because doing so would mark migrations as "
+            "applied that never ran. Restore a complete backup, or reconcile "
+            "the schema by hand and then run `alembic stamp` at the revision "
+            "it matches."
+        )
+
+    return True
 
 
 def run_migrations() -> None:

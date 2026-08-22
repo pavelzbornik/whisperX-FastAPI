@@ -141,3 +141,21 @@ def test_downgrade_removes_model_tables(patched_engine: Engine) -> None:
 
     remaining = _table_names(patched_engine)
     assert not (set(Base.metadata.tables) & remaining)
+
+
+@pytest.mark.unit
+def test_partial_legacy_schema_is_refused(patched_engine: Engine) -> None:
+    """An incomplete unversioned schema fails loudly instead of being stamped.
+
+    A database holding only some application tables is not a legacy database
+    but a broken one — an interrupted deployment, or a partial restore.
+    Stamping it would record migrations as applied that never ran, leaving the
+    missing tables to fail at runtime instead of at startup.
+    """
+    migrations.run_migrations()
+    with patched_engine.begin() as connection:
+        connection.execute(text("DROP TABLE speaker_embeddings"))
+        connection.execute(text("DROP TABLE alembic_version"))
+
+    with pytest.raises(RuntimeError, match="speaker_embeddings"):
+        migrations.run_migrations()

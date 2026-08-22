@@ -12,7 +12,9 @@ from app.schemas import Metadata, Response, Result
 task_router = APIRouter()
 
 
-@task_router.get("/task/all", tags=["Tasks Management"])
+@task_router.get(
+    "/task/all", tags=["Tasks Management"], response_model=TaskListResponse
+)
 async def get_all_tasks_status(
     service: TaskManagementServiceDep,
 ) -> TaskListResponse:
@@ -34,7 +36,7 @@ async def get_all_tasks_status(
     return TaskListResponse(tasks=task_summaries)
 
 
-@task_router.get("/task/{identifier}", tags=["Tasks Management"])
+@task_router.get("/task/{identifier}", tags=["Tasks Management"], response_model=Result)
 async def get_transcription_status(
     identifier: str,
     service: TaskManagementServiceDep,
@@ -79,7 +81,9 @@ async def get_transcription_status(
     )
 
 
-@task_router.delete("/task/{identifier}/delete", tags=["Tasks Management"])
+@task_router.delete(
+    "/task/{identifier}/delete", tags=["Tasks Management"], response_model=Response
+)
 async def delete_task(
     identifier: str,
     service: TaskManagementServiceDep,

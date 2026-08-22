@@ -45,7 +45,7 @@ repos:
           - types-requests
           - types-PyYAML
           - pandas-stubs
-          - alembic
+          - alembic==1.17.0
         args: [--config-file=pyproject.toml]
         # alembic/ is the generated migration tree; env.py drives alembic's
         # dynamic context API, which is not meaningfully checkable.
