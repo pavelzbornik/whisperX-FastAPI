@@ -8,7 +8,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.core.config import get_settings
-from app.core.exceptions import AudioProcessingError, InsufficientMemoryError
+from app.core.exceptions import (
+    AudioProcessingError,
+    DatabaseOperationError,
+    InsufficientMemoryError,
+)
 from app.schemas import TaskStatus
 from app.services import audio_processing_service
 
@@ -55,17 +59,31 @@ def _run(
     use_gpu_semaphore: bool = False,
     max_retries: str | None = None,
     backoff: str = "0.01",
+    fail_update_on: Any = None,
 ) -> None:
-    """Invoke the runner with the repository, semaphore and sleep patched out."""
+    """Invoke the runner with the repository, semaphore and sleep patched out.
+
+    Args:
+        harness: Capture buffers for updates, sleeps and semaphore events.
+        processor: The audio processor callable under test.
+        use_gpu_semaphore: Whether the runner should take a GPU slot.
+        max_retries: Value for ``TASK_MAX_RETRIES``.
+        backoff: Value for ``TASK_RETRY_BACKOFF_SECONDS``.
+        fail_update_on: Status whose repository write should raise, simulating
+            a database outage during bookkeeping.
+    """
     if max_retries is not None:
         os.environ["TASK_MAX_RETRIES"] = max_retries
     os.environ["TASK_RETRY_BACKOFF_SECONDS"] = backoff
     get_settings.cache_clear()
 
-    repository = MagicMock()
-    repository.update.side_effect = lambda identifier, update_data: (
+    def record(identifier: str, update_data: dict[str, Any]) -> None:
         harness.updates.append(update_data)
-    )
+        if fail_update_on is not None and update_data.get("status") == fail_update_on:
+            raise DatabaseOperationError("update", "database is locked")
+
+    repository = MagicMock()
+    repository.update.side_effect = record
 
     semaphore = MagicMock()
     semaphore.acquire.side_effect = lambda: harness.events.append("acquire")
@@ -210,3 +228,24 @@ def test_gpu_slot_released_once_per_attempt() -> None:
 
     assert harness.events.count("acquire") == 3
     assert harness.events.count("release") == 3
+
+
+@pytest.mark.unit
+def test_retry_survives_a_failed_requeue_write() -> None:
+    """A database blip while recording the retry must not cancel the retry.
+
+    DatabaseOperationError is itself retryable, so the bookkeeping write that
+    marks a task queued can fail for precisely the reason the task is being
+    retried. If that write escaped the handler, the retry loop would die on the
+    very class of failure it exists to survive.
+    """
+    harness = _Harness()
+    processor = MagicMock(
+        side_effect=[InsufficientMemoryError("transcription"), {"text": "ok"}]
+    )
+
+    _run(harness, processor, max_retries="2", fail_update_on=TaskStatus.queued)
+
+    # The retry still happened despite the requeue write blowing up.
+    assert processor.call_count == 2
+    assert harness.final_update()["status"] == TaskStatus.completed

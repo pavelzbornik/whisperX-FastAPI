@@ -480,14 +480,28 @@ def process_audio_common(
                         policy.max_attempts,
                         pending_delay,
                     )
-                    repository.update(
-                        identifier=params.identifier,
-                        update_data={
-                            "status": TaskStatus.queued,
-                            "error": str(e),
-                            "retry_count": attempt,
-                        },
-                    )
+                    # Guarded on purpose. This write is bookkeeping, and
+                    # DatabaseOperationError is itself retryable — so the very
+                    # outage being retried through can break it. Letting it
+                    # escape would kill the retry loop at the moment it is
+                    # most needed, so the attempt proceeds either way and the
+                    # task state is corrected by the next write.
+                    try:
+                        repository.update(
+                            identifier=params.identifier,
+                            update_data={
+                                "status": TaskStatus.queued,
+                                "error": str(e),
+                                "retry_count": attempt,
+                            },
+                        )
+                    except Exception:  # noqa: BLE001
+                        logger.warning(
+                            "Could not record the requeue for task %s; "
+                            "retrying regardless",
+                            params.identifier,
+                            exc_info=True,
+                        )
                     continue
 
                 repository.update(
