@@ -1,0 +1,24 @@
+name: PR Title Lint
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+permissions:
+  contents: read
+  # The action fetches the PR through the REST API rather than reading
+  # the webhook payload, so it needs this scope. Declaring a permissions
+  # block sets every unlisted scope to none, and the call would 403.
+  # It works today only because this repository is public.
+  pull-requests: read
+jobs:
+  conventional-title:
+    name: Validate Conventional Commit title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
