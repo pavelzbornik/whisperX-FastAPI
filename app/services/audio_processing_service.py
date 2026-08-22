@@ -1,5 +1,6 @@
 """This module provides services for processing audio tasks including transcription, diarization, alignment, and speaker assignment using WhisperX and FastAPI."""
 
+import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
@@ -22,6 +23,7 @@ from app.infrastructure.database.connection import SyncSessionLocal
 from app.infrastructure.database.repositories.sqlalchemy_task_repository import (
     SyncSQLAlchemyTaskRepository,
 )
+from app.services.retry import RetryPolicy
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -30,6 +32,21 @@ from app.schemas import (
     TaskStatus,
     VADOptions,
     WhisperModelParams,
+)
+
+
+# Failures the pipeline is known to raise. Kept only to preserve the two
+# distinct log messages this module has always emitted; retry eligibility is
+# decided by app.services.retry, not by this tuple.
+_EXPECTED_TASK_ERRORS: tuple[type[BaseException], ...] = (
+    ValueError,
+    TypeError,
+    RuntimeError,
+    MemoryError,
+    TranscriptionFailedError,
+    DiarizationFailedError,
+    AudioProcessingError,
+    InsufficientMemoryError,
 )
 
 
@@ -177,98 +194,130 @@ def process_audio_task(
     session = SyncSessionLocal()
     repository: SyncSQLAlchemyTaskRepository = SyncSQLAlchemyTaskRepository(session)
 
+    policy = RetryPolicy.from_settings()
+    pending_delay = 0.0
+
     try:
-        gpu_semaphore = get_gpu_semaphore() if use_gpu_semaphore else None
+        for attempt in range(1, policy.max_attempts + 1):
+            # Slept at the top of the attempt rather than at the point of
+            # failure, so the GPU slot has already been released — backing off
+            # while still holding it would stall every other queued task.
+            if pending_delay:
+                time.sleep(pending_delay)
+                pending_delay = 0.0
 
-        if gpu_semaphore is not None:
-            logger.info("Task %s waiting for GPU slot", identifier)
-            gpu_semaphore.acquire()
+            gpu_semaphore = get_gpu_semaphore() if use_gpu_semaphore else None
 
-        try:
-            # Transition queued → processing and record start time
-            start_time = datetime.now(tz=timezone.utc)
-            repository.update(
-                identifier=identifier,
-                update_data={
-                    "status": TaskStatus.processing,
-                    "start_time": start_time,
-                },
-            )
-            logger.info("Starting %s task for identifier %s", task_type, identifier)
-
-            result = audio_processor()
-
-            if task_type == "diarization":
-                from app.domain.entities.diarization_result import DiarizationResult
-
-                if isinstance(result, DiarizationResult):
-                    if identify_speakers or auto_store_speakers:
-                        result = _identify_and_store_speakers(
-                            diarization_result=result,
-                            identifier=identifier,
-                            session=session,
-                            identify=identify_speakers,
-                            auto_store=auto_store_speakers,
-                        )
-                    result = result.to_serializable()
-                else:
-                    result = result.drop(columns=["segment"]).to_dict(orient="records")
-
-            end_time = datetime.now(tz=timezone.utc)
-            duration = (end_time - start_time).total_seconds()
-            logger.info(
-                "Completed %s task for identifier %s. Duration: %ss",
-                task_type,
-                identifier,
-                duration,
-            )
-
-            repository.update(
-                identifier=identifier,
-                update_data={
-                    "status": TaskStatus.completed,
-                    "result": result,
-                    "duration": duration,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                },
-            )
-
-        except (
-            ValueError,
-            TypeError,
-            RuntimeError,
-            MemoryError,
-            TranscriptionFailedError,
-            DiarizationFailedError,
-            AudioProcessingError,
-            InsufficientMemoryError,
-        ) as e:
-            logger.error(
-                "Task %s failed for identifier %s. Error: %s",
-                task_type,
-                identifier,
-                str(e),
-            )
-            repository.update(
-                identifier=identifier,
-                update_data={"status": TaskStatus.failed, "error": str(e)},
-            )
-        except Exception as e:
-            logger.error(
-                "Task %s failed for identifier %s with unexpected error. Error: %s",
-                task_type,
-                identifier,
-                str(e),
-            )
-            repository.update(
-                identifier=identifier,
-                update_data={"status": TaskStatus.failed, "error": str(e)},
-            )
-        finally:
             if gpu_semaphore is not None:
-                gpu_semaphore.release()
-                logger.info("GPU slot released for task %s", identifier)
+                logger.info("Task %s waiting for GPU slot", identifier)
+                gpu_semaphore.acquire()
+
+            try:
+                # Transition queued → processing and record start time
+                start_time = datetime.now(tz=timezone.utc)
+                repository.update(
+                    identifier=identifier,
+                    update_data={
+                        "status": TaskStatus.processing,
+                        "start_time": start_time,
+                    },
+                )
+                logger.info("Starting %s task for identifier %s", task_type, identifier)
+
+                result = audio_processor()
+
+                if task_type == "diarization":
+                    from app.domain.entities.diarization_result import DiarizationResult
+
+                    if isinstance(result, DiarizationResult):
+                        if identify_speakers or auto_store_speakers:
+                            result = _identify_and_store_speakers(
+                                diarization_result=result,
+                                identifier=identifier,
+                                session=session,
+                                identify=identify_speakers,
+                                auto_store=auto_store_speakers,
+                            )
+                        result = result.to_serializable()
+                    else:
+                        result = result.drop(columns=["segment"]).to_dict(
+                            orient="records"
+                        )
+
+                end_time = datetime.now(tz=timezone.utc)
+                duration = (end_time - start_time).total_seconds()
+                logger.info(
+                    "Completed %s task for identifier %s. Duration: %ss",
+                    task_type,
+                    identifier,
+                    duration,
+                )
+
+                repository.update(
+                    identifier=identifier,
+                    update_data={
+                        "status": TaskStatus.completed,
+                        "result": result,
+                        "duration": duration,
+                        "start_time": start_time,
+                        "end_time": end_time,
+                        # Clear any error recorded by a previous failed attempt.
+                        "error": None,
+                    },
+                )
+
+                return
+
+            except Exception as e:
+                if isinstance(e, _EXPECTED_TASK_ERRORS):
+                    logger.error(
+                        "Task %s failed for identifier %s. Error: %s",
+                        task_type,
+                        identifier,
+                        str(e),
+                    )
+                else:
+                    logger.error(
+                        "Task %s failed for identifier %s with unexpected error. "
+                        "Error: %s",
+                        task_type,
+                        identifier,
+                        str(e),
+                    )
+
+                if policy.should_retry(e, attempt):
+                    pending_delay = policy.delay_for(attempt)
+                    logger.warning(
+                        "Task %s attempt %d/%d failed transiently; retrying in %.1fs",
+                        identifier,
+                        attempt,
+                        policy.max_attempts,
+                        pending_delay,
+                    )
+                    repository.update(
+                        identifier=identifier,
+                        update_data={
+                            "status": TaskStatus.queued,
+                            "error": str(e),
+                            "retry_count": attempt,
+                        },
+                    )
+                    continue
+
+                repository.update(
+                    identifier=identifier,
+                    update_data={
+                        "status": TaskStatus.failed,
+                        "error": str(e),
+                        "retry_count": attempt - 1,
+                    },
+                )
+            finally:
+                if gpu_semaphore is not None:
+                    gpu_semaphore.release()
+                    logger.info("GPU slot released for task %s", identifier)
+
+            return
 
     finally:
         session.close()

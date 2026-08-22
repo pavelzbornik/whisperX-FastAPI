@@ -366,6 +366,20 @@ class Settings(BaseSettings):
         ge=1,
         description="Maximum number of GPU tasks allowed to run concurrently",
     )
+    TASK_MAX_RETRIES: int = Field(
+        default=0,
+        ge=0,
+        le=10,
+        description=(
+            "Retry attempts for a background task that fails transiently; "
+            "0 (the default) disables retrying"
+        ),
+    )
+    TASK_RETRY_BACKOFF_SECONDS: float = Field(
+        default=2.0,
+        gt=0,
+        description="Base delay between retry attempts; doubles each attempt",
+    )
     MAX_UPLOAD_SIZE_MB: int = Field(
         default=0,
         ge=0,

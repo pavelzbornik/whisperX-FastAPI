@@ -80,7 +80,13 @@ def test_legacy_database_is_stamped_not_recreated(patched_engine: Engine) -> Non
     This is the upgrade path for deployments that predate Alembic: the tables
     are already there but unversioned, so `upgrade head` alone would fail.
     """
-    Base.metadata.create_all(patched_engine)
+    # The realistic legacy shape: built by the previous release's create_all,
+    # so it matches the initial revision. Reproduced by migrating to that
+    # revision and then removing the stamp.
+    with patched_engine.begin() as connection:
+        command.upgrade(migrations._build_config(connection), "6142b214f12d")
+    with patched_engine.begin() as connection:
+        connection.execute(text("DROP TABLE alembic_version"))
     assert "alembic_version" not in _table_names(patched_engine)
 
     # Prove the data survives: a stamp must not drop or recreate the table.
@@ -159,3 +165,34 @@ def test_partial_legacy_schema_is_refused(patched_engine: Engine) -> None:
 
     with pytest.raises(RuntimeError, match="speaker_embeddings"):
         migrations.run_migrations()
+
+
+@pytest.mark.unit
+def test_legacy_database_gains_columns_added_by_later_revisions(
+    patched_engine: Engine,
+) -> None:
+    """A pre-Alembic database is brought all the way up to head.
+
+    This is the real upgrade path: the database was built by `create_all` from
+    the previous release, so it predates every column added since. Stamping it
+    at the initial revision and then upgrading is what applies those columns.
+    Stamping it at head instead would mark the migrations as already applied
+    and silently leave the table missing `retry_count`.
+    """
+    # Build the schema as the initial revision left it — i.e. without any
+    # column added by a later revision — and strip the version stamp so the
+    # database looks pre-Alembic.
+    with patched_engine.begin() as connection:
+        config = migrations._build_config(connection)
+        command.upgrade(config, "6142b214f12d")
+    with patched_engine.begin() as connection:
+        connection.execute(text("DROP TABLE alembic_version"))
+
+    columns = {c["name"] for c in inspect(patched_engine).get_columns("tasks")}
+    assert "retry_count" not in columns, "precondition: column not yet present"
+
+    migrations.run_migrations()
+
+    columns = {c["name"] for c in inspect(patched_engine).get_columns("tasks")}
+    assert "retry_count" in columns
+    assert _current_revision(patched_engine) == _head_revision()
