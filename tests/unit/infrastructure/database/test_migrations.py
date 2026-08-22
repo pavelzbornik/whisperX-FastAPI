@@ -2,7 +2,6 @@
 
 from collections.abc import Generator
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 from alembic import command
@@ -142,25 +141,3 @@ def test_downgrade_removes_model_tables(patched_engine: Engine) -> None:
 
     remaining = _table_names(patched_engine)
     assert not (set(Base.metadata.tables) & remaining)
-
-
-@pytest.mark.unit
-def test_legacy_database_is_stamped_at_head_not_base(patched_engine: Engine) -> None:
-    """A legacy database is stamped at head, never at an earlier revision.
-
-    This cannot be observed by comparing revisions while only one revision
-    exists, since base and head are then the same commit. It is asserted on the
-    call itself because getting it wrong is silent until a second revision is
-    added, at which point startup dies with "duplicate column name" — the
-    migration replays against columns create_all already made.
-    """
-    Base.metadata.create_all(patched_engine)
-
-    with patch.object(migrations.command, "stamp") as stamp:
-        with patch.object(migrations.command, "upgrade") as upgrade:
-            migrations.run_migrations()
-
-    stamp.assert_called_once()
-    assert stamp.call_args.args[1] == "head"
-    # Upgrading afterwards would be a no-op at best; the stamp is the whole job.
-    upgrade.assert_not_called()

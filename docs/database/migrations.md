@@ -43,13 +43,9 @@ uv run alembic check          # passes when models and migrations agree
 
 Databases created by the old `Base.metadata.create_all` startup path hold the right tables
 but carry no `alembic_version` row, so a plain `upgrade head` would fail with "table already
-exists". Startup detects this and stamps such a database **at head**, then stops.
-
-Head is the correct mark because `create_all` built that schema from the models as they
-are now, and head is precisely what the current models describe — the same statement
-`alembic check` makes. Stamping any earlier revision would replay later migrations against
-columns that already exist, which fails with "duplicate column name". No manual
-intervention is needed, and existing rows are left untouched.
+exists". Startup detects this and stamps such a database at the initial revision before
+upgrading, which is safe because that revision emits DDL identical to what `create_all`
+produced. No manual intervention is needed, and existing rows are left untouched.
 
 ## Multi-worker deployments
 

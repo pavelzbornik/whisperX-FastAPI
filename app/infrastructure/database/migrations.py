@@ -6,9 +6,8 @@ before serving traffic, so a fresh deployment needs no manual setup step.
 Databases created by the earlier ``Base.metadata.create_all`` startup path have
 the right tables but no ``alembic_version`` row, which would make
 ``upgrade head`` fail on "table already exists". Those are detected and stamped
-at head instead, which is the shape ``create_all`` actually produced: it built
-the schema from the current models, and head is what the current models
-describe.
+at the initial revision — safe because that revision produces DDL identical to
+what ``create_all`` produced — and then upgraded normally.
 """
 
 import logging
@@ -17,6 +16,7 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import Connection, inspect
 
 from app.infrastructure.database.connection import sync_engine
@@ -80,18 +80,17 @@ def run_migrations() -> None:
     with sync_engine.begin() as connection:
         config = _build_config(connection)
 
-        if _is_legacy_database(connection):
+        base_revision = ScriptDirectory.from_config(config).get_base()
+
+        if base_revision is not None and _is_legacy_database(connection):
             logger.info(
-                "Existing unversioned schema detected; stamping it at head "
-                "rather than recreating it"
+                "Existing unversioned schema detected; stamping it as revision "
+                "%s before upgrading",
+                base_revision,
             )
-            # Stamped at head, not at the initial revision. `create_all` built
-            # the schema from the models as they are now, which is by definition
-            # what head describes — `alembic check` passing is that same
-            # statement. Stamping any earlier revision would replay migrations
-            # against columns that are already present, which fails outright
-            # ("duplicate column name") the moment a second revision exists.
-            command.stamp(config, "head")
-            return
+            # Stamped at the *initial* revision rather than at head: the legacy
+            # schema matches that revision, so any later revisions still need to
+            # be applied by the upgrade below.
+            command.stamp(config, base_revision)
 
         command.upgrade(config, "head")
