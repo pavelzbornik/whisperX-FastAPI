@@ -57,14 +57,37 @@ def _policy(**env: str) -> RetryPolicy:
         FileDownloadError("http://example.com/a.wav"),
         DatabaseOperationError("insert", "deadlock"),
         MemoryError("out of memory"),
-        RuntimeError("CUDA out of memory"),
         TimeoutError("timed out"),
         ConnectionError("connection reset"),
+        # CUDA reports out-of-memory as a bare RuntimeError, and
+        # torch.cuda.OutOfMemoryError subclasses it with the same wording.
+        RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB"),
+        RuntimeError("cuDNN error: out of memory"),
     ],
 )
 def test_transient_failures_are_retryable(exc: BaseException) -> None:
     """Infrastructure and resource failures may succeed on a later attempt."""
     assert is_retryable(exc) is True
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "exc",
+    [
+        RuntimeError("shape '[1, 2]' is invalid for input of size 5"),
+        RuntimeError("Expected all tensors to be on the same device"),
+        RuntimeError("Given groups=1, weight of size [64, 3, 7, 7]"),
+    ],
+)
+def test_deterministic_runtime_errors_are_not_retryable(exc: BaseException) -> None:
+    """A RuntimeError is only transient when it is an out-of-memory report.
+
+    RuntimeError is the catch-all torch raises for tensor-shape and device
+    mismatches too. Those are properties of the model and the input, so they
+    fail identically on every attempt; retrying them burns the whole budget on
+    a guaranteed repeat.
+    """
+    assert is_retryable(exc) is False
 
 
 @pytest.mark.unit

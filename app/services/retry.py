@@ -24,16 +24,23 @@ logger = logging.getLogger(__name__)
 #
 # InfrastructureError covers the application's own transient categories —
 # ModelLoadError, FileDownloadError, InsufficientMemoryError,
-# DatabaseOperationError. The builtins cover what escapes from torch and the
-# HTTP stack: CUDA reports out-of-memory as a RuntimeError, and MemoryError
-# means another task was holding the memory this one needed.
+# DatabaseOperationError. The builtins cover what escapes from the HTTP stack,
+# and MemoryError means another task was holding the memory this one needed.
 RETRYABLE_EXCEPTIONS: tuple[type[BaseException], ...] = (
     InfrastructureError,
     MemoryError,
-    RuntimeError,
     TimeoutError,
     ConnectionError,
 )
+
+# RuntimeError is deliberately *not* in the tuple above. torch raises it for
+# out-of-memory, but equally for tensor-shape and device mismatches, which are
+# properties of the model and the input and so fail identically every time.
+# Matching the whole class would spend the entire retry budget re-running a
+# guaranteed failure, so only the out-of-memory wording is treated as
+# transient. torch.cuda.OutOfMemoryError subclasses RuntimeError and carries
+# the same wording, so it is covered here too.
+_OOM_MARKER = "out of memory"
 
 
 def is_retryable(exc: BaseException) -> bool:
@@ -50,7 +57,11 @@ def is_retryable(exc: BaseException) -> bool:
     Returns:
         ``True`` when the task may be retried.
     """
-    return isinstance(exc, RETRYABLE_EXCEPTIONS)
+    if isinstance(exc, RETRYABLE_EXCEPTIONS):
+        return True
+    if isinstance(exc, RuntimeError):
+        return _OOM_MARKER in str(exc).lower()
+    return False
 
 
 @dataclass(frozen=True)

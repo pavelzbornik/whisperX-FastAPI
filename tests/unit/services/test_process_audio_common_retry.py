@@ -15,7 +15,6 @@ import pytest
 
 from app.core.config import get_settings
 from app.core.exceptions import InsufficientMemoryError
-from app.domain.entities.task import Task
 from app.schemas import (
     AlignmentParams,
     ASROptions,
@@ -31,6 +30,12 @@ from app.schemas import (
     WhisperModelParams,
 )
 from app.services import whisperx_wrapper_service
+from tests.factories.task_factory import TaskFactory
+from tests.mocks.mock_alignment_service import MockAlignmentService
+from tests.mocks.mock_diarization_service import MockDiarizationService
+from tests.mocks.mock_speaker_assignment_service import (
+    MockSpeakerAssignmentService,
+)
 
 _ENV_KEYS = ("TASK_MAX_RETRIES", "TASK_RETRY_BACKOFF_SECONDS")
 
@@ -94,8 +99,16 @@ def _run(
     *,
     max_retries: str,
     callback_url: str | None = None,
+    transcribe_side_effect: Any = None,
 ) -> tuple[MagicMock, MagicMock, list[dict[str, Any]]]:
-    """Run the pipeline with a transcription service that always fails."""
+    """Run the pipeline, by default with a transcription service that fails.
+
+    Args:
+        max_retries: Value for ``TASK_MAX_RETRIES``.
+        callback_url: Callback URL to post to, or ``None`` for no callback.
+        transcribe_side_effect: Override for ``transcribe``; defaults to an
+            unconditional transient failure.
+    """
     os.environ["TASK_MAX_RETRIES"] = max_retries
     os.environ["TASK_RETRY_BACKOFF_SECONDS"] = "0.01"
     get_settings.cache_clear()
@@ -107,14 +120,25 @@ def _run(
     )
     # A real entity: the callback path builds a pydantic Metadata from it, so a
     # bare MagicMock would not survive validation.
-    repository.get_by_id.return_value = Task(
+    repository.get_by_id.return_value = TaskFactory(
         uuid="task-1",
         status=TaskStatus.failed.value,
         task_type="full_process",
     )
 
     transcription = MagicMock()
-    transcription.transcribe.side_effect = InsufficientMemoryError("transcription")
+    transcription.transcribe.side_effect = transcribe_side_effect or (
+        InsufficientMemoryError("transcription")
+    )
+
+    # Passed explicitly: process_audio_common falls back to constructing the
+    # real WhisperX services when these are omitted, which a unit test must
+    # never do. The repository's own mocks are used rather than bare
+    # MagicMocks, because the downstream stages validate their inputs with
+    # pydantic and a MagicMock does not survive that.
+    alignment = MockAlignmentService()
+    diarization = MockDiarizationService()
+    speaker = MockSpeakerAssignmentService()
 
     callback = MagicMock()
 
@@ -131,6 +155,9 @@ def _run(
         whisperx_wrapper_service.process_audio_common(
             _params(callback_url),
             transcription_service=transcription,
+            alignment_service=alignment,
+            diarization_service=diarization,
+            speaker_service=speaker,
         )
 
     return transcription, callback, updates
@@ -177,3 +204,27 @@ def test_no_callback_when_none_configured() -> None:
 
     assert transcription.transcribe.call_count == 2
     assert callback.call_count == 0
+
+
+@pytest.mark.unit
+def test_transient_failure_then_success_clears_the_error() -> None:
+    """A task that recovers on a retry must not keep the earlier error.
+
+    The failed attempt writes an error onto the task. If the next attempt
+    succeeds, that error has to be cleared, or a completed task carries a
+    message describing a failure that no longer happened.
+    """
+    transcription, _, updates = _run(
+        max_retries="2",
+        transcribe_side_effect=[
+            InsufficientMemoryError("transcription"),
+            {"segments": [{"text": "ok", "start": 0.0, "end": 1.0}], "language": "en"},
+        ],
+    )
+
+    assert transcription.transcribe.call_count == 2
+    final = updates[-1]
+    assert final["status"] == TaskStatus.completed
+    assert final["error"] is None
+    # The attempt that failed is still recorded, so the recovery is visible.
+    assert TaskStatus.queued in [u["status"] for u in updates if "status" in u]
