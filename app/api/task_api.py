@@ -13,7 +13,10 @@ task_router = APIRouter()
 
 
 @task_router.get(
-    "/task/all", tags=["Tasks Management"], response_model=TaskListResponse
+    "/task/all",
+    tags=["Tasks Management"],
+    response_model=TaskListResponse,
+    summary="List the status of all tasks",
 )
 async def get_all_tasks_status(
     service: TaskManagementServiceDep,
@@ -36,7 +39,12 @@ async def get_all_tasks_status(
     return TaskListResponse(tasks=task_summaries)
 
 
-@task_router.get("/task/{identifier}", tags=["Tasks Management"], response_model=Result)
+@task_router.get(
+    "/task/{identifier}",
+    tags=["Tasks Management"],
+    response_model=Result,
+    summary="Get the status of a single task",
+)
 async def get_transcription_status(
     identifier: str,
     service: TaskManagementServiceDep,
@@ -82,7 +90,10 @@ async def get_transcription_status(
 
 
 @task_router.delete(
-    "/task/{identifier}/delete", tags=["Tasks Management"], response_model=Response
+    "/task/{identifier}/delete",
+    tags=["Tasks Management"],
+    response_model=Response,
+    summary="Delete a task",
 )
 async def delete_task(
     identifier: str,
