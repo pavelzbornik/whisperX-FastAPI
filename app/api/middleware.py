@@ -253,12 +253,13 @@ class RequestLoggingMiddleware:
         try:
             await self.app(scope, receive, send_capturing_status)
         except Exception as exc:
-            logger.error(
+            # logger.exception is logger.error(..., exc_info=True); the
+            # dedicated call is the idiomatic form inside an except block.
+            logger.exception(
                 "Request failed: %s %s",
                 method,
                 path,
                 extra={"method": method, "path": path, "error": str(exc)},
-                exc_info=True,
             )
             raise
 
