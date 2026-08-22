@@ -249,3 +249,37 @@ def test_retry_survives_a_failed_requeue_write() -> None:
     # The retry still happened despite the requeue write blowing up.
     assert processor.call_count == 2
     assert harness.final_update()["status"] == TaskStatus.completed
+
+
+@pytest.mark.unit
+def test_completed_task_records_the_retries_it_actually_used() -> None:
+    """A task that succeeds on a retry must store how many retries it took.
+
+    The requeue write is deliberately guarded, so it can be skipped entirely
+    during the outage being retried through. When that happens nothing else
+    records the count, and a task that recovered on its second attempt would
+    report ``retry_count`` 0 -- indistinguishable from one that never failed.
+    """
+    harness = _Harness()
+    processor = MagicMock(
+        side_effect=[InsufficientMemoryError("transcription"), {"text": "ok"}]
+    )
+
+    _run(harness, processor, max_retries="2", fail_update_on=TaskStatus.queued)
+
+    final = harness.final_update()
+    assert final["status"] == TaskStatus.completed
+    # One retry was used: the second attempt. The failed requeue write must not
+    # be the only place that fact is recorded.
+    assert final["retry_count"] == 1
+
+
+@pytest.mark.unit
+def test_first_attempt_success_records_no_retries() -> None:
+    """A task that never failed reports zero retries, not a stale count."""
+    harness = _Harness()
+    processor = MagicMock(return_value={"text": "ok"})
+
+    _run(harness, processor, max_retries="2")
+
+    assert harness.final_update()["retry_count"] == 0
