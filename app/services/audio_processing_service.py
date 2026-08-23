@@ -263,6 +263,11 @@ def process_audio_task(
                         "end_time": end_time,
                         # Clear any error recorded by a previous failed attempt.
                         "error": None,
+                        # Written here as well as on the requeue, because the
+                        # requeue write is guarded and can be skipped during
+                        # the very outage being retried through. Without this a
+                        # task that recovered would report zero retries.
+                        "retry_count": attempt - 1,
                     },
                 )
 
