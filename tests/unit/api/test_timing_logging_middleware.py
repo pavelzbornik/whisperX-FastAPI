@@ -13,6 +13,7 @@ from app.api.middleware import (
     RequestLoggingMiddleware,
     TimingMiddleware,
     _sanitize_headers,
+    _REDACTED,
     _sanitize_query_string,
 )
 from app.core.config import get_settings
@@ -276,3 +277,33 @@ def test_sanitize_query_string_handles_empty_and_valueless() -> None:
     assert _sanitize_query_string(b"flag&token=x", {"token"}) == (
         "flag&token=***REDACTED***"
     )
+
+
+@pytest.mark.unit
+def test_sanitize_query_string_redacts_percent_encoded_names() -> None:
+    """A percent-encoded parameter name must not slip past the redaction set.
+
+    ``to%6ben`` is decoded to ``token`` by every real query parser, so a
+    credential sent under that spelling is just as sensitive as one sent
+    plainly -- but a raw string comparison does not match it.
+    """
+    result = _sanitize_query_string(b"to%6ben=super-secret", {"token"})
+
+    assert "super-secret" not in result
+    assert _REDACTED in result
+
+
+@pytest.mark.unit
+def test_sanitize_query_string_preserves_the_encoded_name() -> None:
+    """Redaction replaces the value only; the name is logged as it arrived."""
+    result = _sanitize_query_string(b"to%6ben=super-secret", {"token"})
+
+    assert result == f"to%6ben={_REDACTED}"
+
+
+@pytest.mark.unit
+def test_sanitize_query_string_decodes_plus_as_space() -> None:
+    """``+`` is a space in query strings, so it must decode before matching."""
+    result = _sanitize_query_string(b"api+key=super-secret", {"api key"})
+
+    assert "super-secret" not in result

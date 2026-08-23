@@ -6,6 +6,7 @@ state, so the application keeps behaving exactly as it did before.
 
 import logging
 from importlib.metadata import PackageNotFoundError, version
+from urllib.parse import urlsplit
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -17,6 +18,35 @@ from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
 from app.core.config import Settings
 
 logger = logging.getLogger(__name__)
+
+
+def _signal_endpoint(endpoint: str, signal: str) -> str:
+    """Resolve an OTLP/HTTP endpoint to its signal-specific URL.
+
+    An explicit ``endpoint=`` is sent verbatim by the exporters, unlike the
+    SDK's own ``OTEL_EXPORTER_OTLP_ENDPOINT``, which is treated as a base and
+    gets the signal path appended. Configuring a bare collector URL — which is
+    what the documentation asks for — would therefore POST both traces and
+    metrics to the collector root, where they are dropped.
+
+    A URL that already carries a path is left untouched: that is the operator
+    naming a specific ingest route, and second-guessing it would break gateways
+    that do not use the conventional layout.
+
+    Args:
+        endpoint: The configured OTLP/HTTP endpoint. Assumed non-empty.
+        signal: The OTLP signal name, ``traces`` or ``metrics``.
+
+    Returns:
+        The endpoint the exporter should post to.
+    """
+    base = endpoint.rstrip("/")
+    path = urlsplit(base).path
+
+    if path:
+        return endpoint
+
+    return f"{base}/v1/{signal}"
 
 
 def _service_version() -> str:
@@ -65,7 +95,11 @@ def configure_tracing(settings: Settings) -> TracerProvider | None:
     # An empty endpoint is deliberate — the exporter then reads the SDK's own
     # OTEL_EXPORTER_OTLP_ENDPOINT, so existing collector config keeps working.
     endpoint = settings.observability.EXPORTER_ENDPOINT
-    exporter = OTLPSpanExporter(endpoint=endpoint) if endpoint else OTLPSpanExporter()
+    exporter = (
+        OTLPSpanExporter(endpoint=_signal_endpoint(endpoint, "traces"))
+        if endpoint
+        else OTLPSpanExporter()
+    )
     provider.add_span_processor(BatchSpanProcessor(exporter))
 
     trace.set_tracer_provider(provider)

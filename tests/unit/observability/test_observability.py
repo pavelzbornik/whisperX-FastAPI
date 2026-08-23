@@ -13,7 +13,11 @@ from opentelemetry.sdk.trace import TracerProvider
 import app.observability as observability
 from app.core.config import Settings, get_settings
 from app.observability.metrics import configure_metrics
-from app.observability.tracing import build_resource, configure_tracing
+from app.observability.tracing import (
+    _signal_endpoint,
+    build_resource,
+    configure_tracing,
+)
 
 _ENV_KEYS = (
     "OTEL__ENABLED",
@@ -193,3 +197,45 @@ def test_configure_observability_reads_cached_settings_when_omitted() -> None:
     observability.configure_observability(app)
 
     assert observability._tracer_provider is None
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [
+        ("http://collector:4318", "http://collector:4318/v1/traces"),
+        ("http://collector:4318/", "http://collector:4318/v1/traces"),
+        # An explicit path is the operator's choice and is left alone.
+        ("http://collector:4318/v1/traces", "http://collector:4318/v1/traces"),
+        ("http://gateway/custom/ingest", "http://gateway/custom/ingest"),
+    ],
+)
+def test_traces_endpoint_gets_the_signal_path(configured: str, expected: str) -> None:
+    """A bare collector URL must reach /v1/traces, not the collector root.
+
+    The exporter uses an explicit ``endpoint`` verbatim, so a base URL -- which
+    is exactly what the documentation tells operators to configure -- would
+    otherwise POST spans to the collector root and be dropped.
+    """
+    assert _signal_endpoint(configured, "traces") == expected
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [
+        ("http://collector:4318", "http://collector:4318/v1/metrics"),
+        ("http://collector:4318/v1/metrics", "http://collector:4318/v1/metrics"),
+    ],
+)
+def test_metrics_endpoint_gets_the_signal_path(configured: str, expected: str) -> None:
+    """Metrics resolve to their own path, not the same URL as traces."""
+    assert _signal_endpoint(configured, "metrics") == expected
+
+
+@pytest.mark.unit
+def test_traces_and_metrics_do_not_share_one_endpoint() -> None:
+    """One configured base must fan out to two distinct signal endpoints."""
+    base = "http://collector:4318"
+
+    assert _signal_endpoint(base, "traces") != _signal_endpoint(base, "metrics")

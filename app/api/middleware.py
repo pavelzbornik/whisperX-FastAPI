@@ -4,6 +4,7 @@ import logging
 import time
 from collections.abc import Iterable, MutableMapping
 from typing import Any
+from urllib.parse import unquote_plus
 
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -103,7 +104,10 @@ def _sanitize_query_string(raw_query: bytes, sensitive: set[str]) -> str:
     sanitized = []
     for pair in decoded.split("&"):
         name, separator, _ = pair.partition("=")
-        if separator and name.lower() in sensitive:
+        # Decoded before matching: query parsers resolve percent-escapes, so
+        # "to%6ben" names the same parameter as "token" and carries the same
+        # credential. Comparing the raw spelling would let it through.
+        if separator and unquote_plus(name).lower() in sensitive:
             sanitized.append(f"{name}={_REDACTED}")
         else:
             sanitized.append(pair)
