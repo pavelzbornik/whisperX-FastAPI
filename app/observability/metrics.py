@@ -13,7 +13,7 @@ from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 
 from app.core.config import Settings
-from app.observability.tracing import build_resource
+from app.observability.tracing import _signal_endpoint, build_resource
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,9 @@ def configure_metrics(settings: Settings) -> MeterProvider | None:
     # As in tracing: an empty endpoint defers to the SDK's own env var.
     endpoint = settings.observability.EXPORTER_ENDPOINT
     exporter = (
-        OTLPMetricExporter(endpoint=endpoint) if endpoint else OTLPMetricExporter()
+        OTLPMetricExporter(endpoint=_signal_endpoint(endpoint, "metrics"))
+        if endpoint
+        else OTLPMetricExporter()
     )
     reader = PeriodicExportingMetricReader(
         exporter,

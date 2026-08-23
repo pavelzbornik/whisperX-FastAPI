@@ -11,6 +11,10 @@ OTEL__ENABLED=true
 OTEL__EXPORTER_ENDPOINT=http://collector:4318   # OTLP/HTTP base endpoint
 ```
 
+A base URL is what you want here: the signal path is appended for you, so traces go to
+`/v1/traces` and metrics to `/v1/metrics`. Setting a URL that already has a path — a
+gateway with its own ingest route, say — disables that and the value is used verbatim.
+
 Leaving `OTEL__EXPORTER_ENDPOINT` empty is supported and useful: the exporters then fall
 back to the SDK's own standard variables (`OTEL_EXPORTER_OTLP_ENDPOINT`,
 `OTEL_EXPORTER_OTLP_HEADERS`, …), so an existing collector setup keeps working untouched.
