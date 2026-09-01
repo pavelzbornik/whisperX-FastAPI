@@ -6,7 +6,7 @@ state, so the application keeps behaving exactly as it did before.
 
 import logging
 from importlib.metadata import PackageNotFoundError, version
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
@@ -40,13 +40,18 @@ def _signal_endpoint(endpoint: str, signal: str) -> str:
     Returns:
         The endpoint the exporter should post to.
     """
-    base = endpoint.rstrip("/")
-    path = urlsplit(base).path
+    parts = urlsplit(endpoint)
 
-    if path:
+    # Only the path component decides. A lone "/" is the collector root, not a
+    # route the operator chose, so it still gets the signal path.
+    if parts.path.strip("/"):
         return endpoint
 
-    return f"{base}/v1/{signal}"
+    # Rebuilt from the parsed parts rather than concatenated, so the path lands
+    # ahead of any query or fragment. Appending textually to a URL like
+    # "http://collector:4318?tenant=foo" would bury "/v1/traces" inside the
+    # query value and post to the collector root.
+    return urlunsplit(parts._replace(path=f"/v1/{signal}"))
 
 
 def _service_version() -> str:
