@@ -239,3 +239,40 @@ def test_traces_and_metrics_do_not_share_one_endpoint() -> None:
     base = "http://collector:4318"
 
     assert _signal_endpoint(base, "traces") != _signal_endpoint(base, "metrics")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("configured", "expected"),
+    [
+        (
+            "http://collector:4318?tenant=foo",
+            "http://collector:4318/v1/traces?tenant=foo",
+        ),
+        (
+            "http://collector:4318/?tenant=foo",
+            "http://collector:4318/v1/traces?tenant=foo",
+        ),
+        ("http://collector:4318#frag", "http://collector:4318/v1/traces#frag"),
+        (
+            "http://collector:4318/?tenant=foo#frag",
+            "http://collector:4318/v1/traces?tenant=foo#frag",
+        ),
+        # A real path still wins, and its query rides along untouched.
+        (
+            "http://gateway/custom/ingest?tenant=foo",
+            "http://gateway/custom/ingest?tenant=foo",
+        ),
+    ],
+)
+def test_signal_path_is_inserted_before_query_and_fragment(
+    configured: str, expected: str
+) -> None:
+    """The signal path belongs in the path component, not glued onto the end.
+
+    A collector URL carrying a query string -- a tenant selector on a
+    multi-tenant gateway, say -- has no path, so it needs the signal path.
+    Appending it textually would produce ``...:4318?tenant=foo/v1/traces``,
+    burying the path inside the query value and sending spans nowhere.
+    """
+    assert _signal_endpoint(configured, "traces") == expected
