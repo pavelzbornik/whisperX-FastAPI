@@ -33,6 +33,7 @@ def _torch_load_compat(*args: Any, **kwargs: Any) -> Any:
 
 torch.load = _torch_load_compat
 
+import asyncio  # noqa: E402
 import logging  # noqa: E402
 import os  # noqa: E402
 import time  # noqa: E402
@@ -81,7 +82,11 @@ from app.api.exception_handlers import (  # noqa: E402
     task_not_found_handler,
     validation_error_handler,
 )
-from app.api.middleware import MaxUploadSizeMiddleware  # noqa: E402
+from app.api.middleware import (  # noqa: E402
+    MaxUploadSizeMiddleware,
+    RequestLoggingMiddleware,
+    TimingMiddleware,
+)
 from app.api.security import (  # noqa: E402
     enforce_async_gpu_quota,
     enforce_sync_gpu_quota,
@@ -101,6 +106,11 @@ from app.core.exceptions import (  # noqa: E402
 from app.core.rate_limit import limiter  # noqa: E402
 from app.docs import generate_db_schema, save_openapi_json  # noqa: E402
 from app.infrastructure.database import Base, async_engine, sync_engine  # noqa: E402
+from app.infrastructure.database.migrations import run_migrations  # noqa: E402
+from app.observability import (  # noqa: E402
+    configure_observability,
+    shutdown_observability,
+)
 
 # Log application startup information
 environment = os.getenv("ENVIRONMENT", "production").lower()
@@ -135,9 +145,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     logger.info("Application lifespan started - dependency container initialized")
 
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database connection established")
+    # Alembic is synchronous, so it runs in a worker thread rather than on the
+    # event loop. This replaces the previous create_all call: the schema is now
+    # versioned, so column changes can ship as migrations instead of silently
+    # not being applied to existing databases.
+    await asyncio.to_thread(run_migrations)
+    logger.info("Database schema is up to date")
+
+    # No-op unless OTEL__ENABLED is set.
+    configure_observability(app)
 
     save_openapi_json(app)
     generate_db_schema(Base.metadata.tables.values())
@@ -152,6 +168,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # sync_engine uses QueuePool for PostgreSQL; disposing prevents connection leaks.
     await async_engine.dispose()
     sync_engine.dispose()
+
+    # Flush buffered spans and metrics rather than dropping them on exit.
+    shutdown_observability()
 
 
 tags_metadata = [
@@ -294,6 +313,13 @@ class RequestContextMiddleware:
         await self.app(scope, receive, send_with_request_id)
 
 
+# Middleware added later wraps middleware added earlier, so the resulting
+# request order is: MaxUploadSize -> RequestContext -> RequestLogging -> Timing.
+# Timing is innermost so it measures handler work rather than the middleware
+# stack, and both logging and timing run inside RequestContext so their records
+# carry the request id.
+app.add_middleware(TimingMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RequestContextMiddleware)
 # Added last so it is the outermost middleware: oversized uploads are rejected
 # with HTTP 413 before the body is buffered or any downstream work begins.
