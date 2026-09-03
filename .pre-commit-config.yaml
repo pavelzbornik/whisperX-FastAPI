@@ -32,13 +32,13 @@ repos:
       # - id: name-tests-test
       - id: check-toml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.22
+    rev: v0.16.6
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.1.0
+    rev: v2.3.1
     hooks:
       - id: mypy
         additional_dependencies:
@@ -76,7 +76,7 @@ repos:
   - repo: https://github.com/igorshubovych/markdownlint-cli
     # Lint: Markdown
 
-    rev: v0.48.0
+    rev: v0.49.1
     hooks:
       - id: markdownlint
         args: ["--fix", "--config", ".markdownlint.json"]
@@ -92,7 +92,7 @@ repos:
       - id: gitleaks
         args: ["--config", ".gitleaks.toml"]
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.14.0
+    rev: v2.15.1
     hooks:
       - id: hadolint
         files: '(^|/)[Dd]ockerfile$'
@@ -107,7 +107,7 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.16.5
+    rev: v4.18.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
