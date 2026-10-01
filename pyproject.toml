@@ -43,7 +43,7 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "python-dotenv==1.2.2",
     "python-multipart==0.0.31",
-    "tqdm==4.70.0",
+    "tqdm==4.70.1",
     "uvicorn==0.52.4",
     "whisperx==3.8.5",
     "sqlalchemy[asyncio]>=2.0.0",
