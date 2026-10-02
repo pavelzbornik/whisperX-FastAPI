@@ -1,6 +1,7 @@
 """This module provides services for transcribing, diarizing, and aligning audio using Whisper and other models."""
 
 import gc
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -15,6 +16,7 @@ from whisperx import (
 from whisperx.diarize import DiarizationPipeline
 
 from app.callbacks import post_task_callback
+from app.services.retry import RetryPolicy
 from app.core.config import Config
 from app.core.logging import logger
 from app.domain.services.alignment_service import IAlignmentService
@@ -299,179 +301,229 @@ def process_audio_common(
 
     # Only gate on the semaphore when using CUDA — CPU deployments don't risk OOM
     use_semaphore = params.whisper_model_params.device == Device.cuda
+    policy = RetryPolicy.from_settings()
+    pending_delay = 0.0
+
     try:
-        gpu_semaphore = get_gpu_semaphore() if use_semaphore else None
-        if gpu_semaphore is not None:
-            logger.info("Task %s waiting for GPU slot", params.identifier)
-            gpu_semaphore.acquire()
-        try:
-            # Transition from queued → processing
-            start_time = datetime.now(tz=timezone.utc)
-            repository.update(
-                identifier=params.identifier,
-                update_data={
-                    "status": TaskStatus.processing,
-                    "start_time": start_time,
-                },
-            )
-            logger.info(
-                "Starting speech-to-text processing for identifier: %s",
-                params.identifier,
-            )
+        for attempt in range(1, policy.max_attempts + 1):
+            # Slept at the top of the attempt rather than at the point of
+            # failure, so the GPU slot has already been released — backing off
+            # while still holding it would stall every other queued task.
+            if pending_delay:
+                time.sleep(pending_delay)
+                pending_delay = 0.0
 
-            logger.debug(
-                "Transcription parameters - task: %s, language: %s, batch_size: %d, chunk_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
-                params.whisper_model_params.task.value,
-                params.whisper_model_params.language,
-                params.whisper_model_params.batch_size,
-                params.whisper_model_params.chunk_size,
-                params.whisper_model_params.model.value,
-                params.whisper_model_params.device.value,
-                params.whisper_model_params.device_index,
-                params.whisper_model_params.compute_type.value,
-                params.whisper_model_params.threads,
-            )
-
-            segments_before_alignment = transcription_svc.transcribe(
-                audio=params.audio,
-                task=params.whisper_model_params.task.value,
-                asr_options=params.asr_options.model_dump(),
-                vad_options=params.vad_options.model_dump(),
-                language=params.whisper_model_params.language,
-                batch_size=params.whisper_model_params.batch_size,
-                chunk_size=params.whisper_model_params.chunk_size,
-                model=params.whisper_model_params.model.value,
-                device=params.whisper_model_params.device.value,
-                device_index=params.whisper_model_params.device_index,
-                compute_type=params.whisper_model_params.compute_type.value,
-                threads=params.whisper_model_params.threads,
-            )
-
-            logger.debug(
-                "Alignment parameters - align_model: %s, interpolate_method: %s, return_char_alignments: %s, language_code: %s",
-                params.alignment_params.align_model,
-                params.alignment_params.interpolate_method,
-                params.alignment_params.return_char_alignments,
-                segments_before_alignment["language"],
-            )
-            segments_transcript = alignment_svc.align(
-                transcript=segments_before_alignment["segments"],
-                audio=params.audio,
-                language_code=segments_before_alignment["language"],
-                device=params.whisper_model_params.device.value,
-                align_model=params.alignment_params.align_model,
-                interpolate_method=params.alignment_params.interpolate_method,
-                return_char_alignments=params.alignment_params.return_char_alignments,
-            )
-            transcript = AlignedTranscription(**segments_transcript)
-            # removing words within each segment that have missing start, end, or score values
-            filtered_transcript = filter_aligned_transcription(transcript)
-            transcript_dict = filtered_transcript.model_dump()
-
-            logger.debug(
-                "Diarization parameters - device: %s, min_speakers: %s, max_speakers: %s",
-                params.whisper_model_params.device.value,
-                params.diarization_params.min_speakers,
-                params.diarization_params.max_speakers,
-            )
-            need_embeddings = (
-                params.diarization_params.return_embeddings
-                or params.diarization_params.identify_speakers
-                or params.diarization_params.auto_store_speakers
-            )
-            diarization_result = diarization_svc.diarize(
-                audio=params.audio,
-                device=params.whisper_model_params.device.value,
-                min_speakers=params.diarization_params.min_speakers,
-                max_speakers=params.diarization_params.max_speakers,
-                return_embeddings=need_embeddings,
-            )
-
-            # Identify speakers against local DB if requested
-            if (
-                params.diarization_params.identify_speakers
-                or params.diarization_params.auto_store_speakers
-            ):
-                from app.services.audio_processing_service import (
-                    _identify_and_store_speakers,
-                )
-
-                diarization_result = _identify_and_store_speakers(
-                    diarization_result=diarization_result,
-                    identifier=params.identifier,
-                    session=session,
-                    identify=params.diarization_params.identify_speakers,
-                    auto_store=params.diarization_params.auto_store_speakers,
-                )
-
-            logger.debug("Starting to combine transcript with diarization results")
-            result = speaker_svc.assign_speakers(
-                diarization_result.segments,
-                transcript_dict,
-                speaker_embeddings=diarization_result.speaker_embeddings,
-            )
-
-            logger.debug("Completed combining transcript with diarization results")
-
-            end_time = datetime.now(tz=timezone.utc)
-            duration = (end_time - start_time).total_seconds()
-            logger.info(
-                "Completed speech-to-text processing for identifier: %s. Duration: %ss",
-                params.identifier,
-                duration,
-            )
-
-            repository.update(
-                identifier=params.identifier,
-                update_data={
-                    "status": TaskStatus.completed,
-                    "result": result,
-                    "duration": duration,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                },
-            )
-
-        except (RuntimeError, ValueError, KeyError) as e:
-            logger.error(
-                "Speech-to-text processing failed for identifier: %s. Error: %s",
-                params.identifier,
-                str(e),
-            )
-            repository.update(
-                identifier=params.identifier,
-                update_data={
-                    "status": TaskStatus.failed,
-                    "error": str(e),
-                },
-            )
-
-        except MemoryError as e:
-            logger.error(
-                "Task failed for identifier %s due to out of memory. Error: %s",
-                params.identifier,
-                str(e),
-            )
-            repository.update(
-                identifier=params.identifier,
-                update_data={"status": TaskStatus.failed, "error": str(e)},
-            )
-
-        except Exception as e:
-            logger.error(
-                "Speech-to-text processing failed for identifier: %s with unexpected error. Error: %s",
-                params.identifier,
-                str(e),
-            )
-            repository.update(
-                identifier=params.identifier,
-                update_data={"status": TaskStatus.failed, "error": str(e)},
-            )
-
-        finally:
+            gpu_semaphore = get_gpu_semaphore() if use_semaphore else None
             if gpu_semaphore is not None:
-                gpu_semaphore.release()
-                logger.info("GPU slot released for task %s", params.identifier)
+                logger.info("Task %s waiting for GPU slot", params.identifier)
+                gpu_semaphore.acquire()
+            try:
+                # Transition from queued → processing
+                start_time = datetime.now(tz=timezone.utc)
+                repository.update(
+                    identifier=params.identifier,
+                    update_data={
+                        "status": TaskStatus.processing,
+                        "start_time": start_time,
+                    },
+                )
+                logger.info(
+                    "Starting speech-to-text processing for identifier: %s",
+                    params.identifier,
+                )
+
+                logger.debug(
+                    "Transcription parameters - task: %s, language: %s, batch_size: %d, chunk_size: %d, model: %s, device: %s, device_index: %d, compute_type: %s, threads: %d",
+                    params.whisper_model_params.task.value,
+                    params.whisper_model_params.language,
+                    params.whisper_model_params.batch_size,
+                    params.whisper_model_params.chunk_size,
+                    params.whisper_model_params.model.value,
+                    params.whisper_model_params.device.value,
+                    params.whisper_model_params.device_index,
+                    params.whisper_model_params.compute_type.value,
+                    params.whisper_model_params.threads,
+                )
+
+                segments_before_alignment = transcription_svc.transcribe(
+                    audio=params.audio,
+                    task=params.whisper_model_params.task.value,
+                    asr_options=params.asr_options.model_dump(),
+                    vad_options=params.vad_options.model_dump(),
+                    language=params.whisper_model_params.language,
+                    batch_size=params.whisper_model_params.batch_size,
+                    chunk_size=params.whisper_model_params.chunk_size,
+                    model=params.whisper_model_params.model.value,
+                    device=params.whisper_model_params.device.value,
+                    device_index=params.whisper_model_params.device_index,
+                    compute_type=params.whisper_model_params.compute_type.value,
+                    threads=params.whisper_model_params.threads,
+                )
+
+                logger.debug(
+                    "Alignment parameters - align_model: %s, interpolate_method: %s, return_char_alignments: %s, language_code: %s",
+                    params.alignment_params.align_model,
+                    params.alignment_params.interpolate_method,
+                    params.alignment_params.return_char_alignments,
+                    segments_before_alignment["language"],
+                )
+                segments_transcript = alignment_svc.align(
+                    transcript=segments_before_alignment["segments"],
+                    audio=params.audio,
+                    language_code=segments_before_alignment["language"],
+                    device=params.whisper_model_params.device.value,
+                    align_model=params.alignment_params.align_model,
+                    interpolate_method=params.alignment_params.interpolate_method,
+                    return_char_alignments=params.alignment_params.return_char_alignments,
+                )
+                transcript = AlignedTranscription(**segments_transcript)
+                # removing words within each segment that have missing start, end, or score values
+                filtered_transcript = filter_aligned_transcription(transcript)
+                transcript_dict = filtered_transcript.model_dump()
+
+                logger.debug(
+                    "Diarization parameters - device: %s, min_speakers: %s, max_speakers: %s",
+                    params.whisper_model_params.device.value,
+                    params.diarization_params.min_speakers,
+                    params.diarization_params.max_speakers,
+                )
+                need_embeddings = (
+                    params.diarization_params.return_embeddings
+                    or params.diarization_params.identify_speakers
+                    or params.diarization_params.auto_store_speakers
+                )
+                diarization_result = diarization_svc.diarize(
+                    audio=params.audio,
+                    device=params.whisper_model_params.device.value,
+                    min_speakers=params.diarization_params.min_speakers,
+                    max_speakers=params.diarization_params.max_speakers,
+                    return_embeddings=need_embeddings,
+                )
+
+                # Identify speakers against local DB if requested
+                if (
+                    params.diarization_params.identify_speakers
+                    or params.diarization_params.auto_store_speakers
+                ):
+                    from app.services.audio_processing_service import (
+                        _identify_and_store_speakers,
+                    )
+
+                    diarization_result = _identify_and_store_speakers(
+                        diarization_result=diarization_result,
+                        identifier=params.identifier,
+                        session=session,
+                        identify=params.diarization_params.identify_speakers,
+                        auto_store=params.diarization_params.auto_store_speakers,
+                    )
+
+                logger.debug("Starting to combine transcript with diarization results")
+                result = speaker_svc.assign_speakers(
+                    diarization_result.segments,
+                    transcript_dict,
+                    speaker_embeddings=diarization_result.speaker_embeddings,
+                )
+
+                logger.debug("Completed combining transcript with diarization results")
+
+                end_time = datetime.now(tz=timezone.utc)
+                duration = (end_time - start_time).total_seconds()
+                logger.info(
+                    "Completed speech-to-text processing for identifier: %s. Duration: %ss",
+                    params.identifier,
+                    duration,
+                )
+
+                repository.update(
+                    identifier=params.identifier,
+                    update_data={
+                        "status": TaskStatus.completed,
+                        "result": result,
+                        "duration": duration,
+                        "start_time": start_time,
+                        "end_time": end_time,
+                        # Clear any error recorded by a previous failed attempt.
+                        "error": None,
+                        # Written here as well as on the requeue, because the
+                        # requeue write is guarded and can be skipped during
+                        # the very outage being retried through. Without this a
+                        # task that recovered would report zero retries.
+                        "retry_count": attempt - 1,
+                    },
+                )
+
+                return
+
+            except Exception as e:
+                if isinstance(e, (RuntimeError, ValueError, KeyError)):
+                    logger.error(
+                        "Speech-to-text processing failed for identifier: %s. "
+                        "Error: %s",
+                        params.identifier,
+                        str(e),
+                    )
+                elif isinstance(e, MemoryError):
+                    logger.error(
+                        "Task failed for identifier %s due to out of memory. Error: %s",
+                        params.identifier,
+                        str(e),
+                    )
+                else:
+                    logger.error(
+                        "Speech-to-text processing failed for identifier: %s "
+                        "with unexpected error. Error: %s",
+                        params.identifier,
+                        str(e),
+                    )
+
+                if policy.should_retry(e, attempt):
+                    pending_delay = policy.delay_for(attempt)
+                    logger.warning(
+                        "Task %s attempt %d/%d failed transiently; retrying in %.1fs",
+                        params.identifier,
+                        attempt,
+                        policy.max_attempts,
+                        pending_delay,
+                    )
+                    # Guarded on purpose. This write is bookkeeping, and
+                    # DatabaseOperationError is itself retryable — so the very
+                    # outage being retried through can break it. Letting it
+                    # escape would kill the retry loop at the moment it is
+                    # most needed, so the attempt proceeds either way and the
+                    # task state is corrected by the next write.
+                    try:
+                        repository.update(
+                            identifier=params.identifier,
+                            update_data={
+                                "status": TaskStatus.queued,
+                                "error": str(e),
+                                "retry_count": attempt,
+                            },
+                        )
+                    except Exception:  # noqa: BLE001
+                        logger.warning(
+                            "Could not record the requeue for task %s; "
+                            "retrying regardless",
+                            params.identifier,
+                            exc_info=True,
+                        )
+                    continue
+
+                repository.update(
+                    identifier=params.identifier,
+                    update_data={
+                        "status": TaskStatus.failed,
+                        "error": str(e),
+                        "retry_count": attempt - 1,
+                    },
+                )
+
+            finally:
+                if gpu_semaphore is not None:
+                    gpu_semaphore.release()
+                    logger.info("GPU slot released for task %s", params.identifier)
+
+            return
 
     finally:
         try:

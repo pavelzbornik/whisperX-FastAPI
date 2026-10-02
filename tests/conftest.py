@@ -5,6 +5,8 @@ import os
 
 from typing import Generator
 
+from sqlalchemy import text as sa_text
+
 import pytest
 
 # Must happen before any app imports — connection.py reads get_settings() at
@@ -55,15 +57,27 @@ def setup_test_db(
     # connections created inside asyncio.run()'s temporary event loop are not
     # reused by the test session's event loop (avoids asyncpg "Future attached
     # to a different loop" errors when TEST_DB_URL points at PostgreSQL).
-    async def _create_tables() -> None:
+    async def _reset_schema() -> None:
         async with async_engine.begin() as conn:
             # Drop first so re-running against an existing external DB (e.g.
-            # PostgreSQL via TEST_DB_URL) starts from a clean schema.
+            # PostgreSQL via TEST_DB_URL) starts from a clean schema. The
+            # alembic_version table is not part of Base.metadata, so it has to
+            # go explicitly — otherwise a stale stamp would survive the reset
+            # and migrations would replay against tables already rebuilt.
             await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.execute(sa_text("DROP TABLE IF EXISTS alembic_version"))
         await async_engine.dispose()
 
-    asyncio.run(_create_tables())
+    asyncio.run(_reset_schema())
+
+    # Build the schema the way the application does — by running migrations —
+    # rather than via create_all. Using create_all here would leave the test
+    # database in a shape no deployment ever has: tables matching the current
+    # models but carrying no version stamp, which startup then tries to
+    # migrate.
+    from app.infrastructure.database.migrations import run_migrations  # noqa: E402
+
+    run_migrations()
     logger.debug("conftest.py: Tables created")
 
     yield

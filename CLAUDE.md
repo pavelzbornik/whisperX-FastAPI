@@ -80,18 +80,26 @@ app/
 │   ├── audio_api.py           # Speech-to-text (full pipeline) endpoints
 │   ├── audio_services_api.py  # Individual service endpoints (transcribe/align/diarize)
 │   ├── task_api.py            # Task management endpoints
-│   ├── dependencies.py        # Injects services from Container via Depends()
+│   ├── dependencies.py        # Container providers + Annotated injection aliases
 │   ├── schemas/               # Pydantic request/response models
 │   ├── mappers/               # API schema ↔ domain entity conversion
 │   └── exception_handlers.py  # Maps domain exceptions → HTTP responses
 ├── core/                      # Config, DI Container, exception hierarchy → see app/core/CLAUDE.md
 ├── domain/                    # Pure Python entities, repository + ML service interfaces → see app/domain/CLAUDE.md
 ├── infrastructure/            # SQLAlchemy + WhisperX implementations → see app/infrastructure/CLAUDE.md
+├── observability/             # Optional OpenTelemetry tracing + metrics (off by default)
 └── services/                  # Business logic orchestration → see app/services/CLAUDE.md
 
+alembic/                       # Schema migrations (revisions in alembic/versions/)
 tests/                         # Markers, mocks, factories, coverage → see tests/CLAUDE.md
 docs/                          # ADRs, stories, config migration guide → see docs/CLAUDE.md
 ```
+
+**Schema changes go through Alembic.** The app runs pending migrations at startup, so no
+manual step is needed to boot. After editing `app/infrastructure/database/models.py`, run
+`task db:revision MSG="..."`, read the generated revision (autogenerate turns a column
+rename into a drop plus an add, losing data), and check it in. `uv run alembic check`
+fails when a model change has no matching migration. See `docs/database/migrations.md`.
 
 ## Environment Variables
 
@@ -118,6 +126,15 @@ RATE_LIMIT__BURST=10
 RATE_LIMIT__KEY_STRATEGY=ip       # ip | bearer_token
 AUTH__ENABLED=false               # shared bearer-token auth → 401
 AUTH__BEARER_TOKEN=               # required when AUTH__ENABLED=true
+
+# Request observability (see app/api/middleware.py)
+MIDDLEWARE__ENABLE_REQUEST_LOGGING=false  # log request start/completion, headers redacted
+MIDDLEWARE__SLOW_REQUEST_THRESHOLD=5.0    # warn when a request exceeds this many seconds
+
+# OpenTelemetry (off by default — see docs/observability/README.md)
+OTEL__ENABLED=false               # master switch for traces + metrics
+OTEL__EXPORTER_ENDPOINT=          # OTLP/HTTP endpoint; empty defers to OTEL_EXPORTER_OTLP_ENDPOINT
+OTEL__TRACES_SAMPLER_RATIO=1.0
 ```
 
 **Critical:** When `DEVICE=cpu`, `COMPUTE_TYPE` is auto-corrected to `int8`. Tests set
@@ -131,6 +148,14 @@ enabled — changing them needs a restart (tests clear the caches to re-read). T
 is enforced from `Content-Length`; the async concurrency gate is admission control (the
 background GPU pipeline is bounded by `MAX_CONCURRENT_GPU_TASKS`). Multi-worker deployments
 give each worker its own in-process budget.
+
+**Request observability** also lives in `app/api/middleware.py`: `TimingMiddleware` (always
+on — adds an `X-Response-Time` header and warns past `MIDDLEWARE__SLOW_REQUEST_THRESHOLD`)
+and `RequestLoggingMiddleware` (off by default; redacts sensitive headers). Every
+middleware here is raw ASGI rather than `BaseHTTPMiddleware`, so `contextvars` propagate
+correctly to handlers and background tasks. Request order is
+`MaxUploadSize → RequestContext → RequestLogging → Timing`, which puts logging and timing
+inside the request-id context.
 
 ## CI Pipeline
 
