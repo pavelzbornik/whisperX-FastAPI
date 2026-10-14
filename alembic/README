@@ -1,0 +1,20 @@
+Alembic migration environment for whisperX-FastAPI.
+
+The database URL is not configured in alembic.ini — alembic/env.py uses the
+application's own sync engine, which is built from DB_URL. Set DB_URL (or the
+.env file) the same way you would for running the app.
+
+Common commands:
+
+    uv run alembic upgrade head        # apply all pending migrations
+    uv run alembic downgrade -1        # revert the most recent migration
+    uv run alembic current             # show the revision the database is at
+    uv run alembic history             # list revisions
+
+To add a migration after changing app/infrastructure/database/models.py:
+
+    uv run alembic revision --autogenerate -m "describe the change"
+
+Always read the generated revision before committing it — autogenerate does not
+detect every change (notably column renames, which it emits as a drop plus an
+add, losing the data).

@@ -66,6 +66,10 @@ RUN uv run --no-sync python -c "import nltk; \
     nltk.download('punkt_tab', download_dir='/app/nltk_data', quiet=False)"
 
 # Layer 3: Application code (rebuilds on code changes — cheap)
+# The alembic tree ships with the image: the app applies pending migrations
+# during startup, so the revisions must be present at runtime.
+COPY alembic.ini ./
+COPY alembic alembic/
 COPY app app/
 
 EXPOSE 8000

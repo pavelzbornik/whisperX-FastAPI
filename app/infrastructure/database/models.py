@@ -27,6 +27,7 @@ class Task(Base):
     - task_type: Type/category of the task.
     - duration: Duration of the task execution.
     - error: Error message, if any, associated with the task.
+    - retry_count: Number of retry attempts made after a transient failure.
     - created_at: Date and time of creation.
     - updated_at: Date and time of last update.
     """
@@ -79,6 +80,12 @@ class Task(Base):
     )
     error: Mapped[str | None] = mapped_column(
         String, nullable=True, comment="Error message, if any, associated with the task"
+    )
+    retry_count: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default="0",
+        comment="Number of retry attempts made after a transient failure",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

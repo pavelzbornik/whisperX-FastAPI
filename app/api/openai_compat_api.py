@@ -5,17 +5,17 @@ from datetime import datetime, timezone
 from typing import Annotated, Any, NoReturn, cast
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Header, HTTPException, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.api.dependencies import (
-    get_alignment_service,
-    get_file_service,
-    get_task_repository,
-    get_transcription_service,
+    AlignmentServiceDep,
+    FileServiceDep,
+    TaskRepositoryDep,
+    TranscriptionServiceDep,
 )
 from app.api.mappers import map_request_to_whisper_params
 from app.api.schemas import (
@@ -444,12 +444,10 @@ async def _handle_openai_transcription(
 @limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def create_transcription(
     request: Request,
-    file_service: Annotated[FileService, Depends(get_file_service)],
-    transcription_service: Annotated[
-        ITranscriptionService, Depends(get_transcription_service)
-    ],
-    alignment_service: Annotated[IAlignmentService, Depends(get_alignment_service)],
-    repository: Annotated[ITaskRepository, Depends(get_task_repository)],
+    file_service: FileServiceDep,
+    transcription_service: TranscriptionServiceDep,
+    alignment_service: AlignmentServiceDep,
+    repository: TaskRepositoryDep,
     _authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ) -> Response:
     """Transcribe an uploaded file and return the transcript synchronously.
@@ -477,12 +475,10 @@ async def create_transcription(
 @limiter.limit(rate_limit_value, exempt_when=rate_limiting_disabled)
 async def create_translation(
     request: Request,
-    file_service: Annotated[FileService, Depends(get_file_service)],
-    transcription_service: Annotated[
-        ITranscriptionService, Depends(get_transcription_service)
-    ],
-    alignment_service: Annotated[IAlignmentService, Depends(get_alignment_service)],
-    repository: Annotated[ITaskRepository, Depends(get_task_repository)],
+    file_service: FileServiceDep,
+    transcription_service: TranscriptionServiceDep,
+    alignment_service: AlignmentServiceDep,
+    repository: TaskRepositoryDep,
     _authorization: Annotated[str | None, Header(alias="Authorization")] = None,
 ) -> Response:
     """Translate an uploaded file to English and return the result synchronously.
