@@ -1,5 +1,9 @@
 # Contributing to whisperX-FastAPI
 
+> [!WARNING]
+> This repository is archived and no longer accepts issues or pull requests.
+> The guide below is kept for reference. To continue the work, fork the repository.
+
 Thank you for your interest in contributing to whisperX-FastAPI! We welcome contributions of all kinds, including bug fixes, new features, documentation improvements, and more.
 
 ## Branch Strategy
