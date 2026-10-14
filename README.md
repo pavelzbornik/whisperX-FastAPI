@@ -1,5 +1,12 @@
 # whisperX REST API
 
+> [!WARNING]
+> This repository is archived and no longer maintained. It gets no fixes,
+> dependency updates or security patches, and issues and pull requests are closed.
+> The last release is [0.8.0](https://github.com/pavelzbornik/whisperX-FastAPI/releases).
+> The code stays available under the MIT licence. If you depend on it, fork it
+> or check the [existing forks](https://github.com/pavelzbornik/whisperX-FastAPI/forks).
+
 [![GitHub stars](https://img.shields.io/github/stars/pavelzbornik/whisperX-FastAPI?style=social)](https://github.com/pavelzbornik/whisperX-FastAPI/stargazers)
 [![License: MIT](https://img.shields.io/github/license/pavelzbornik/whisperX-FastAPI.svg)](https://github.com/pavelzbornik/whisperX-FastAPI/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pavelzbornik/whisperX-FastAPI)
