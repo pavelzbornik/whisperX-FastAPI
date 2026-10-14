@@ -1,5 +1,10 @@
 # Security Policy
 
+> [!WARNING]
+> This repository is archived and no longer maintained. No version is supported,
+> and security reports will not be investigated or fixed. The advisories listed
+> below and any found later stay unpatched.
+
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in whisperX-FastAPI, please report it as soon as possible to help keep the community safe.

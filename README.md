@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > This repository is archived and no longer maintained. It gets no fixes,
-> dependency updates or security patches, and issues and pull requests are closed.
+> dependency updates or security patches, and its issues and pull requests are read-only.
 > The last release is [0.8.0](https://github.com/pavelzbornik/whisperX-FastAPI/releases).
 > The code stays available under the MIT licence. If you depend on it, fork it
 > or check the [existing forks](https://github.com/pavelzbornik/whisperX-FastAPI/forks).
